@@ -42,5 +42,6 @@ extern void customize_server_version();
 static constexpr uint DEFAULT_RPC_PORT = 33660;
 extern int32 rpc_port;
 extern bool new_rpc;
+extern void print_commit_id();
 
 #endif /* SYS_VARS_EXT_H_INCLUDED */

@@ -204,6 +204,8 @@ char innodb_version[SERVER_VERSION_LENGTH];
 /* Local scope variables */
 static uint rds_version = 0;
 
+static char *rds_release_date_ptr = NULL;
+
 /**
   Customize mysqld server version
 
@@ -239,6 +241,16 @@ static bool fix_server_version(sys_var *, THD *, enum_var_type) {
   customize_server_version();
   return false;
 }
+
+/**
+  Output the latest commit id for the MYSQLD binary.
+
+  @returns void.
+*/
+void print_commit_id() {
+  printf("RDS_GALAXYENGINE_80 commit id: %s\n", RDS_COMMIT_ID);
+}
+
 
 /**
   RDS DEFINED variables
@@ -418,5 +430,10 @@ static Sys_var_bool Sys_disable_wait_commitindex(
        "it may detory the cluster data if some crash happen",
        GLOBAL_VAR(opt_disable_wait_commitindex), CMD_LINE(OPT_ARG),
        DEFAULT(false), NO_MUTEX_GUARD, NOT_IN_BINLOG, ON_CHECK(0), ON_UPDATE(0));
+
+static Sys_var_charptr Sys_rds_release_date(
+    "rds_release_date", "RDS RPM package release date",
+    READ_ONLY GLOBAL_VAR(rds_release_date_ptr), NO_CMD_LINE, IN_SYSTEM_CHARSET,
+    DEFAULT(RDS_RELEASE_DATE));
 
 /* RDS DEFINED */

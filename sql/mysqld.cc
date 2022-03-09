@@ -810,6 +810,7 @@ The documentation is based on the source files such as:
 #include "sql/bl_consensus_log.h"
 #include "sql/log_table.h"
 #include "sql/binlog_ext.h"
+#include "sql/sys_vars_ext.h"
 
 using std::max;
 using std::min;
@@ -9510,6 +9511,7 @@ bool mysqld_get_one_option(int optid,
       break;
     case 'V':
       print_server_version();
+      print_commit_id();
       exit(MYSQLD_SUCCESS_EXIT);
     case 'T':
       test_flags = argument ? (uint)atoi(argument) : 0;
