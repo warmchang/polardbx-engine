@@ -99,6 +99,8 @@ $CMAKE_BIN .                            \
   -DENABLED_PROFILING=1              \
   -DENABLED_LOCAL_INFILE=1           \
   -DWITH_BOOST="extra/boost/boost_1_70_0.tar.gz" \
+  -DDOWNLOAD_BOOST=1 \
+  -DWITH_BOOST=extra/boost \
   -DRDS_RELEASE_DATE=%{release_date} \
   -DRDS_COMMIT_ID=%{commit_id}
 
