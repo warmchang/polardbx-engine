@@ -1,0 +1,3 @@
+t-rds-galaxyengine-80:
+  pkgpara:
+    DOCKER: 1
