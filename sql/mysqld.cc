@@ -1192,6 +1192,9 @@ bool thread_cache_size_specified = false;
 bool host_cache_size_specified = false;
 bool table_definition_cache_specified = false;
 ulong locked_account_connection_count = 0;
+ulonglong smart_handle_dup_key= 0;
+ulonglong smart_handle_no_key= 0;
+ulonglong smart_handle_failed= 0;
 
 /**
   Limit of the total number of prepared statements in the server.
@@ -1911,7 +1914,7 @@ class Set_kill_conn : public Do_THD_Impl {
                      post_kill_notification, (killing_thd));
       // And THD galaxy cb.
       if (likely(killing_thd != nullptr))
-        MYSQL_CALLBACK(killing_thd->galaxy_parallel_monitor,
+        MYSQL_CALLBACK(killing_thd->polarx_rpc_monitor,
                        post_kill_notification, (killing_thd));
     }
 
@@ -6880,7 +6883,7 @@ int mysqld_main(int argc, char **argv)
     LogErr(INFORMATION_LEVEL, ER_WARN_NO_SERVERID_SPECIFIED);
 
   /*
-    For GalaxyEngine:
+    For PolarDB-X Engine:
     bin_log must be set to ON
   */
   if (!opt_initialize && consensus_log_manager.option_invalid(opt_bin_log)) {
@@ -8905,6 +8908,12 @@ SHOW_VAR status_vars[] = {
      SHOW_FUNC, SHOW_SCOPE_GLOBAL},
     {"Slave_last_heartbeat", (char *)&show_slave_last_heartbeat, SHOW_FUNC,
      SHOW_SCOPE_GLOBAL},
+    {"Smart_handle_dup_key",     (char*) &smart_handle_dup_key, SHOW_LONGLONG,
+     SHOW_SCOPE_ALL},
+    {"Smart_handle_no_key",      (char*) &smart_handle_no_key, SHOW_LONGLONG,
+     SHOW_SCOPE_ALL},
+    {"Smart_handle_failed",      (char*) &smart_handle_failed, SHOW_LONGLONG,
+     SHOW_SCOPE_ALL},
 #ifndef DBUG_OFF
     {"Slave_rows_last_search_algorithm_used",
      (char *)&show_slave_rows_last_search_algorithm_used, SHOW_FUNC,
@@ -9069,7 +9078,7 @@ static void print_server_version(void) {
   set_server_version();
 
   print_explicit_version(server_version);
-  print_galaxyengine_version();
+  print_polardbx_engine_version();
 }
 
 /** Compares two options' names, treats - and _ the same */

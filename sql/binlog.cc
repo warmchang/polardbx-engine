@@ -1440,7 +1440,7 @@ int binlog_cache_data::write_event(Log_event *ev) {
                ("event_counter= %lu", static_cast<ulong>(event_counter)));
   }
 
-  /* GalaxyEngine do not allow a log event larger than opt_consensus_large_event_limit */
+  /* PolarDB-X Engine do not allow a log event larger than opt_consensus_large_event_limit */
   my_off_t newpos = get_byte_position();
   if (opt_consensus_check_large_event) {
     if (newpos - oldpos > opt_consensus_large_event_limit || DBUG_EVALUATE_IF("force_large_event", 1, 0)) {
@@ -4931,7 +4931,7 @@ bool MYSQL_BIN_LOG::open_binlog(
     if (relay_log_checksum_alg == binary_log::BINLOG_CHECKSUM_ALG_UNDEF) {
 #ifdef NORMANDY_CLUSTER
       /*
-      GalaxyEngine do not send fd event to Follower, so just use binlog_checksum_options.
+      PolarDB-X Engine do not send fd event to Follower, so just use binlog_checksum_options.
       The binlog_checksum_options of Leader and Follower must be set to a same value.
       */
       relay_log_checksum_alg= static_cast<enum_binlog_checksum_alg>
@@ -8760,12 +8760,14 @@ int MYSQL_BIN_LOG::finish_commit(THD *thd) {
     mysql_mutex_unlock(&LOCK_slave_trans_dep_tracker);
   }
 
-  /* whether consensus layer allow to commit */
-  if (thd->get_transaction()->m_flags.commit_low || thd->consensus_error != THD::CSS_NONE)
+  if (!opt_binlog_order_commits || thd->get_transaction()->m_flags.commit_low ||
+      thd->consensus_error != THD::CSS_NONE) {
+    /* Wait until the logs are received by more than half of the nodes */
     MYSQL_BIN_LOG::consensus_before_commit(thd);
+  }
 
-    DBUG_EXECUTE_IF("crash_before_large_trx_commit_late", {
-      /* after waitCommitIndexUpdate */
+  DBUG_EXECUTE_IF("crash_before_large_trx_commit_late", {
+    /* after waitCommitIndexUpdate */
     DBUG_SUICIDE();
   });
 

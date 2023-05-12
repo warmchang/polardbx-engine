@@ -9363,6 +9363,15 @@ ER_SEQUENCE_BATCH_SIZE_INVALID
 ER_SEQUENCE_SKIP_ERROR
    eng "Nextval skipped to is not valid in sequence '%-.192s.%-.192s'"
 
+ER_IC_NOT_ALLOWED_IN_SUB_STMT
+  eng "Inventory transactional hints didn't alllowed in stored procedure"
+
+ER_IC_NOT_ALLOWED_IN_AUTOCOMMIT
+  eng "Inventory transactinal hints didn't allowed in autocommit mode"
+
+ER_IC_NOT_MATCH_TARGET
+  eng "Inventory conditional hints didn't match with result"
+
 #
 #  End of RDS error message.
 #
@@ -9374,11 +9383,14 @@ ER_SEQUENCE_SKIP_ERROR
 
 start-error-number 8000
 
-ER_GALAXY_PREPARE_CACHE_MISS
+ER_POLARX_RPC_CACHE_MISS
   eng "Galaxy prepare cache miss."
 
 ER_POLARX_RPC_ERROR_MSG
   eng "%s"
+
+ER_GP_WAIT_TIMEOUT
+  eng "Prepare wait timeout exceeded; try restarting global query"
 
 #
 # End of PolarDB-X special error messages intended to be return to CN.

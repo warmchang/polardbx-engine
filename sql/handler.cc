@@ -708,6 +708,7 @@ int ha_init_errors(void) {
   SETMSG(HA_ERR_AS_OF_INTERNAL, ER_DEFAULT(ER_FLASHBACK_INTERNAL_ERROR));
   SETMSG(HA_ERR_AS_OF_TABLE_DEF_CHANGED, ER_DEFAULT(ER_AS_OF_TABLE_DEF_CHANGED));
   SETMSG(HA_ERR_SNAPSHOT_TOO_OLD, ER_DEFAULT(ER_SNAPSHOT_TOO_OLD));
+  SETMSG(HA_ERR_GP_WAIT_TIMEOUT, ER_DEFAULT(ER_GP_WAIT_TIMEOUT));
   /* Register the error messages for use with my_error(). */
   return my_error_register(get_handler_errmsg, HA_ERR_FIRST, HA_ERR_LAST);
 }
@@ -2998,15 +2999,18 @@ int handler::ha_ft_read(uchar *buf) {
 }
 
 int handler::ha_sample_init(double sampling_percentage, int sampling_seed,
-                            enum_sampling_method) {
+                            enum_sampling_method method) {
   DBUG_TRACE;
   DBUG_ASSERT(sampling_percentage >= 0.0);
   DBUG_ASSERT(sampling_percentage <= 100.0);
   DBUG_ASSERT(inited == NONE);
 
+  DBUG_EXECUTE_IF("fixed_sample_seed", sampling_seed = 1;);
+
   // Initialise the random number generator.
   m_random_number_engine.seed(sampling_seed);
   m_sampling_percentage = sampling_percentage;
+  m_sampling_method = method;
 
   int result = sample_init();
   inited = (result != 0) ? NONE : SAMPLING;
@@ -3015,9 +3019,12 @@ int handler::ha_sample_init(double sampling_percentage, int sampling_seed,
 
 int handler::ha_sample_end() {
   DBUG_TRACE;
-  DBUG_ASSERT(inited == SAMPLING);
-  inited = NONE;
-  int result = sample_end();
+  int result = 0;
+  if (inited != NONE) {
+    DBUG_ASSERT(inited == SAMPLING);
+    inited = NONE;
+    result = sample_end();
+  }
   return result;
 }
 
@@ -4343,6 +4350,9 @@ void handler::print_error(int error, myf errflag) {
       break;
     case HA_ERR_SNAPSHOT_TOO_OLD:
       textno = ER_SNAPSHOT_TOO_OLD;
+      break;
+    case HA_ERR_GP_WAIT_TIMEOUT:
+      textno = ER_GP_WAIT_TIMEOUT;
       break;
     default: {
       /* The error was "unknown" to this function.

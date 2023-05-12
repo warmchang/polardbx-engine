@@ -5,10 +5,10 @@
    This program is also distributed with certain software (including
    but not limited to OpenSSL) that is licensed under separate terms,
    as designated in a particular file or component or in included license
-   documentation.  The authors of MySQL/Apsara GalaxyEngine hereby grant you an
+   documentation.  The authors of MySQL/PolarDB-X Engine hereby grant you an
    additional permission to link the program and your derivative works with the
    separately licensed software that they have included with
-   MySQL/Apsara GalaxyEngine.
+   MySQL/PolarDB-X Engine.
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
@@ -92,6 +92,9 @@ struct undo_addr_t {
   scn_t scn;
   /* Active or Commit state */
   bool state;
+
+  /** Commit gcn number */
+  gcn_t gcn;
 };
 
 typedef struct undo_addr_t undo_addr_t;
@@ -172,6 +175,7 @@ struct txn_rec_t {
     visible judgement, and it can be retrieved by txn undo header, so defined
     gcn as txn record attribute.
   */
+  /** Revision: Persist gcn into record */
   gcn_t gcn;
 };
 
@@ -179,12 +183,15 @@ struct txn_rec_t {
   Lizard transaction attributes in undo log record
    1) scn
    2) undo_ptr
+   3) gcn
 */
 struct txn_info_t {
   /** scn number */
   scn_id_t scn;
   /** undo log header address */
   undo_ptr_t undo_ptr;
+  /** gcn number */
+  gcn_t gcn;
 };
 
 /**

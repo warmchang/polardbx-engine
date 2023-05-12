@@ -1232,7 +1232,7 @@ void THD::awake(THD::killed_state state_to_set) {
       MYSQL_CALLBACK(Connection_handler_manager::event_functions,
                      post_kill_notification, (this));
       // And THD galaxy cb.
-      MYSQL_CALLBACK(galaxy_parallel_monitor, post_kill_notification, (this));
+      MYSQL_CALLBACK(polarx_rpc_monitor, post_kill_notification, (this));
     }
   }
 
@@ -1386,6 +1386,12 @@ void THD::store_globals() {
   set_my_thread_var_id(m_thread_id);
 #endif
   real_id = my_thread_self();  // For debugging
+
+#ifdef USE_PPOLL_IN_VIO
+  if (net.vio != nullptr) {
+    net.vio->thread_id = real_id;
+  }
+#endif
 }
 
 /*

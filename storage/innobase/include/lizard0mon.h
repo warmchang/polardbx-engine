@@ -5,10 +5,10 @@
    This program is also distributed with certain software (including
    but not limited to OpenSSL) that is licensed under separate terms,
    as designated in a particular file or component or in included license
-   documentation.  The authors of MySQL/Apsara GalaxyEngine hereby grant you an
+   documentation.  The authors of MySQL/PolarDB-X Engine hereby grant you an
    additional permission to link the program and your derivative works with the
    separately licensed software that they have included with
-   MySQL/Apsara GalaxyEngine.
+   MySQL/PolarDB-X Engine.
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
@@ -270,10 +270,6 @@ struct lizard_stats_t {
   ulint_ctr_1_t block_tcn_cache_miss;
   ulint_ctr_1_t block_tcn_cache_evict;
 
-  ulint_ctr_1_t session_tcn_cache_hit;
-  ulint_ctr_1_t session_tcn_cache_miss;
-  ulint_ctr_1_t session_tcn_cache_evict;
-
   ulint_ctr_1_t global_tcn_cache_hit;
   ulint_ctr_1_t global_tcn_cache_miss;
   ulint_ctr_1_t global_tcn_cache_evict;
@@ -330,6 +326,7 @@ void page_write_req_stat(const buf_block_t *block);
 void txn_lookup_stat(txn_lookup_entry entry);
 
 }  // namespace lizard
+#ifdef UNIV_DEBUG
 
 #define BLOCK_TCN_CACHE_HIT                         \
   do {                                              \
@@ -346,21 +343,6 @@ void txn_lookup_stat(txn_lookup_entry entry);
     lizard::lizard_stats.block_tcn_cache_evict.inc(); \
   } while (0)
 
-#define SESSION_TCN_CACHE_HIT                        \
-  do {                                                \
-    lizard::lizard_stats.session_tcn_cache_hit.inc(); \
-  } while (0)
-
-#define SESSION_TCN_CACHE_MISS                         \
-  do {                                                 \
-    lizard::lizard_stats.session_tcn_cache_miss.inc(); \
-  } while (0)
-
-#define SESSION_TCN_CACHE_EVICT                         \
-  do {                                                  \
-    lizard::lizard_stats.session_tcn_cache_evict.inc(); \
-  } while (0)
-
 #define GLOBAL_TCN_CACHE_HIT                         \
   do {                                               \
     lizard::lizard_stats.global_tcn_cache_hit.inc(); \
@@ -375,6 +357,17 @@ void txn_lookup_stat(txn_lookup_entry entry);
   do {                                                 \
     lizard::lizard_stats.global_tcn_cache_evict.inc(); \
   } while (0)
+
+#else
+
+#define BLOCK_TCN_CACHE_HIT
+#define BLOCK_TCN_CACHE_MISS
+#define BLOCK_TCN_CACHE_EVICT
+#define GLOBAL_TCN_CACHE_HIT
+#define GLOBAL_TCN_CACHE_MISS
+#define GLOBAL_TCN_CACHE_EVICT
+
+#endif
 
 #define LIZARD_MONITOR_INC_TXN_CACHED(NUMBER)                             \
   do {                                                                    \

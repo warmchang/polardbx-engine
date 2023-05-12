@@ -5,10 +5,10 @@
    This program is also distributed with certain software (including
    but not limited to OpenSSL) that is licensed under separate terms,
    as designated in a particular file or component or in included license
-   documentation.  The authors of MySQL/Apsara GalaxyEngine hereby grant you an
+   documentation.  The authors of MySQL/PolarDB-X Engine hereby grant you an
    additional permission to link the program and your derivative works with the
    separately licensed software that they have included with
-   MySQL/Apsara GalaxyEngine.
+   MySQL/PolarDB-X Engine.
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
@@ -38,6 +38,7 @@ struct st_udf_counter {
   unsigned long long bloomfilter_counter = 0;
   unsigned long long hyperloglog_counter = 0;
   unsigned long long hllndv_counter = 0;
+  unsigned long long hashcheck_counter = 0;
 };
 
 extern struct st_udf_counter udf_counter;
@@ -92,5 +93,6 @@ class UDF {
 void bloomfilter_udf(gs::udf::Udf_definition *def);
 void hllndv_udf(gs::udf::Udf_definition *def);
 void hyperloglog_udf(gs::udf::Udf_definition *def);
+void hashcheck_udf(gs::udf::Udf_definition *def);
 
 #endif

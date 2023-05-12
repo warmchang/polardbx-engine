@@ -5,10 +5,10 @@
    This program is also distributed with certain software (including
    but not limited to OpenSSL) that is licensed under separate terms,
    as designated in a particular file or component or in included license
-   documentation.  The authors of MySQL/Apsara GalaxyEngine hereby grant you an
+   documentation.  The authors of MySQL/PolarDB-X Engine hereby grant you an
    additional permission to link the program and your derivative works with the
    separately licensed software that they have included with
-   MySQL/Apsara GalaxyEngine.
+   MySQL/PolarDB-X Engine.
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
@@ -102,10 +102,6 @@ static void export_lizard_status(void) {
   lizard_vars.block_tcn_cache_hit = lizard_stats.block_tcn_cache_hit;
   lizard_vars.block_tcn_cache_miss = lizard_stats.block_tcn_cache_miss;
   lizard_vars.block_tcn_cache_evict = lizard_stats.block_tcn_cache_evict;
-
-  lizard_vars.session_tcn_cache_hit = lizard_stats.session_tcn_cache_hit;
-  lizard_vars.session_tcn_cache_miss = lizard_stats.session_tcn_cache_miss;
-  lizard_vars.session_tcn_cache_evict = lizard_stats.session_tcn_cache_evict;
 
   lizard_vars.global_tcn_cache_hit = lizard_stats.global_tcn_cache_hit;
   lizard_vars.global_tcn_cache_miss = lizard_stats.global_tcn_cache_miss;
@@ -317,15 +313,6 @@ static SHOW_VAR lizard_status_variables[] = {
      SHOW_LONG, SHOW_SCOPE_GLOBAL},
 
     {"block_tcn_cache_evict", (char *)&lizard_vars.block_tcn_cache_evict,
-     SHOW_LONG, SHOW_SCOPE_GLOBAL},
-
-    {"session_tcn_cache_hit", (char *)&lizard_vars.session_tcn_cache_hit,
-     SHOW_LONG, SHOW_SCOPE_GLOBAL},
-
-    {"session_tcn_cache_miss", (char *)&lizard_vars.session_tcn_cache_miss,
-     SHOW_LONG, SHOW_SCOPE_GLOBAL},
-
-    {"session_tcn_cache_evict", (char *)&lizard_vars.session_tcn_cache_evict,
      SHOW_LONG, SHOW_SCOPE_GLOBAL},
 
     {"global_tcn_cache_hit", (char *)&lizard_vars.global_tcn_cache_hit,

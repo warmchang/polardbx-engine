@@ -10,8 +10,13 @@
 #include <stdexcept>
 #include <string>
 
+#include "../global_defines.h"
+#ifdef MYSQL8
+#include "sql/hostname_cache.h" // ip_to_hostname
+#else
+#include "sql/hostname.h"
+#endif
 #include "sql/mysqld.h"
-#include "sql/hostname_cache.h"  // ip_to_hostname
 
 #include "../common_define.h"
 #include "../polarx_rpc.h"
@@ -53,7 +58,7 @@ private:
     host.resize(ip.size()); /// remove tail
 
     // turn IP to hostname for auth uses
-    if (!skip_name_resolve) {
+    if (!opt_skip_name_resolve) {
       char *hostname = nullptr;
       uint connect_errors;
       int rc = ip_to_hostname(reinterpret_cast<sockaddr_storage *>(
@@ -61,9 +66,11 @@ private:
                               host.data(), &hostname, &connect_errors);
 
       if (rc == RC_BLOCKED_HOST) {
-        my_plugin_log_message(&plugin_info.plugin_info, MY_WARNING_LEVEL,
-                              "Resolve name blocked %s:%u.", host.c_str(),
-                              port);
+        std::lock_guard<std::mutex> plugin_lck(plugin_info.mutex);
+        if (plugin_info.plugin_info != nullptr)
+          my_plugin_log_message(&plugin_info.plugin_info, MY_WARNING_LEVEL,
+                                "Resolve name blocked %s:%u.", host.c_str(),
+                                port);
         return false;
       }
       if (hostname) {
@@ -105,6 +112,10 @@ private:
           continue;
         }
 
+        /// once ready and connected, watch dog should work normally
+        if (!plugin_info.inited.load(std::memory_order_acquire))
+          plugin_info.inited.store(true, std::memory_order_release);
+
         /// new connection
         std::unique_ptr<CtcpConnection> tcp(new CtcpConnection(
             epoll_, g_tcp_id_generator.fetch_add(1, std::memory_order_relaxed),
@@ -118,9 +129,14 @@ private:
           auto bret = tcp->events(EPOLLIN, 0, 1);
           assert(bret); /// still keep the reference, so never fail
         } else {
-          tcp->fin(); /// close socket
-          my_plugin_log_message(&plugin_info.plugin_info, MY_WARNING_LEVEL,
-                                "Failed to accept. %s", std::strerror(-err));
+          tcp->fin("failed to add to epoll"); /// close socket
+          {
+            std::lock_guard<std::mutex> plugin_lck(plugin_info.mutex);
+            if (plugin_info.plugin_info != nullptr)
+              my_plugin_log_message(&plugin_info.plugin_info, MY_WARNING_LEVEL,
+                                    "Failed to accept. %s",
+                                    std::strerror(-err));
+          }
         }
         auto after = tcp->sub_reference();
         if (after > 0) {
@@ -136,16 +152,21 @@ private:
         break; /// The socket is marked nonblocking and no connections are
                /// present to be accepted.
       else if (err != EINTR) {
-        my_plugin_log_message(&plugin_info.plugin_info, MY_ERROR_LEVEL,
-                              "Fatal error when accept. %s",
-                              std::strerror(err));
-        // unireg_abort(MYSQLD_ABORT_EXIT);
+        {
+          std::lock_guard<std::mutex> plugin_lck(plugin_info.mutex);
+          if (plugin_info.plugin_info != nullptr)
+            my_plugin_log_message(&plugin_info.plugin_info, MY_ERROR_LEVEL,
+                                  "Fatal error when accept. %s",
+                                  std::strerror(err));
+        }
         throw std::runtime_error("Bad accept state.");
       }
       if (++retry >= 10) {
-        my_plugin_log_message(&plugin_info.plugin_info, MY_WARNING_LEVEL,
-                              "Failed to accept with EINTR after retry %d.",
-                              retry);
+        std::lock_guard<std::mutex> plugin_lck(plugin_info.mutex);
+        if (plugin_info.plugin_info != nullptr)
+          my_plugin_log_message(&plugin_info.plugin_info, MY_WARNING_LEVEL,
+                                "Failed to accept with EINTR after retry %d.",
+                                retry);
         break;
       }
     }
@@ -155,28 +176,49 @@ private:
 public:
   static void start(uint16_t port) {
     /// check port first
-    auto err = CmtEpoll::check_port(port);
-    if (err != 0) {
-      my_plugin_log_message(&plugin_info.plugin_info, MY_ERROR_LEVEL,
-                            "Failed to check port %u. %s", port,
-                            std::strerror(-err));
+    auto check_times = 0;
+    int ierr;
+    do {
+      ierr = CmtEpoll::check_port(port);
+      if (0 == ierr)
+        break; /// good
+      else
+        std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    } while (++check_times < 3);
+    if (ierr != 0) {
+      {
+        std::lock_guard<std::mutex> plugin_lck(plugin_info.mutex);
+        if (plugin_info.plugin_info != nullptr)
+          my_plugin_log_message(&plugin_info.plugin_info, MY_ERROR_LEVEL,
+                                "Failed to check port %u. %s", port,
+                                std::strerror(-ierr));
+      }
       throw std::runtime_error("Failed to check port.");
     }
 
+    /// bind port
     size_t inst_cnt;
     auto insts = CmtEpoll::get_instance(inst_cnt);
     for (size_t i = 0; i < inst_cnt; ++i) {
       std::unique_ptr<Clistener> listener(new Clistener(*insts[i]));
       /// only set reuse port on other inst
-      err = insts[i]->listen_port(port, listener.get(), inst_cnt > 1);
-      if (0 == err) {
+      ierr = insts[i]->listen_port(port, listener.get(), inst_cnt > 1);
+      if (0 == ierr) {
         listener.release(); /// leak it to epoll
-        my_plugin_log_message(&plugin_info.plugin_info, MY_WARNING_LEVEL,
-                              "Listen on port %u.", port);
+        {
+          std::lock_guard<std::mutex> plugin_lck(plugin_info.mutex);
+          if (plugin_info.plugin_info != nullptr)
+            my_plugin_log_message(&plugin_info.plugin_info, MY_WARNING_LEVEL,
+                                  "Listen on port %u.", port);
+        }
       } else {
-        my_plugin_log_message(&plugin_info.plugin_info, MY_ERROR_LEVEL,
-                              "Failed to listen on port %u. %s", port,
-                              std::strerror(-err));
+        {
+          std::lock_guard<std::mutex> plugin_lck(plugin_info.mutex);
+          if (plugin_info.plugin_info != nullptr)
+            my_plugin_log_message(&plugin_info.plugin_info, MY_ERROR_LEVEL,
+                                  "Failed to listen on port %u. %s", port,
+                                  std::strerror(-ierr));
+        }
         throw std::runtime_error("Failed to listen.");
       }
     }

@@ -5,10 +5,10 @@
    This program is also distributed with certain software (including
    but not limited to OpenSSL) that is licensed under separate terms,
    as designated in a particular file or component or in included license
-   documentation.  The authors of MySQL/Apsara GalaxyEngine hereby grant you an
+   documentation.  The authors of MySQL/PolarDB-X Engine hereby grant you an
    additional permission to link the program and your derivative works with the
    separately licensed software that they have included with
-   MySQL/Apsara GalaxyEngine.
+   MySQL/PolarDB-X Engine.
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
@@ -674,7 +674,6 @@ static Sys_var_charptr Sys_consensus_flow_control(
        IN_FS_CHARSET, DEFAULT(0), NO_MUTEX_GUARD, NOT_IN_BINLOG,
        ON_CHECK(0), ON_UPDATE(fix_consensus_flow_control));
 
-#ifdef NORMANDY_CLUSTER
 static bool fix_consensus_log_level(sys_var *, THD *, enum_var_type)
 {
   // opt_consensus_log_level + 3 equal to easy log level
@@ -689,6 +688,7 @@ static Sys_var_enum Sys_consensus_log_level(
        internal_tmp_consensus_log_level_names, DEFAULT(0),
        NO_MUTEX_GUARD, NOT_IN_BINLOG, ON_CHECK(0), ON_UPDATE(fix_consensus_log_level));
 
+#ifdef NORMANDY_CLUSTER
 static Sys_var_ulonglong Sys_consensus_check_commit_index_interval(
        "consensus_check_commit_index_interval", "check interval for slave calling checkCommitIndex",
        GLOBAL_VAR(opt_consensus_check_commit_index_interval), CMD_LINE(OPT_ARG),

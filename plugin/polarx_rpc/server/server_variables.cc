@@ -7,6 +7,7 @@
 
 #include "mysql/plugin.h"
 
+#include "../global_defines.h"
 #include "server_variables.h"
 
 class THD;
@@ -15,10 +16,18 @@ namespace polarx_rpc {
 
 namespace defaults {
 static constexpr my_bool auto_cpu_affinity = true;
+/// allow bind to multi core in group, set to true in aliyun
+static constexpr my_bool multi_affinity_in_group = false;
 static constexpr my_bool force_all_cores = false;
 /// auto calculate by core numbers
 static constexpr uint32_t epoll_groups = 0;
+#ifdef MYSQL8
+/// for open source
 static constexpr uint32_t min_auto_epoll_groups = 32;
+#else
+/// for aliyun
+static constexpr uint32_t min_auto_epoll_groups = 16;
+#endif
 /// only works when 0 == epoll_groups, better performance if set to 0 with auto
 /// bind core
 static constexpr uint32_t epoll_extra_groups = 0;
@@ -43,8 +52,6 @@ static constexpr uint32_t tcp_fixed_dealing_buf = 0x1000;
 
 static constexpr uint32_t mcs_spin_cnt = 2000;
 static constexpr uint32_t session_poll_rwlock_spin_cnt = 1;
-
-static constexpr my_bool skip_name_resolve = true;
 
 /// 10s
 static constexpr uint32_t net_write_timeout = 10 * 1000;
@@ -84,9 +91,15 @@ static constexpr uint32_t epoll_group_tasker_multiply = 3;
 /// default 2
 static constexpr uint32_t epoll_group_tasker_extend_step = 2;
 static constexpr my_bool enable_epoll_in_tasker = true;
-}  // namespace defaults
+
+static constexpr uint32_t request_cache_number = 1024;
+static constexpr uint32_t request_cache_instances = 16;
+/// only cache sql/plan smaller than 1MB
+static constexpr uint32_t request_cache_max_length = 1024 * 1024;
+} // namespace defaults
 
 my_bool auto_cpu_affinity = defaults::auto_cpu_affinity;
+my_bool multi_affinity_in_group = defaults::multi_affinity_in_group;
 my_bool force_all_cores = defaults::force_all_cores;
 uint32_t epoll_groups = defaults::epoll_groups;
 uint32_t min_auto_epoll_groups = defaults::min_auto_epoll_groups;
@@ -107,8 +120,6 @@ uint32_t tcp_fixed_dealing_buf = defaults::tcp_fixed_dealing_buf;
 
 uint32_t mcs_spin_cnt = defaults::mcs_spin_cnt;
 uint32_t session_poll_rwlock_spin_cnt = defaults::session_poll_rwlock_spin_cnt;
-
-my_bool skip_name_resolve = defaults::skip_name_resolve;
 
 uint32_t net_write_timeout = defaults::net_write_timeout;
 
@@ -144,6 +155,10 @@ uint32_t epoll_group_tasker_extend_step =
     defaults::epoll_group_tasker_extend_step;
 my_bool enable_epoll_in_tasker = defaults::enable_epoll_in_tasker;
 
+uint32_t request_cache_number = defaults::request_cache_number;
+uint32_t request_cache_instances = defaults::request_cache_instances;
+uint32_t request_cache_max_length = defaults::request_cache_max_length;
+
 /**
  * Global Variables
  */
@@ -167,6 +182,11 @@ static MYSQL_SYSVAR_BOOL(auto_cpu_affinity, ::polarx_rpc::auto_cpu_affinity,
                          PLUGIN_VAR_OPCMDARG | PLUGIN_VAR_READONLY,
                          "Enable auto thread CPU affinity(RO)", nullptr,
                          nullptr, defaults::auto_cpu_affinity);
+static MYSQL_SYSVAR_BOOL(multi_affinity_in_group,
+                         ::polarx_rpc::multi_affinity_in_group,
+                         PLUGIN_VAR_OPCMDARG | PLUGIN_VAR_READONLY,
+                         "Enable base thread bind to all cores in group(RO)",
+                         nullptr, nullptr, defaults::multi_affinity_in_group);
 static MYSQL_SYSVAR_BOOL(force_all_cores, ::polarx_rpc::force_all_cores,
                          PLUGIN_VAR_OPCMDARG | PLUGIN_VAR_READONLY,
                          "Enable thread CPU affinity to all CPU cores(RO)",
@@ -208,6 +228,22 @@ static MYSQL_SYSVAR_UINT(tcp_listen_queue, ::polarx_rpc::tcp_listen_queue,
                          PLUGIN_VAR_OPCMDARG | PLUGIN_VAR_READONLY,
                          "TCP listen queue(RO)", nullptr, nullptr,
                          defaults::tcp_listen_queue, 128, 4096, 0);
+static MYSQL_SYSVAR_UINT(request_cache_number,
+                         ::polarx_rpc::request_cache_number,
+                         PLUGIN_VAR_OPCMDARG | PLUGIN_VAR_READONLY,
+                         "Total cache number of XRPC requests(RO)", nullptr,
+                         nullptr, defaults::request_cache_number, 128, 16384,
+                         0);
+static MYSQL_SYSVAR_UINT(request_cache_instances,
+                         ::polarx_rpc::request_cache_instances,
+                         PLUGIN_VAR_OPCMDARG | PLUGIN_VAR_READONLY,
+                         "Instances number of request cache(RO)", nullptr,
+                         nullptr, defaults::request_cache_instances, 1, 128, 0);
+static MYSQL_SYSVAR_UINT(
+    request_cache_max_length, ::polarx_rpc::request_cache_max_length,
+    PLUGIN_VAR_OPCMDARG | PLUGIN_VAR_READONLY,
+    "Max length of sql/plan which will store in request cache(RO)", nullptr,
+    nullptr, defaults::request_cache_max_length, 128, 1024 * 1024 * 1024, 0);
 
 /// Dynamic param
 static MYSQL_SYSVAR_UINT(epoll_events_per_thread,
@@ -249,9 +285,6 @@ static MYSQL_SYSVAR_UINT(
     PLUGIN_VAR_OPCMDARG,
     "Spin count of RW-lock before snooze for session pool(RW)", nullptr,
     update_func_u32, defaults::session_poll_rwlock_spin_cnt, 1, 10000, 0);
-static MYSQL_SYSVAR_BOOL(skip_name_resolve, ::polarx_rpc::skip_name_resolve,
-                         PLUGIN_VAR_OPCMDARG, "Don't resolve hostnames(RW)",
-                         nullptr, update_func_b, defaults::skip_name_resolve);
 static MYSQL_SYSVAR_UINT(net_write_timeout, ::polarx_rpc::net_write_timeout,
                          PLUGIN_VAR_OPCMDARG, "Timeout for TCP write in ms(RW)",
                          nullptr, update_func_u32, defaults::net_write_timeout,
@@ -331,18 +364,17 @@ static MYSQL_SYSVAR_UINT(
 static MYSQL_SYSVAR_BOOL(enable_tasker, ::polarx_rpc::enable_tasker,
                          PLUGIN_VAR_OPCMDARG, "Enable balance tasker(RW)",
                          nullptr, update_func_b, defaults::enable_tasker);
-static MYSQL_SYSVAR_UINT(
-    epoll_group_tasker_multiply,
-    ::polarx_rpc::epoll_group_tasker_multiply,
-    PLUGIN_VAR_OPCMDARG, "Workload factor of one thread to n queued tasks(RW)",
-    nullptr, update_func_u32,
-    defaults::epoll_group_tasker_multiply, 1, 50, 0);
-static MYSQL_SYSVAR_UINT(
-    epoll_group_tasker_extend_step,
-    ::polarx_rpc::epoll_group_tasker_extend_step,
-    PLUGIN_VAR_OPCMDARG, "Tasker threads extend step(RW)",
-    nullptr, update_func_u32,
-    defaults::epoll_group_tasker_extend_step, 1, 50, 0);
+static MYSQL_SYSVAR_UINT(epoll_group_tasker_multiply,
+                         ::polarx_rpc::epoll_group_tasker_multiply,
+                         PLUGIN_VAR_OPCMDARG,
+                         "Workload factor of one thread to n queued tasks(RW)",
+                         nullptr, update_func_u32,
+                         defaults::epoll_group_tasker_multiply, 1, 50, 0);
+static MYSQL_SYSVAR_UINT(epoll_group_tasker_extend_step,
+                         ::polarx_rpc::epoll_group_tasker_extend_step,
+                         PLUGIN_VAR_OPCMDARG, "Tasker threads extend step(RW)",
+                         nullptr, update_func_u32,
+                         defaults::epoll_group_tasker_extend_step, 1, 50, 0);
 static MYSQL_SYSVAR_BOOL(enable_epoll_in_tasker,
                          ::polarx_rpc::enable_epoll_in_tasker,
                          PLUGIN_VAR_OPCMDARG, "Enable tasker to do epoll(RW)",
@@ -351,6 +383,7 @@ static MYSQL_SYSVAR_BOOL(enable_epoll_in_tasker,
 
 struct SYS_VAR *polarx_rpc_system_variables[] = {
     MYSQL_SYSVAR(auto_cpu_affinity),
+    MYSQL_SYSVAR(multi_affinity_in_group),
     MYSQL_SYSVAR(force_all_cores),
     MYSQL_SYSVAR(epoll_groups),
     MYSQL_SYSVAR(min_auto_epoll_groups),
@@ -359,6 +392,9 @@ struct SYS_VAR *polarx_rpc_system_variables[] = {
     MYSQL_SYSVAR(max_epoll_wait_total_threads),
     MYSQL_SYSVAR(epoll_work_queue_capacity),
     MYSQL_SYSVAR(tcp_listen_queue),
+    MYSQL_SYSVAR(request_cache_number),
+    MYSQL_SYSVAR(request_cache_instances),
+    MYSQL_SYSVAR(request_cache_max_length),
 
     MYSQL_SYSVAR(epoll_events_per_thread),
     MYSQL_SYSVAR(epoll_timeout),
@@ -368,7 +404,6 @@ struct SYS_VAR *polarx_rpc_system_variables[] = {
     MYSQL_SYSVAR(tcp_fixed_dealing_buf),
     MYSQL_SYSVAR(mcs_spin_cnt),
     MYSQL_SYSVAR(session_poll_rwlock_spin_cnt),
-    MYSQL_SYSVAR(skip_name_resolve),
     MYSQL_SYSVAR(net_write_timeout),
     MYSQL_SYSVAR(galaxy_protocol),
     MYSQL_SYSVAR(galaxy_version),
@@ -389,4 +424,4 @@ struct SYS_VAR *polarx_rpc_system_variables[] = {
     MYSQL_SYSVAR(epoll_group_tasker_extend_step),
     MYSQL_SYSVAR(enable_epoll_in_tasker),
     nullptr};
-}  // namespace polarx_rpc
+} // namespace polarx_rpc

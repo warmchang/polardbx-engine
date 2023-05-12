@@ -2,6 +2,10 @@
 // Created by zzy on 2022/8/31.
 //
 
+#include "../global_defines.h"
+#ifndef MYSQL8
+#define MYSQL_SERVER
+#endif
 #include "mysql/service_command.h"
 #include "sql/mysqld.h"
 #include "sql/sql_class.h"
@@ -20,6 +24,7 @@ CsessionBase::~CsessionBase() {
     srv_session_close(mysql_session_);
     mysql_session_ = nullptr;
   }
+  plugin_info.total_sessions.fetch_sub(1, std::memory_order_release);
 }
 
 err_t CsessionBase::init(uint16_t port) {
@@ -75,6 +80,16 @@ err_t CsessionBase::switch_to_user(const char *username, const char *hostname,
     return err_t::Error(ER_ACCESS_DENIED_ERROR,
                         "Unable to switch context to user %s", username);
   return err_t::Success();
+}
+
+void CsessionBase::set_show_hostname(const char *hostname) {
+  show_hostname_ = hostname ? hostname : "";
+  auto thd = get_thd();
+  if (thd != nullptr) {
+    auto sec = thd->security_context();
+    if (sec != nullptr)
+      sec->set_host_or_ip_ptr(show_hostname_.c_str(), show_hostname_.length());
+  }
 }
 
 err_t CsessionBase::reset() {
@@ -171,7 +186,11 @@ void CsessionBase::switch_to_sys_user() {
   scontext->set_host_or_ip_ptr();
 
   scontext->set_master_access(0x1FFFFFFF);
+#ifdef MYSQL8
   scontext->cache_current_db_access(0);
+#else
+  scontext->set_db_access(0);
+#endif
 
   scontext->assign_priv_user(username_.data(),
                              static_cast<int>(username_.length()));
@@ -189,27 +208,23 @@ err_t CsessionBase::authenticate(const char *user, const char *host,
   if (error)
     return err_t::SQLError_access_denied();
 
-  auto authenticated_user_name = get_authenticated_user_name();
-  auto authenticated_user_host = get_authenticated_user_host();
+  if (!is_acl_disabled()) {
+    auto authenticated_user_name = get_authenticated_user_name();
+    auto authenticated_user_host = get_authenticated_user_host();
 
-  /// force switch to fake sys user
-  switch_to_sys_user();
-  /*
-  error = switch_to_user("mysql.session", "localhost", nullptr, nullptr);
-  if (error)
-    return error;
+    /// force switch to fake sys user
+    switch_to_sys_user();
 
-  if (!is_acl_disabled())
-  */
-  {
-    error = account_verification.authenticate_account(
-        authenticated_user_name, authenticated_user_host, passwd);
-    if (error)
-      return error;
+    if (!is_acl_disabled()) {
+      error = account_verification.authenticate_account(
+          authenticated_user_name, authenticated_user_host, passwd);
+      if (error)
+        return error;
+    }
+
+    /// switch to user
+    error = switch_to_user(user, host, ip, db);
   }
-
-  /// switch to user
-  error = switch_to_user(user, host, ip, db);
 
   /// check db
   if (!error) {
@@ -257,7 +272,11 @@ err_t CsessionBase::execute_server_command(enum_server_command cmd,
     /// if no error spec
     if (!delegate.get_error()) {
       /// check killed
+#ifdef MYSQL8
       auto killed = get_thd()->killed.load(std::memory_order_acquire);
+#else
+      auto killed = get_thd()->killed;
+#endif
       if (THD::KILL_CONNECTION == killed)
         return err_t(ER_QUERY_INTERRUPTED, "Query execution was interrupted",
                      "70100", err_t::FATAL);
@@ -289,16 +308,24 @@ err_t CsessionBase::execute_sql(const char *sql, size_t sql_len,
 err_t CsessionBase::detach() {
   if (nullptr == mysql_session_ || srv_session_detach(mysql_session_) != 0)
     return err_t(ER_POLARX_RPC_ERROR_MSG, "Internal error when detaching");
-  /// Note: we should force clear thd, or stale thd may cause bad memory access
+    /// Note: we should force clear thd, or stale thd may cause bad memory
+    /// access
+#ifdef MYSQL8
   current_thd = nullptr;
   THR_MALLOC = nullptr;
+#else
+  my_thread_set_THR_THD(nullptr);
+  my_thread_set_THR_MALLOC(nullptr);
+#endif
   return err_t::Success();
 }
 
 void CsessionBase::remote_kill() {
   if (enable_kill_log) {
-    my_plugin_log_message(&plugin_info.plugin_info, MY_WARNING_LEVEL,
-                          "Session %p sid %lu killing.", this, sid_);
+    std::lock_guard<std::mutex> plugin_lck(plugin_info.mutex);
+    if (plugin_info.plugin_info != nullptr)
+      my_plugin_log_message(&plugin_info.plugin_info, MY_WARNING_LEVEL,
+                            "Session %p sid %lu killing.", this, sid_);
   }
 
   /// store exit flag first
@@ -319,8 +346,10 @@ void CsessionBase::remote_kill() {
 
 void CsessionBase::remote_cancel() {
   if (enable_kill_log) {
-    my_plugin_log_message(&plugin_info.plugin_info, MY_WARNING_LEVEL,
-                          "Session %p sid %lu canceling.", this, sid_);
+    std::lock_guard<std::mutex> plugin_lck(plugin_info.mutex);
+    if (plugin_info.plugin_info != nullptr)
+      my_plugin_log_message(&plugin_info.plugin_info, MY_WARNING_LEVEL,
+                            "Session %p sid %lu canceling.", this, sid_);
   }
 
   auto thd = get_thd();
@@ -334,7 +363,12 @@ void CsessionBase::remote_cancel() {
 }
 
 bool CsessionBase::is_api_ready() {
-  return 0 != srv_session_server_is_available() && !connection_events_loop_aborted();
+#ifdef MYSQL8
+  return 0 != srv_session_server_is_available() &&
+         !connection_events_loop_aborted();
+#else
+  return 0 != srv_session_server_is_available() && !::abort_loop;
+#endif
 }
 
 } // namespace polarx_rpc

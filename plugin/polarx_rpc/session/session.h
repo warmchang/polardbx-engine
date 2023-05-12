@@ -75,8 +75,6 @@ public:
   void wait_end(THD *thd);
   void post_kill(THD *thd);
 
-  inline CpolarxEncoder &encoder() { return encoder_; }
-
   inline void shutdown() {
     shutdown_.store(true, std::memory_order_release);
     remote_kill();
@@ -104,8 +102,11 @@ public:
   }
 
   static void init_thread_for_session() {
-    srv_session_init_thread(plugin_info.plugin_info);
-
+    {
+      std::lock_guard<std::mutex> plugin_lck(plugin_info.mutex);
+      if (plugin_info.plugin_info != nullptr)
+        srv_session_init_thread(plugin_info.plugin_info);
+    }
 #if defined(__APPLE__)
     pthread_setname_np("polarx_rpc");
 #elif defined(HAVE_PTHREAD_SETNAME_NP)

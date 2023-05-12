@@ -214,6 +214,7 @@ this program; if not, write to the Free Software Foundation, Inc.,
 #include "lizard0xa.h"
 #include "lizard0tcn.h"
 #include "clone0repl.h"
+#include "btr0sample.h"
 
 #ifndef UNIV_HOTBACKUP
 /** Stop printing warnings, if the count exceeds this threshold. */
@@ -296,6 +297,8 @@ static char *innodb_version_str = (char *)INNODB_VERSION_STR;
 
 
 static Innodb_data_lock_inspector innodb_data_lock_inspector;
+
+bool opt_force_index_pct_cached = false;
 
 /** Note we cannot use rec_format_enum because we do not allow
 COMPRESSED row format for innodb_default_row_format option. */
@@ -2083,6 +2086,8 @@ int convert_error_code_to_mysql(dberr_t error, uint32_t flags, THD *thd) {
       return (HA_ERR_AS_OF_TABLE_DEF_CHANGED);
     case DB_SNAPSHOT_TOO_OLD:
       return (HA_ERR_SNAPSHOT_TOO_OLD);
+    case DB_GP_WAIT_TIMEOUT:
+      return (HA_ERR_GP_WAIT_TIMEOUT);
   }
 }
 
@@ -10432,6 +10437,39 @@ int ha_innobase::rnd_pos(
   return error;
 }
 
+int ha_innobase::sample_init() {
+  if (m_sampling_method != enum_sampling_method::USER || !btr_sample_enabled) {
+    return handler::sample_init();
+  }
+
+  auto ret = rnd_init(true);
+  if (ret == 0) {
+    m_prebuilt->sample->enable();
+  }
+  return ret;
+}
+
+int ha_innobase::sample_end() {
+  if (!m_prebuilt->sample->enabled) {
+    ut_ad(m_sampling_method != enum_sampling_method::USER ||
+          !btr_sample_enabled);
+    return handler::sample_end();
+  }
+
+  m_prebuilt->sample->reset();
+  return rnd_end();
+}
+
+int ha_innobase::sample_next(uchar *buf) {
+  if (!m_prebuilt->sample->enabled) {
+    ut_ad(m_sampling_method != enum_sampling_method::USER ||
+          !btr_sample_enabled);
+    return handler::sample_next(buf);
+  }
+
+  return rnd_next(buf);
+}
+
 /** Initialize FT index scan
  @return 0 or error number */
 
@@ -14398,6 +14436,7 @@ bool ha_innobase::get_se_private_data(dd::Table *dd_table, bool reset) {
     Here we give it a fake number. */
     p.set(dd_index_key_strings[DD_INDEX_UBA], lizard::UNDO_PTR_DICT_REC);
     p.set(dd_index_key_strings[DD_INDEX_SCN], lizard::SCN_DICT_REC);
+    p.set(dd_index_key_strings[DD_INDEX_GCN], lizard::GCN_DICT_REC);
   }
 
   DBUG_ASSERT(n_indexes - n_indexes_old == data.n_indexes);
@@ -16361,6 +16400,9 @@ static void calculate_index_size_stats(const dict_table_t *ib_table,
 */
 inline double index_pct_cached(const dict_index_t *index) {
   const ulint n_leaf = index->stat_n_leaf_pages;
+
+  if (opt_force_index_pct_cached)
+    return 1.0;
 
   if (n_leaf == 0) {
     return (0.0);
@@ -22689,10 +22731,11 @@ static MYSQL_SYSVAR_BOOL(
     NULL, NULL, FALSE);
 /* End of data file purge system variables  */
 
-static const char *innodb_tcn_cache_level_names[] = {"block",   /* BLOCK_LEVEL */
-                                               "session", /* SESSION LEVEL */
-                                               "global",  /* GLOBAL LEVEL */
-                                               NullS};
+static const char *innodb_tcn_cache_level_names[] = {
+    "none",   /* Disable */
+    "global", /* GLOBAL_LEVEL */
+    "block",  /* BLOCK_LEVEL */
+    NullS};
 
 static TYPELIB innodb_tcn_cache_level_typelib = {
     array_elements(innodb_tcn_cache_level_names) - 1, "innodb_tcn_cache_level_typelib",
@@ -22701,7 +22744,7 @@ static TYPELIB innodb_tcn_cache_level_typelib = {
 static MYSQL_SYSVAR_ENUM(tcn_cache_level, lizard::innodb_tcn_cache_level,
                          PLUGIN_VAR_OPCMDARG,
                          "transaction commit number cache level.", NULL, NULL,
-                         BLOCK_LEVEL, &innodb_tcn_cache_level_typelib);
+                         GLOBAL_LEVEL, &innodb_tcn_cache_level_typelib);
 
 static const char *innodb_tcn_block_cache_type_names[] = {"lru",    /* lru */
                                                           "random", /* random */
@@ -22752,6 +22795,15 @@ static MYSQL_SYSVAR_BOOL(cleanout_write_redo,
                          PLUGIN_VAR_OPCMDARG | PLUGIN_VAR_READONLY,
                          "whether to write redo log when cleanout",
                          NULL, NULL, FALSE);
+
+static MYSQL_SYSVAR_ULONG(sample_advise_pages, sample_advise_pages,
+                          PLUGIN_VAR_OPCMDARG,
+                          "advise number of leaves that sampling by block",
+                          NULL, NULL, 100, 0, UINT_MAX32, 0);
+
+static MYSQL_SYSVAR_BOOL(btree_sampling, btr_sample_enabled,
+                         PLUGIN_VAR_OPCMDARG, "enable btree sampling", NULL,
+                         NULL, TRUE);
 
 static SYS_VAR *innobase_system_variables[] = {
     MYSQL_SYSVAR(api_trx_level),
@@ -22994,6 +23046,8 @@ static SYS_VAR *innobase_system_variables[] = {
     MYSQL_SYSVAR(write_non_innodb_gtids),
     MYSQL_SYSVAR(lizard_stat_enabled),
     MYSQL_SYSVAR(cleanout_write_redo),
+    MYSQL_SYSVAR(sample_advise_pages),
+    MYSQL_SYSVAR(btree_sampling),
     NULL};
 
 mysql_declare_plugin(innobase){

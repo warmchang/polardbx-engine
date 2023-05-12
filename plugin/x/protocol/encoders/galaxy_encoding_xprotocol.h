@@ -5,10 +5,10 @@
    This program is also distributed with certain software (including
    but not limited to OpenSSL) that is licensed under separate terms,
    as designated in a particular file or component or in included license
-   documentation.  The authors of MySQL/Apsara GalaxyEngine hereby grant you an
+   documentation.  The authors of MySQL/PolarDB-X Engine hereby grant you an
    additional permission to link the program and your derivative works with the
    separately licensed software that they have included with
-   MySQL/Apsara GalaxyEngine.
+   MySQL/PolarDB-X Engine.
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
@@ -107,6 +107,12 @@ class GProtocol_encoder : public Protobuf_encoder {
  public:
   explicit GProtocol_encoder(Encoding_buffer *buffer, gx::GHeader *hdr)
       : Protobuf_encoder(buffer), m_hdr(hdr) {
+    ensure_buffer_size<1>();
+    set_header_config(m_header_configuration);
+  }
+
+  explicit GProtocol_encoder(Encoding_buffer *buffer)
+      : Protobuf_encoder(buffer), m_hdr() {
     ensure_buffer_size<1>();
     set_header_config(m_header_configuration);
   }

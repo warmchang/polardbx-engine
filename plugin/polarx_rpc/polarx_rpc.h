@@ -4,8 +4,15 @@
 
 #pragma once
 
+#include <atomic>
 #include <memory>
+#include <mutex>
 
+#include "global_defines.h"
+#ifndef MYSQL8
+#include "sql_plugin.h"
+#include <my_global.h>
+#endif
 #include <mysql.h>
 #include <mysql/plugin.h>
 #include <mysql/service_my_plugin_log.h>
@@ -15,11 +22,33 @@
 
 namespace polarx_rpc {
 class Cserver;
+class CrequestCache;
 }
 
 struct polarx_rpc_info_t final {
+  st_mysql_daemon daemon{MYSQL_DAEMON_INTERFACE_VERSION};
+
+  /// server
+  std::mutex mutex;
   MYSQL_PLUGIN plugin_info = nullptr;
   std::unique_ptr<polarx_rpc::Cserver> server;
+
+  /// cache
+  std::unique_ptr<polarx_rpc::CrequestCache> cache;
+
+  /// status
+  std::atomic<bool> inited = {false};
+  std::atomic<int64> tcp_connections = {0};
+  std::atomic<int64> tcp_closing = {0};
+  //// session count use polarx_rpc::g_session_count;
+  std::atomic<int64> total_sessions = {0}; /// include internal session
+  std::atomic<int64> threads = {0}; /// working threads(without watchdog)
+  std::atomic<int64> sql_hit = {0};
+  std::atomic<int64> sql_miss = {0};
+  std::atomic<int64> sql_evict = {0};
+  std::atomic<int64> plan_hit = {0};
+  std::atomic<int64> plan_miss = {0};
+  std::atomic<int64> plan_evict = {0};
 };
 
 extern polarx_rpc_info_t plugin_info;

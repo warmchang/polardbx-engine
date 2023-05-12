@@ -5,10 +5,10 @@
    This program is also distributed with certain software (including
    but not limited to OpenSSL) that is licensed under separate terms,
    as designated in a particular file or component or in included license
-   documentation.  The authors of MySQL/Apsara GalaxyEngine hereby grant you an
+   documentation.  The authors of MySQL/PolarDB-X Engine hereby grant you an
    additional permission to link the program and your derivative works with the
    separately licensed software that they have included with
-   MySQL/Apsara GalaxyEngine.
+   MySQL/PolarDB-X Engine.
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
@@ -125,6 +125,9 @@ constexpr gcn_t GCN_UNDO_LOST = 2;
 
 /** GCN special for temporary table record */
 constexpr gcn_t GCN_TEMP_TAB_REC = 3;
+
+/** GCN special for index */
+constexpr gcn_t GCN_DICT_REC = 4;
 
 /** The initial global commit number value after initialize db */
 constexpr gcn_t GCN_INITIAL = 1024;

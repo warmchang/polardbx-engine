@@ -5,10 +5,10 @@
    This program is also distributed with certain software (including
    but not limited to OpenSSL) that is licensed under separate terms,
    as designated in a particular file or component or in included license
-   documentation.  The authors of MySQL/Apsara GalaxyEngine hereby grant you an
+   documentation.  The authors of MySQL/PolarDB-X Engine hereby grant you an
    additional permission to link the program and your derivative works with the
    separately licensed software that they have included with
-   MySQL/Apsara GalaxyEngine.
+   MySQL/PolarDB-X Engine.
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
@@ -219,6 +219,7 @@ bool deny_returning_clause_by_command(THD *thd, LEX *lex) {
   */
   if (thd->get_lex_returning()->is_returning_call() &&
       (lex->is_explain() || (lex->sql_command != SQLCOM_UPDATE &&
+                             lex->sql_command != SQLCOM_REPLACE &&
                              lex->sql_command != SQLCOM_DELETE &&
                              lex->sql_command != SQLCOM_INSERT))) {
     my_error(ER_NOT_SUPPORT_RETURNING_CLAUSE, MYF(0));

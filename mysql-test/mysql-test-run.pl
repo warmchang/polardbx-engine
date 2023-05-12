@@ -132,6 +132,7 @@ my $opt_max_save_core      = env_or_val(MTR_MAX_SAVE_CORE => 5);
 my $opt_max_save_datadir   = env_or_val(MTR_MAX_SAVE_DATADIR => 20);
 my $opt_max_test_fail      = env_or_val(MTR_MAX_TEST_FAIL => 1000);
 my $opt_mysqlx_baseport    = $ENV{'MYSQLXPLUGIN_PORT'} || "auto";
+my $opt_polarx_rpc_baseport= $ENV{'POLARX_RPC_PORT'} || "auto";
 my $opt_port_base          = $ENV{'MTR_PORT_BASE'} || "auto";
 my $opt_reorder            = 1;
 my $opt_retry              = 3;
@@ -159,6 +160,7 @@ my $exe_ndbmtd;
 my $initial_bootstrap_cmd;
 my $mysql_base_version;
 my $mysqlx_baseport;
+my $polarx_rpc_baseport;
 my $path_config_file;       # The generated config file, var/my.cnf
 my $path_vardir_trace;      # Unix formatted opt_vardir for trace files
 my $test_fail;
@@ -176,6 +178,32 @@ my @valgrind_args;
 # Storage for changed environment variables
 my %old_env;
 my %visited_suite_names;
+
+# xcluster port offset
+# you can't change this offset for now
+# if you want to change it, you need to change all the test in xcluster suite,
+# becase port use in test is hard code.
+my %xcluster_port_offset;
+$xcluster_port_offset{'mysqld'} = 0;
+$xcluster_port_offset{'mysqlx'} = 10;
+$xcluster_port_offset{'galaxyx_port'} = 20;
+$xcluster_port_offset{'polarx_rpc'} = 30;
+$xcluster_port_offset{'consensus'} = 40;
+
+# |                              mtr0                                   | mtr1 |
+# |                   node                        |       learner       |
+# | mysqld | mysqlx | galaxyx | rpc   | consensus | almost same as node |
+# | 0~9    | 10~19  | 20~29   | 30~39 | 40~49     |                     |
+
+# 0~39 xcluster node instance
+  # 0~10 port
+  # 11~39 x & galaxyx share same range for now (this is a hack)
+  # 30~39 rpc
+  # 40~49 cluster
+# 50~99 xcluster leaner
+  # same as above
+  # but x & galaxyx not share the same ports range
+$ports_per_thread = 100;
 
 # Global variables
 our $opt_client_dbx;
@@ -215,7 +243,8 @@ our $opt_xml_report;
 #
 # Suites run by default (i.e. when invoking ./mtr without parameters)
 #
-our $DEFAULT_SUITES = "auth_sec,binlog_gtid,binlog_nogtid,clone,collations,connection_control,encryption,federated,funcs_2,gcol,sysschema,gis,innodb,innodb_fts,innodb_gis,innodb_undo,innodb_zip,json,main,opt_trace,parts,perfschema,query_rewrite_plugins,rpl,rpl_gtid,rpl_nogtid,secondary_engine,service_status_var_registration,service_sys_var_registration,service_udf_registration,sys_vars,binlog,test_service_sql_api,test_services,x";
+our $DEFAULT_SUITES = 
+"main,sys_vars,binlog,binlog_gtid,binlog_nogtid,federated,gis,rpl,rpl_gtid,rpl_nogtid,innodb,innodb_gis,innodb_fts,innodb_zip,innodb_undo,perfschema,funcs_2,opt_trace,parts,auth_sec,query_rewrite_plugins,gcol,sysschema,test_service_sql_api,json,connection_control,test_services,collations,service_udf_registration,service_sys_var_registration,service_status_var_registration,secondary_engine,encryption,stress,opt_trace,jp,large_tests,innodb_gcn,funcs_1,audit_null,xcluster";
 
 # End of list of default suites
 
@@ -578,8 +607,9 @@ sub main {
   mtr_report("Using parallel: $opt_parallel");
 
   my $is_option_mysqlx_port_set = $opt_mysqlx_baseport ne "auto";
+  my $is_option_polarx_rpc_port_set = $opt_polarx_rpc_baseport ne "auto";
   if ($opt_parallel > 1) {
-    if ($opt_start_exit || $opt_stress || $is_option_mysqlx_port_set) {
+    if ($opt_start_exit || $opt_stress || $is_option_mysqlx_port_set || $is_option_polarx_rpc_port_set) {
       mtr_warning("Parallel cannot be used neither with --start-and-exit nor",
                   "--stress nor --mysqlx_port.\nSetting parallel value to 1.");
       $opt_parallel = 1;
@@ -1455,6 +1485,7 @@ sub command_line_setup {
     # Specify ports
     'build-thread|mtr-build-thread=i' => \$opt_build_thread,
     'mysqlx-port=i'                   => \$opt_mysqlx_baseport,
+    'rpc-port=i'                      => \$opt_polarx_rpc_baseport,
     'port-base|mtr-port-base=i'       => \$opt_port_base,
 
     # Test case authoring
@@ -2189,32 +2220,42 @@ sub set_build_thread_ports($) {
 
   if (lc($opt_mysqlx_baseport) eq "auto") {
     if ($ports_per_thread > 10) {
-      # Reserving last 10 ports in the current port range for X plugin.
-      $mysqlx_baseport = $baseport + $ports_per_thread - 10;
+      $mysqlx_baseport = $baseport + $xcluster_port_offset{'mysqlx'};
     } else {
-      # Reserving the last port in the range for X plugin
-      $mysqlx_baseport = $baseport + 9;
+      # Reserving the last 2 port in the range for X plugin
+      $mysqlx_baseport = $baseport + 8;
     }
   } else {
     $mysqlx_baseport = $opt_mysqlx_baseport;
   }
 
-  if ($secondary_engine_support) {
-    # Reserve a port for secondary engine server
-    if ($group_replication and $ports_per_thread == 40) {
-      # When both group replication and secondary engine are enabled,
-      # ports_per_thread value should be 40.
-      # - First set of 10 ports are reserved for mysqld servers
-      # - Second set of 10 ports are reserver for Group replication
-      # - Third set of 10 ports are reserved for secondary engine server
-      # - Fourth and last set of 10 porst are reserved for X plugin
-      $::secondary_engine_port = $baseport + 20;
+  if (lc($opt_polarx_rpc_baseport) eq "auto") {
+    if ($ports_per_thread > 10) {
+      $polarx_rpc_baseport = $baseport + $xcluster_port_offset{'polarx_rpc'};
     } else {
-      # ports_per_thread value should be 30, reserve second set of
-      # 10 ports for secondary engine server.
-      $::secondary_engine_port = $baseport + 10;
+      $polarx_rpc_baseport = $baseport + 7;
     }
+  } else {
+    $polarx_rpc_baseport = $opt_polarx_rpc_baseport;
   }
+
+  # don't support secondary engine for now
+  # if ($secondary_engine_support) {
+  #   # Reserve a port for secondary engine server
+  #   if ($group_replication and $ports_per_thread == 40) {
+  #     # When both group replication and secondary engine are enabled,
+  #     # ports_per_thread value should be 40.
+  #     # - First set of 10 ports are reserved for mysqld servers
+  #     # - Second set of 10 ports are reserver for Group replication
+  #     # - Third set of 10 ports are reserved for secondary engine server
+  #     # - Fourth and last set of 10 porst are reserved for X plugin
+  #     $::secondary_engine_port = $baseport + 20;
+  #   } else {
+  #     # ports_per_thread value should be 30, reserve second set of
+  #     # 10 ports for secondary engine server.
+  #     $::secondary_engine_port = $baseport + 10;
+  #   }
+  # }
 
   if ($baseport < 5001 or $baseport + $ports_per_thread - 1 >= 32767) {
     mtr_error("MTR_BUILD_THREAD number results in a port",
@@ -2567,6 +2608,27 @@ sub galaxyxtest_arguments() {
   return mtr_args2str($exe, @$args);
 }
 
+sub polarx_rpc_test_arguments() {
+  my $exe;
+  # polarx_rpc_test executable may _not_ exist
+  $exe = mtr_exe_maybe_exists("$path_client_bindir/polarx_rpc_test");
+  return "" unless $exe;
+
+  my $args;
+  mtr_init_args(\$args);
+
+  if ($opt_valgrind_clients) {
+    valgrind_client_arguments($args, \$exe);
+  }
+
+  if ($opt_debug) {
+    mtr_add_arg($args, "--debug=$debug_d:t:i:A,%s/log/%s.trace",
+                $path_vardir_trace, "polarx_rpc_test");
+  }
+
+  mtr_add_arg($args, "--port=%d", $polarx_rpc_baseport);
+  return mtr_args2str($exe, @$args);
+}
 
 sub mysqlxtest_arguments() {
   my $exe;
@@ -2865,6 +2927,7 @@ sub environment_setup {
   $ENV{'MYSQLADMIN'}          = native_path($exe_mysqladmin);
   $ENV{'MYSQLXTEST'}          = mysqlxtest_arguments();
   $ENV{'GALAXYXTEST'}         = galaxyxtest_arguments();
+  $ENV{'POLARX_RPC_TEST'}     = polarx_rpc_test_arguments();
   $ENV{'PATH_CONFIG_FILE'}    = $path_config_file;
 
   $ENV{'MYSQLBACKUP'} = mysqlbackup_arguments()
@@ -3798,7 +3861,6 @@ sub initialize_servers {
       if (!$opt_xcluster) {
         mysql_install_db(default_mysqld(), "$opt_vardir/data/");
       }
-      mysql_install_db(default_mysqld(), "$opt_vardir/data/");
 
       # Save the value of MYSQLD_BOOTSTRAP_CMD before a test with bootstrap
       # options in the opt file runs, so that its original value is restored
@@ -4633,6 +4695,7 @@ sub run_testcase ($) {
                            baseport            => $baseport,
                            extra_template_path => $tinfo->{extra_template_path},
                            mysqlxbaseport      => $mysqlx_baseport,
+                           polarx_rpc_baseport => $polarx_rpc_baseport,
                            password            => '',
                            template_path       => $tinfo->{template_path},
                            testdir             => $glob_mysql_test_dir,
@@ -4713,45 +4776,47 @@ sub run_testcase ($) {
     }
     # transfer leader to 1
     #if ($mysqld_servers > 1) {
-      while (1) {
-	sleep(1);
-	foreach my $mysqld ( mysqlds() ) {
-	  mtr_verbose("Run change leader query: " . $mysqld->name() . "  " . $mysqld->value('port') . "  " . $mysqld->value('socket'));
-	  my $query = "call dbms_consensus.change_leader('127.0.0.1:".($mysqld_leader->value('port')+8000)."')";
-	  $ret = run_query($mysqld, $query);
-	  if ($ret == 0) {
-	    $mysqld_oldleader= $mysqld;
-	    mtr_verbose("I am the old leader: " . $mysqld->name());
-	  }
-	}
-	last if (defined $mysqld_oldleader);
-	$err_cnt++;
-	if ($err_cnt < 5) {
-	  mtr_report("Fail to find old leader, try again...");
-	} else {
-	  mtr_warning("Fail to find old leader after $err_cnt times trying!!!");
-	  report_failure_and_restart($tinfo);
-	  return 1;
-	}
+    while (1) {
+      sleep(1);
+      foreach my $mysqld ( mysqlds() ) {
+        mtr_verbose("Run change leader query: " . $mysqld->name() . "  " . $mysqld->value('port') . "  " . $mysqld->value('socket'));
+        my $query = "call dbms_consensus.change_leader('127.0.0.1:".($mysqld_leader->value('port') + $xcluster_port_offset{'consensus'})."')";
+        $ret = run_query($mysqld, $query);
+        if ($ret == 0) {
+          $mysqld_oldleader= $mysqld;
+          mtr_verbose("I am the old leader: " . $mysqld->name());
+        }
       }
-      $err_cnt = 0;
-      while (1) {
-	sleep(1); # wait leader election
-	my $query = "call dbms_consensus.change_leader('127.0.0.1:".($mysqld_leader->value('port')+8000)."')";
-	$ret = run_query($mysqld_leader, $query, "run_query.log", "run_query.error");
-	last if ($ret == 0);
-	$err_cnt++;
-	if ($err_cnt >= 10) {
-	  mtr_warning("Fail to change consensus_leader after $err_cnt times trying!!!");
-	  report_failure_and_restart($tinfo);
-	  return 1;
-	}
-	mtr_verbose("Run change leader query again...");
-	my $query = "call dbms_consensus.change_leader('127.0.0.1:".($mysqld_leader->value('port')+8000)."')";
-	run_query($mysqld_oldleader, $query);
+      last if (defined $mysqld_oldleader);
+      $err_cnt++;
+      if ($err_cnt < 5) {
+        mtr_report("Fail to find old leader, try again...");
+      } else {
+        mtr_warning("Fail to find old leader after $err_cnt times trying!!!");
+        report_failure_and_restart($tinfo);
+        return 1;
       }
-      mtr_verbose("Finish change leader query.");
+    }
+    $err_cnt = 0;
+
+    while (1) {
+      sleep(1); # wait leader election
+      my $query = "call dbms_consensus.change_leader('127.0.0.1:".($mysqld_leader->value('port') + $xcluster_port_offset{'consensus'})."')";
+      $ret = run_query($mysqld_leader, $query, "run_query.log", "run_query.error");
+      last if ($ret == 0);
+      $err_cnt++;
+      if ($err_cnt >= 10) {
+        mtr_warning("Fail to change consensus_leader after $err_cnt times trying!!!");
+        report_failure_and_restart($tinfo);
+        return 1;
+      }
+      mtr_verbose("Run change leader query again...");
+      $query = "call dbms_consensus.change_leader('127.0.0.1:".($mysqld_leader->value('port') + $xcluster_port_offset{'consensus'})."')";
+      run_query($mysqld_oldleader, $query);
+    }
+    mtr_verbose("Finish change leader query.");
     #}
+
     # only run once
     if ($xcluster_bootstrap == 0) {
       # load sql
@@ -5776,7 +5841,7 @@ sub check_expected_crash_and_restart($$) {
 	      sleep(1);
 	      foreach my $mysqld ( mysqlds() ) {
 		mtr_verbose("Run change leader query: " . $mysqld->name() . "  " . $mysqld->value('port') . "  " . $mysqld->value('socket'));
-		my $query = "call dbms_consensus.change_leader('127.0.0.1:".($mysqld_leader->value('port')+8000)."')";
+		my $query = "call dbms_consensus.change_leader('127.0.0.1:".($mysqld_leader->value('port') + $xcluster_port_offset{'consensus'})."')";
 		$ret = run_query($mysqld, $query);
 		if ($ret == 0) {
 		  $mysqld_oldleader = $mysqld;
@@ -5796,7 +5861,7 @@ sub check_expected_crash_and_restart($$) {
 	    $err_cnt = 0;
 	    while (1) {
 	      sleep(1); # wait leader election
-	      my $query = "call dbms_consensus.change_leader('127.0.0.1:".($mysqld_leader->value('port')+8000)."')";
+	      my $query = "call dbms_consensus.change_leader('127.0.0.1:".($mysqld_leader->value('port') + $xcluster_port_offset{'consensus'})."')";
 	      $ret = run_query($mysqld_leader, $query, "run_query.log", "run_query.error");
 	      last if ($ret == 0);
 	      $err_cnt++;
@@ -5806,7 +5871,7 @@ sub check_expected_crash_and_restart($$) {
 		return 1;
 	      }
 	      mtr_verbose("Run change leader query again...");
-	      my $query = "call dbms_consensus.change_leader('127.0.0.1:".($mysqld_leader->value('port')+8000)."')";
+	      $query = "call dbms_consensus.change_leader('127.0.0.1:".($mysqld_leader->value('port') + $xcluster_port_offset{'consensus'})."')";
 	      run_query($mysqld_oldleader, $query);
 	    }
 	    mtr_verbose("Finish change leader query.");
@@ -5962,7 +6027,7 @@ sub report_failure_and_restart ($) {
   }
 
   # Shotdown properly if not to be killed (for valgrind)
-  #stop_all_servers($tinfo->{'dont_kill_server'} ? $opt_shutdown_timeout : 0);
+  stop_all_servers($tinfo->{'dont_kill_server'} ? $opt_shutdown_timeout : 0);
 
   $tinfo->{'result'} = 'MTR_RES_FAILED';
 
@@ -6091,6 +6156,9 @@ sub mysqld_arguments ($$$) {
       mtr_add_arg($args, "--skip-bdb");
     }
   }
+
+  # make explain select case stable
+  mtr_add_arg($args, "--loose-opt_force_index_pct_cached=1");
 
   if ($opt_lock_order) {
     my $lo_dep_1 = "$basedir/mysql-test/lock_order_dependencies.txt";
@@ -6222,11 +6290,11 @@ sub mysqld_start ($$$$) {
     if ($opt_xcluster) {
       if ($arg eq "--server-id=0") {
         $tinfo->{'skip'} = 1;
-        $tinfo->{'comment'} = "$arg not support for GalaxyEngine";
+        $tinfo->{'comment'} = "$arg not support for PolarDB-X Engine";
         return;
       } if ($arg eq "--skip-log-bin") {
         $tinfo->{'skip'} = 1;
-        $tinfo->{'comment'} = "$arg not support for GalaxyEngine";
+        $tinfo->{'comment'} = "$arg not support for PolarDB-X Engine";
         return;
       }
     }
@@ -6711,8 +6779,8 @@ sub start_servers($) {
   $xcluster_info_prefix= '';
   my $xcluster_info_arr= ();
   foreach my $mysqld (mysqlds()) {
-    # GalaxyEngine: paxos_port = (server_port + 8000)
-    push (@$xcluster_info_arr, '127.0.0.1:'.($mysqld->value('port')+8000));
+    # PolarDB-X Engine: paxos_port = (server_port + %cluster_port_offset{'consensus'})
+    push (@$xcluster_info_arr, '127.0.0.1:'.($mysqld->value('port') + $xcluster_port_offset{'consensus'}));
   }
   mtr_verbose('xcluster_info_prefix: ' . join(';', @$xcluster_info_arr));
   $xcluster_info_prefix= join(';', @$xcluster_info_arr);

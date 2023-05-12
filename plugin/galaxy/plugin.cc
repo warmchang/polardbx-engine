@@ -5,10 +5,10 @@
    This program is also distributed with certain software (including
    but not limited to OpenSSL) that is licensed under separate terms,
    as designated in a particular file or component or in included license
-   documentation.  The authors of MySQL/Apsara GalaxyEngine hereby grant you an
+   documentation.  The authors of MySQL/PolarDB-X Engine hereby grant you an
    additional permission to link the program and your derivative works with the
    separately licensed software that they have included with
-   MySQL/Apsara GalaxyEngine.
+   MySQL/PolarDB-X Engine.
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
@@ -49,7 +49,7 @@ static int galaxy_init(void *) {
 
   if ((udf_cnt = udf_registry->insert(
            {udf::UDF(bloomfilter_udf).def(), udf::UDF(hllndv_udf).def(),
-            udf::UDF(hyperloglog_udf).def()})) != 3) {
+            udf::UDF(hyperloglog_udf).def(), udf::UDF(hashcheck_udf).def()})) != 4) {
     /** Log error */
     LogErr(ERROR_LEVEL, ER_GALAXY_PLUGIN, "Register UDF error!");
 
@@ -57,7 +57,7 @@ static int galaxy_init(void *) {
     return 1;
   }
 
-  LogErr(INFORMATION_LEVEL, ER_GALAXY_PLUGIN, "Register three UDFs.");
+  LogErr(INFORMATION_LEVEL, ER_GALAXY_PLUGIN, "Register four UDFs.");
   return 0;
 }
 
@@ -84,6 +84,8 @@ static SHOW_VAR galaxy_status_vars[] = {
      SHOW_SCOPE_GLOBAL},
     {"galaxy_hllndv_call_count", (char *)&udf::udf_counter.hllndv_counter,
      SHOW_LONG, SHOW_SCOPE_GLOBAL},
+    {"galaxy_hashcheck_call_count", (char*)&udf::udf_counter.hashcheck_counter, SHOW_LONG,
+     SHOW_SCOPE_GLOBAL},
     {NULL, NULL, SHOW_LONG, SHOW_SCOPE_GLOBAL},
 };
 

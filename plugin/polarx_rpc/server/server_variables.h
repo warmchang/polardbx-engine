@@ -7,15 +7,25 @@
 #include <cstdint>
 #include <atomic>
 
+#include "../global_defines.h"
+
+#ifdef MYSQL8
 #include "mysql/plugin.h"
+#else
+#include "my_global.h"
+#define SYS_VAR st_mysql_sys_var
+#endif
 
 struct st_mysql_sys_var;
 
 namespace polarx_rpc {
 
+#ifdef MYSQL8
 typedef bool my_bool;
+#endif
 
 extern my_bool auto_cpu_affinity;
+extern my_bool multi_affinity_in_group;
 extern my_bool force_all_cores;
 extern uint32_t epoll_groups;
 extern uint32_t min_auto_epoll_groups;
@@ -36,8 +46,6 @@ extern uint32_t tcp_fixed_dealing_buf;
 
 extern uint32_t mcs_spin_cnt;
 extern uint32_t session_poll_rwlock_spin_cnt;
-
-extern my_bool skip_name_resolve;
 
 extern uint32_t net_write_timeout;
 
@@ -67,6 +75,10 @@ extern my_bool enable_tasker;
 extern uint32_t epoll_group_tasker_multiply;
 extern uint32_t epoll_group_tasker_extend_step;
 extern my_bool enable_epoll_in_tasker;
+
+extern uint32_t request_cache_number;
+extern uint32_t request_cache_instances;
+extern uint32_t request_cache_max_length;
 
 /**
  * Global Variables

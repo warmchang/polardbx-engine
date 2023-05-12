@@ -15,6 +15,9 @@
 
 #include <poll.h> /// for poll wait
 
+#include "m_ctype.h"
+#include "sql/mysqld.h"
+
 #include "../coders/polarx_encoder.h"
 #include "../coders/protocol_fwd.h"
 #include "../common_define.h"
@@ -112,12 +115,15 @@ private:
 
   inline void tcp_log(plugin_log_level level, int err,
                       const char *what = nullptr, const char *extra = nullptr) {
-    my_plugin_log_message(&plugin_info.plugin_info, level,
-                          "TCP[%lu] %s:%u, %s%s%s%s%s", tcp_id_, host_.c_str(),
-                          port_, nullptr == what ? "" : what,
-                          what != nullptr && extra != nullptr ? "; " : "",
-                          nullptr == extra ? "" : extra, err <= 0 ? "" : ". ",
-                          err <= 0 ? "" : std::strerror(err));
+    std::lock_guard<std::mutex> plugin_lck(plugin_info.mutex);
+    if (plugin_info.plugin_info != nullptr)
+      my_plugin_log_message(
+          &plugin_info.plugin_info, level, "TCP[%lu] %s:%u(%d,%s), %s%s%s%s%s",
+          tcp_id_, host_.c_str(), port_, fd_, registered_ ? "reg" : "unreg",
+          nullptr == what ? "" : what,
+          what != nullptr && extra != nullptr ? "; " : "",
+          nullptr == extra ? "" : extra, err <= 0 ? "" : ". ",
+          err <= 0 ? "" : std::strerror(err));
   }
 
   inline void tcp_info(int err, const char *what = nullptr,
@@ -145,10 +151,11 @@ private:
           if (UNLIKELY(err != 0)) {
             tcp_err(-err, "failed to unregister epoll");
             /// abort? may cause dangling pointer and may segment fault
-            // unireg_abort(MYSQLD_ABORT_EXIT);
+            unireg_abort(MYSQLD_ABORT_EXIT);
           }
           /// successfully removed and do reclaim
           registered_ = false;
+          plugin_info.tcp_closing.fetch_add(1, std::memory_order_release);
           /// schedule a async reclaim and sub reference in callback
           auto trigger_time = Ctime::steady_ms() + MAX_EPOLL_TIMEOUT * 2;
           epoll_.push_trigger({nullptr, nullptr, this, reclaim}, trigger_time);
@@ -183,11 +190,22 @@ private:
     return before - 1;
   }
 
-  void fd_registered() final {
-    tcp_info(0, "connected and registered");
+  void fd_pre_register() final {
     add_reference();
-    std::lock_guard<std::mutex> lck(exit_lock_);
-    registered_ = true;
+    {
+      std::lock_guard<std::mutex> lck(exit_lock_);
+      registered_ = true;
+    }
+    tcp_info(0, "connected and registered");
+  }
+
+  bool fd_rollback_register() final {
+    {
+      std::lock_guard<std::mutex> lck(exit_lock_);
+      registered_ = false;
+    }
+    tcp_info(0, "rollback register");
+    return sub_reference() > 0;
   }
 
   void pre_events() final {
@@ -252,7 +270,7 @@ private:
         0xb40bbe37, 0xc30c8ea1, 0x5a05df1b, 0x2d02ef8d,
     };
 
-    crc ^= 0xffffffff;  // Restore last state.
+    crc ^= 0xffffffff; // Restore last state.
     auto ptr = reinterpret_cast<const uint8_t *>(data);
 
     for (size_t i = 0; i < size; ++i)
@@ -315,8 +333,12 @@ private:
       msg.reset(new Polarx::ExecPlan::GetTSO());
       break;
 
-    default:
+    default: {
+      char extra[0x100];
+      ::snprintf(extra, sizeof(extra), "type: %u, len: %zu", type, length);
+      tcp_warn(0, "failed to parsing message", extra);
       return {};
+    }
     }
 
     // feed the data to the command (up to the specified boundary)
@@ -327,8 +349,8 @@ private:
 
     if (!msg->IsInitialized()) {
       char extra[0x100];
-      ::snprintf(extra, sizeof(extra), "type: %u, len: %zu, info: %s",
-                 type, length, msg->InitializationErrorString().c_str());
+      ::snprintf(extra, sizeof(extra), "type: %u, len: %zu, info: %s", type,
+                 length, msg->InitializationErrorString().c_str());
       tcp_warn(0, "failed to parsing message", extra);
       return {};
     }
@@ -554,6 +576,15 @@ private:
 
               /// check extra data size
               if (extra_data > max_pkt) {
+                /// send fatal message before shutdown
+                msg_enc().reset_sid(sid);
+                msg_enc().encode_error(Polarx::Error::FATAL,
+                                       ER_NET_PACKET_TOO_LARGE,
+                                       "Got a packet bigger than "
+                                       "'polarx_rpc_max_allowed_packet' bytes",
+                                       "S1000");
+                encoder().flush(*this);
+                /// shutdown
                 fin("max allowed packet size exceeded");
                 /// fatal error and drop all data
                 buf_pos_ = start_pos = 0;
@@ -569,7 +600,8 @@ private:
                          static_cast<int>(full_pkt_size))) {
 #if POLARX_RPC_PKT_DBG
                 {
-                  auto crc = crc32(buf_ptr_ + start_pos + hdr_sz_, extra_data - 1, 0);
+                  auto crc =
+                      crc32(buf_ptr_ + start_pos + hdr_sz_, extra_data - 1, 0);
                   char buf[0x100];
                   ::snprintf(buf, sizeof(buf), "sid:%lu type:%u len:%u crc:%x",
                              sid, type, extra_data - 1, crc);
@@ -751,6 +783,7 @@ public:
         buf_ptr_(nullptr), buf_pos_(0), registered_(false), reference_(1),
         encoder_(0), authed_(false), sessions_(host_, port) {
     DBG_LOG(("new TCP context %s:%u", host_.c_str(), port_));
+    plugin_info.tcp_connections.fetch_add(1, std::memory_order_release);
 
     /// set TCP buf size if needed
     auto buf_size = tcp_send_buf;
@@ -789,7 +822,11 @@ public:
     hdr_sz_ = is_gx_ ? 14 : 13;
   }
 
-  ~CtcpConnection() final { tcp_info(0, "destruct"); }
+  ~CtcpConnection() final {
+    plugin_info.tcp_closing.fetch_sub(1, std::memory_order_release);
+    plugin_info.tcp_connections.fetch_sub(1, std::memory_order_release);
+    tcp_info(0, "destruct");
+  }
 
   inline const std::string &ip() const { return ip_; }
   inline const std::string &host() const { return host_; }
@@ -823,21 +860,21 @@ public:
               tcp_warn(errno, "send poll error");
             else
               tcp_warn(0, "send net write timeout");
-            fin();
+            fin("send error while wait");
             return false;
           }
           /// wait done and retry
         } else if (EINTR == err) {
           if (++retry >= 10) {
             tcp_warn(EINTR, "send error with EINTR after retry 10");
-            fin();
+            fin("send error after retry 10");
             return false;
           }
           /// simply retry
         } else {
           /// fatal error
           tcp_err(err, "send error");
-          fin();
+          fin("send error");
           return false;
         }
       } else {
