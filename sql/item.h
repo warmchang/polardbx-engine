@@ -1042,14 +1042,14 @@ class Item : public Parse_tree_node {
     The unsigned property must have been set before calling this function.
 
     @param precision Number of digits of precision
-    @param dec       Number of digits after decimal point.
+    @param scale     Number of digits after decimal point.
   */
-  inline void set_data_type_decimal(uint8 precision, uint8 dec) {
+  inline void set_data_type_decimal(uint8 precision, uint8 scale) {
     set_data_type(MYSQL_TYPE_NEWDECIMAL);
     collation.set_numeric();
-    decimals = dec;
+    decimals = scale;
     fix_char_length(my_decimal_precision_to_length_no_truncation(
-        precision, dec, unsigned_flag));
+        precision, scale, unsigned_flag));
   }
 
   /// Set the data type of the Item to be double precision floating point.
@@ -3863,26 +3863,26 @@ class Item_int : public Item_num {
   Item_int(int32 i, uint length = MY_INT32_NUM_DECIMAL_DIGITS)
       : value((longlong)i) {
     set_data_type(MYSQL_TYPE_LONGLONG);
-    max_length = length;
+    set_max_size(length);
     fixed = true;
   }
   Item_int(const POS &pos, int32 i, uint length = MY_INT32_NUM_DECIMAL_DIGITS)
       : super(pos), value((longlong)i) {
     set_data_type(MYSQL_TYPE_LONGLONG);
-    max_length = length;
+    set_max_size(length);
     fixed = true;
   }
   Item_int(longlong i, uint length = MY_INT64_NUM_DECIMAL_DIGITS) : value(i) {
     set_data_type(MYSQL_TYPE_LONGLONG);
-    max_length = length;
+    set_max_size(length);
     fixed = true;
   }
   Item_int(ulonglong i, uint length = MY_INT64_NUM_DECIMAL_DIGITS)
       : value((longlong)i) {
     set_data_type(MYSQL_TYPE_LONGLONG);
-    max_length = length;
-    fixed = true;
     unsigned_flag = true;
+    set_max_size(length);
+    fixed = true;
   }
   Item_int(const Item_int *item_arg) {
     set_data_type(item_arg->data_type());
@@ -3893,14 +3893,14 @@ class Item_int : public Item_num {
   }
   Item_int(const Name_string &name_arg, longlong i, uint length) : value(i) {
     set_data_type(MYSQL_TYPE_LONGLONG);
-    max_length = length;
+    set_max_size(length);
     item_name = name_arg;
     fixed = true;
   }
   Item_int(const POS &pos, const Name_string &name_arg, longlong i, uint length)
       : super(pos), value(i) {
     set_data_type(MYSQL_TYPE_LONGLONG);
-    max_length = length;
+    set_max_size(length);
     item_name = name_arg;
     fixed = true;
   }
@@ -3919,6 +3919,10 @@ class Item_int : public Item_num {
 
  private:
   void init(const char *str_arg, uint length);
+  void set_max_size(uint length) {
+    max_length = length;
+    if (!unsigned_flag && value >= 0) max_length++;
+  }
 
  protected:
   type_conversion_status save_in_field_inner(Field *field,
@@ -3949,7 +3953,7 @@ class Item_int : public Item_num {
     return this;
   }
   uint decimal_precision() const override {
-    return (uint)(max_length - (value < 0));
+    return static_cast<uint>(max_length - 1);
   }
   bool eq(const Item *, bool) const override;
   bool check_partition_func_processor(uchar *) override { return false; }
