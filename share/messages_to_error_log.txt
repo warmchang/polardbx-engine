@@ -12075,6 +12075,9 @@ ER_IB_INDEX_BUILDER_DONE
 ER_CONSENSUS_CMD_LOG
   eng "user:%s  host:%s sql:%s result:%d!!!"
 
+ER_IB_MSG_DDL_FAIL_NO_BUILDER
+  eng "DDL Failed as Builder is already freed"
+
 # DO NOT add server-to-client messages here;
 # they go in messages_to_clients.txt
 # in the same directory as this file.
