@@ -12076,7 +12076,7 @@ ER_CONSENSUS_CMD_LOG
   eng "user:%s  host:%s sql:%s result:%d!!!"
 
 ER_IB_MSG_DDL_FAIL_NO_BUILDER
-  eng "DDL Failed as Builder is already freed"
+  eng "DDL failed as Builder is already freed. Builder: state=%u, error_state=%u. Index: id=%zu, name='%s', space_id=%u, page=%u. Table: old_name='%s', new_name='%s'."
 
 # DO NOT add server-to-client messages here;
 # they go in messages_to_clients.txt
