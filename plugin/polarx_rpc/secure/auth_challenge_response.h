@@ -31,7 +31,6 @@
 #include "account_verification_handler.h"
 #include "authentication_interface.h"
 #include "native_verification.h"
-#include "sha256_password_cache_interface.h"
 
 namespace polarx_rpc {
 class CtcpConnection;
@@ -66,8 +65,7 @@ class Sasl_challenge_response_auth : public Authentication_interface {
   explicit Sasl_challenge_response_auth(Account_verification_handler *handler)
       : m_verification_handler(handler), m_state(S_starting) {}
 
-  static Authentication_interface_ptr create(
-      CtcpConnection &tcp, SHA256_password_cache_interface *cache);
+  static Authentication_interface_ptr create(CtcpConnection &tcp);
 
   Response handle_start(const std::string &, const std::string &,
                         const std::string &) override;
@@ -101,9 +99,9 @@ template <Account_verification_interface::Account_type Account_type,
           typename Auth_verificator_t>
 Authentication_interface_ptr
 Sasl_challenge_response_auth<Account_type, Auth_verificator_t>::create(
-    CtcpConnection &tcp, SHA256_password_cache_interface *cache) {
-  auto handler = new Account_verification_handler(
-      tcp, Account_type, new Auth_verificator_t(cache));
+    CtcpConnection &tcp) {
+  auto handler = new Account_verification_handler(tcp, Account_type,
+                                                  new Auth_verificator_t());
   return Authentication_interface_ptr(
       new Sasl_challenge_response_auth<Account_type, Auth_verificator_t>(
           handler));

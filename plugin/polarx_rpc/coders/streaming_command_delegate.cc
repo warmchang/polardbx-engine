@@ -272,7 +272,12 @@ int CstreamingCommandDelegate::field_metadata(struct st_send_field *field,
       break;
 
     default:
-      assert(false);  // Shouldn't happen
+      /// this should never happen, but in new version of MySQL,
+      /// we should ignore it
+      length = field->length;
+      length_ptr = &length;
+      xtype = PolarXRPC::Resultset::ColumnMetaData::BYTES;
+      break;
   }
 
   /// fix length

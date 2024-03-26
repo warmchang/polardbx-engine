@@ -239,6 +239,8 @@ void package_context_init() {
 
   /** xrpc.perf_hist() */
   register_package<Proc, Proc_perf_hist>(XRPC_PROC_SCHEMA);
+  /** xrpc.cmd() */
+  register_package<Proc, Proc_cmd>(im::XRPC_PROC_SCHEMA);
 
   /* procedures: polarx.changeset_* */
   register_package<Proc, Changeset_proc_start>(POLARX_PROC_SCHEMA);

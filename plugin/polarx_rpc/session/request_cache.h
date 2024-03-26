@@ -81,6 +81,13 @@ class CrequestCache final {
         std::forward<std::string>(key), std::forward<plan_store_t>(store));
     plugin_info.plan_evict.fetch_add(evicted, std::memory_order_release);
   }
+
+  void clear() {
+    for (size_t i = 0; i < hash_slots_; ++i) {
+      sql_cache_[i]->clear();
+      plan_cache_[i]->clear();
+    }
+  }
 };
 
 }  // namespace polarx_rpc

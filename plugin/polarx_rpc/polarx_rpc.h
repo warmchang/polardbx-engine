@@ -52,6 +52,8 @@ struct polarx_rpc_info_t final {
 
 extern polarx_rpc_info_t plugin_info;
 
+void clear_xrpc_cache();
+
 #define POLARX_RPC_DBG 0
 #if POLARX_RPC_DBG
 #define DBG_LOG(_x_) sql_print_information _x_

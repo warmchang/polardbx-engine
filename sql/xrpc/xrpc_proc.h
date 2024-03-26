@@ -62,4 +62,42 @@ class Cmd_perf_hist : public Sql_cmd_admin_proc {
   std::string name_;
 };
 
+class Proc_cmd : public Xrpc_proc_base {
+ public:
+  explicit Proc_cmd(PSI_memory_key key) : Xrpc_proc_base(key) {
+    m_result_type = Result_type::RESULT_SET;
+    m_parameters.push_back(MYSQL_TYPE_VARCHAR);
+    m_columns.push_back(
+        {MYSQL_TYPE_VARCHAR, C_STRING_WITH_LEN("result"), 65535});
+  }
+
+  static Proc *instance();
+
+#ifdef MYSQL8PLUS
+  Sql_cmd *evoke_cmd(THD *thd, mem_root_deque<Item *> *list) const final;
+#else
+  Sql_cmd *evoke_cmd(THD *thd, List<Item> *list) const final;
+#endif
+
+  const std::string str() const final { return {"cmd"}; }
+};
+
+class Cmd_cmd : public Sql_cmd_admin_proc {
+ public:
+#ifdef MYSQL8PLUS
+  Cmd_cmd(THD *thd, mem_root_deque<Item *> *list, const Proc *proc)
+#else
+  Cmd_cmd(THD *thd, List<Item> *list, const Proc *proc)
+#endif
+      : Sql_cmd_admin_proc(thd, list, proc) {
+  }
+
+  bool pc_execute(THD *thd) final;
+
+  void send_result(THD *thd, bool error) final;
+
+ private:
+  std::string name_;
+};
+
 }  // namespace im

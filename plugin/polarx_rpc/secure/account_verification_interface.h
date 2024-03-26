@@ -33,9 +33,6 @@ class Account_verification_interface {
  public:
   enum Account_type {
     Account_native = 1,
-    Account_sha256 = 2,
-    Account_sha2 = 3,
-    Account_sha256_memory = 4,
     Account_unsupported = 99
   };
 

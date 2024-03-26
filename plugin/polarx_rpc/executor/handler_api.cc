@@ -128,6 +128,9 @@ int handler_open_table(THD *thd, const char *db_name, const char *table_name,
 #ifdef MYSQL8PLUS
     tables = Table_ref(db_name, strlen(db_name), table_name, strlen(table_name),
                        table_name, lock_mode);
+#elif defined(MYSQL8)
+    tables = TABLE_LIST(db_name, strlen(db_name), table_name,
+                        strlen(table_name), table_name, lock_mode);
 #else
     tables.init_one_table(db_name, strlen(db_name), table_name,
                           strlen(table_name), table_name, lock_mode);

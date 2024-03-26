@@ -80,6 +80,10 @@ static int polarx_rpc_deinit(void *arg MY_ATTRIBUTE((unused))) {
   return 0;
 }
 
+void clear_xrpc_cache() {
+  if (plugin_info.cache) plugin_info.cache->clear();
+}
+
 #ifndef MYSQL8
 using SHOW_VAR = st_mysql_show_var;
 #endif

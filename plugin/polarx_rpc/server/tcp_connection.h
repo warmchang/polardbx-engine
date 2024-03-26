@@ -457,7 +457,7 @@ class CtcpConnection final : public CepollCallback {
                 *msg.msg);
         Authentication_interface::Response r;
         if (LIKELY(!auth_handler_)) {
-          auth_handler_ = Sasl_mysql41_auth::create(*this, nullptr);
+          auth_handler_ = Sasl_mysql41_auth::create(*this);
           r = auth_handler_->handle_start(authm.mech_name(), authm.auth_data(),
                                           authm.initial_response());
           tcp_info(0, "start auth", authm.mech_name().c_str());

@@ -30,7 +30,6 @@
 #include "mysql_com.h"
 
 #include "account_verification_interface.h"
-#include "sha256_password_cache_interface.h"
 
 namespace polarx_rpc {
 
@@ -39,17 +38,15 @@ namespace polarx_rpc {
 */
 class Challenge_response_verification : public Account_verification_interface {
  public:
-  explicit Challenge_response_verification(
-      SHA256_password_cache_interface *cache)
-      : k_salt(generate_salt()), m_sha256_password_cache(cache) {}
+  Challenge_response_verification()
+      : k_salt(generate_salt()) {}
 
   const std::string &get_salt() const override { return k_salt; }
 
  protected:
   const std::string k_salt;
-  SHA256_password_cache_interface *m_sha256_password_cache;
 
-  inline std::string generate_salt() {
+  static inline std::string generate_salt() {
     std::string salt(SCRAMBLE_LENGTH, '\0');
     ::generate_user_salt(&salt[0], static_cast<int>(salt.size()));
     return salt;

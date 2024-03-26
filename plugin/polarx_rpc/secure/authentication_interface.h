@@ -32,7 +32,6 @@
 #include "../utility/error.h"
 
 #include "account_verification_interface.h"
-#include "sha256_password_cache_interface.h"
 
 namespace polarx_rpc {
 

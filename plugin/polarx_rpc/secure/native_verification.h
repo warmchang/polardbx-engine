@@ -32,8 +32,6 @@ namespace polarx_rpc {
 
 class Native_verification : public Challenge_response_verification {
  public:
-  explicit Native_verification(SHA256_password_cache_interface *cache)
-      : Challenge_response_verification(cache) {}
   bool verify_authentication_string(
       const std::string &user, const std::string &host,
       const std::string &client_string,
