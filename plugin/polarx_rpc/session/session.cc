@@ -394,6 +394,9 @@ err_t Csession::sql_stmt_execute(const PolarXRPC::Sql::StmtExecute &msg) {
     thd->owned_commit_gcn.set(thd->variables.innodb_commit_gcn,
                               MYSQL_CSR_ASSIGNED);
   }
+  if (msg.has_query_via_flashback_area() && msg.query_via_flashback_area()) {
+    thd->variables.opt_query_via_flashback_area = true;
+  }
 #else
   /// 5.7 specific CTS timestamp
   if (!thd_in_active_multi_stmt_transaction(thd)) thd->clear_transaction_seq();
@@ -624,6 +627,9 @@ err_t Csession::sql_plan_execute(const PolarXRPC::ExecPlan::ExecPlan &msg) {
     thd->variables.innodb_commit_gcn = msg.commit_seq();
     thd->owned_commit_gcn.set(thd->variables.innodb_commit_gcn,
                               MYSQL_CSR_ASSIGNED);
+  }
+  if (msg.has_query_via_flashback_area() && msg.query_via_flashback_area()) {
+    thd->variables.opt_query_via_flashback_area = true;
   }
 #else
   /// 5.7 specific CTS timestamp

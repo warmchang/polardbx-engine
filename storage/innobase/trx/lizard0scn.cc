@@ -39,6 +39,12 @@ this program; if not, write to the Free Software Foundation, Inc.,
 #include "lizard0ut.h"
 
 #include "sql/lizard/lizard_rpl_gcn.h"  // MyGCN...
+					//
+commit_mark_t::commit_mark_t()
+    : scn(lizard::SCN_NULL),
+      us(lizard::US_NULL),
+      gcn(lizard::GCN_NULL),
+      csr(CSR_AUTOMATIC) {}
 
 namespace lizard {
 
@@ -359,7 +365,7 @@ enum scn_state_t commit_mark_state(const commit_mark_t &cmmt) {
 }  // namespace lizard
 
 /*****************************************
- *              commit_scn_t             *
+ *              commit_mark_t            *
  *****************************************/
 void commit_mark_t::copy_from_my_gcn(const MyGCN *my_gcn) {
   if (!my_gcn->is_empty()) {

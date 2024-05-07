@@ -32,6 +32,9 @@
 #include "fil0key.h"
 #include "fil0purge.h"
 #include "mysql/plugin.h"
+#include "sql/dd/cache/dictionary_client.h"
+#include "sql/dd/dictionary.h"
+#include "sql/dd/types/table.h"
 #include "sql/table.h"
 #include "storage/innobase/handler/i_s_ext.h"
 
@@ -300,7 +303,6 @@ static int innodb_tablespace_master_key_fill_table(
 static int innodb_tablespace_master_key_init(void *p) {
   ST_SCHEMA_TABLE *schema;
   DBUG_ENTER("innodb_tablespace_master_key_init");
-
   schema = (ST_SCHEMA_TABLE *)p;
 
   schema->fields_info = innodb_tablespace_master_key_fields_info;
@@ -358,6 +360,154 @@ struct st_mysql_plugin i_s_innodb_tablespace_master_key = {
     /* plugin version (for SHOW PLUGINS) */
     /* unsigned int */
     STRUCT_FLD(version, i_s_innodb_plugin_version_rds),
+
+    /* SHOW_VAR* */
+    STRUCT_FLD(status_vars, NULL),
+
+    /* SYS_VAR** */
+    STRUCT_FLD(system_vars, NULL),
+
+    /* reserved for dependency checking */
+    /* void* */
+    STRUCT_FLD(__reserved1, NULL),
+
+    /* Plugin flags */
+    /* unsigned long */
+    STRUCT_FLD(flags, 0UL),
+};
+
+ST_FIELD_INFO innodb_table_status_fields_info[] = {
+#define IDX_TS_SCHEMA_NAME 0
+    {STRUCT_FLD(field_name, "SCHEMA_NAME"), STRUCT_FLD(field_length, 1024),
+     STRUCT_FLD(field_type, MYSQL_TYPE_STRING), STRUCT_FLD(value, 0),
+     STRUCT_FLD(field_flags, MY_I_S_MAYBE_NULL), STRUCT_FLD(old_name, ""),
+     STRUCT_FLD(open_method, 0)},
+
+#define IDX_TS_TABLE_NAME 1
+    {STRUCT_FLD(field_name, "TABLE_NAME"), STRUCT_FLD(field_length, 1024),
+     STRUCT_FLD(field_type, MYSQL_TYPE_STRING), STRUCT_FLD(value, 0),
+     STRUCT_FLD(field_flags, MY_I_S_MAYBE_NULL), STRUCT_FLD(old_name, ""),
+     STRUCT_FLD(open_method, 0)},
+
+#define IDX_TS_OPTIONS 2
+    {STRUCT_FLD(field_name, "options"), STRUCT_FLD(field_length, 8192),
+     STRUCT_FLD(field_type, MYSQL_TYPE_STRING), STRUCT_FLD(value, 0),
+     STRUCT_FLD(field_flags, MY_I_S_MAYBE_NULL), STRUCT_FLD(old_name, ""),
+     STRUCT_FLD(open_method, 0)},
+
+    END_OF_ST_FIELD_INFO};
+
+static int innodb_table_status_fill_table(THD *thd,
+		Table_ref *tables, Item *) {
+  Field **fields;
+  TABLE *table;
+  std::vector<const dd::Schema *> dd_schemas;
+  std::vector<const dd::Table *> dd_tables;
+  std::unordered_map<dd::Object_id, dd::String_type> schema_map;
+  DBUG_ENTER("innodb_table_status_fill_table");
+
+  table = tables->table;
+  fields = table->field;
+
+  auto dc = dd::get_dd_client(thd);
+  dd::cache::Dictionary_client::Auto_releaser releaser(dc);
+
+  if (dc->fetch_global_components(&dd_schemas)) {
+    DBUG_RETURN(1);
+  }
+  for (auto schema : dd_schemas) {
+    schema_map[schema->id()] = schema->name();
+  }
+
+  if (dc->fetch_global_components(&dd_tables)) {
+    DBUG_RETURN(1);
+  }
+
+  for (auto dd_table: dd_tables) {
+    auto it = schema_map.find(dd_table->schema_id());
+    if (it == schema_map.end()) {
+      continue;
+    } else {
+      OK(field_store_string(fields[IDX_TS_SCHEMA_NAME], it->second.c_str()));
+      fields[IDX_TS_SCHEMA_NAME]->set_notnull();
+    }
+
+    OK(field_store_string(fields[IDX_TS_TABLE_NAME], dd_table->name().c_str()));
+    fields[IDX_TS_TABLE_NAME]->set_notnull();
+
+    dd::String_type options = dd_table->options().raw_string();
+    if (options.empty()) {
+      fields[IDX_TS_OPTIONS]->set_null();
+    } else {
+      OK(field_store_string(fields[IDX_TS_OPTIONS], options.c_str()));
+      fields[IDX_TS_OPTIONS]->set_notnull();
+    }
+
+    OK(schema_table_store_record(thd, table));
+  }
+
+  DBUG_RETURN(0);
+}
+
+static int innodb_table_status_init(void *p) {
+  ST_SCHEMA_TABLE *schema;
+  DBUG_ENTER("innodb_table_status_init");
+  schema = (ST_SCHEMA_TABLE *)p;
+
+  schema->fields_info = innodb_table_status_fields_info;
+  schema->fill_table = innodb_table_status_fill_table;
+
+  DBUG_RETURN(0);
+}
+
+/** I_S.innodb_* views version postfix. Everytime the define of any InnoDB I_S
+ * table is changed, this value has to be increased accordingly */
+static constexpr uint8_t EXTRA_IS_PLUGIN_TS_VERSION = 1;
+
+/** I_S.innodb_* views version. It would be X.Y and X should be the server major
+ *  * version while Y is the InnoDB I_S views version, starting from 1 */
+constexpr uint64_t i_s_innodb_plugin_version_table_status =
+    (INNODB_VERSION_MAJOR << 8 | (EXTRA_IS_PLUGIN_TS_VERSION));
+
+struct st_mysql_plugin i_s_innodb_table_status = {
+    /* the plugin type (a MYSQL_XXX_PLUGIN value) */
+    /* int */
+    STRUCT_FLD(type, MYSQL_INFORMATION_SCHEMA_PLUGIN),
+
+    /* pointer to type-specific plugin descriptor */
+    /* void* */
+    STRUCT_FLD(info, &i_s_info),
+
+    /* plugin name */
+    STRUCT_FLD(name, "INNODB_TABLE_STATUS"),
+
+    /* plugin author (for SHOW PLUGINS) */
+    /* const char* */
+    STRUCT_FLD(author, plugin_author),
+
+    /* general descriptive text (for SHOW PLUGINS) */
+    /* const char* */
+    STRUCT_FLD(descr, "InnoDB all table status"),
+
+    /* the plugin license (PLUGIN_LICENSE_XXX) */
+    /* int */
+    STRUCT_FLD(license, PLUGIN_LICENSE_GPL),
+
+    /* the function to invoke when plugin is loaded */
+    /* int (*)(void*); */
+    STRUCT_FLD(init, innodb_table_status_init),
+
+    /* the function to invoke when plugin is un installed */
+    /* int (*)(void*); */
+    NULL,
+
+    /* the function to invoke when plugin is unloaded */
+    /* int (*)(void*); */
+    STRUCT_FLD(deinit, i_s_common_deinit),
+
+    /* plugin version (for SHOW PLUGINS) */
+    /* unsigned int */
+    STRUCT_FLD(version, i_s_innodb_plugin_version_table_status),
 
     /* SHOW_VAR* */
     STRUCT_FLD(status_vars, NULL),

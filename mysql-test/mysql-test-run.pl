@@ -336,6 +336,7 @@ our $opt_xcluster                  = 1;
 our $xcluster_id_cnt               = 1;
 our $xcluster_info_prefix;
 our $xcluster_bootstrap            = 0;
+our $opt_flashback_area            = 0;
 # Visual Studio produces executables in different sub-directories
 # based on the configuration used to build them. To make life easier,
 # an environment variable or command-line option may be specified to
@@ -1666,6 +1667,7 @@ sub command_line_setup {
     'sp-protocol'           => \$opt_sp_protocol,
     'view-protocol'         => \$opt_view_protocol,
     'vs-config=s'           => \$opt_vs_config,
+    'flashback-area'        => \$opt_flashback_area,
 
     # Max number of parallel threads to use
     'parallel=s' => \$opt_parallel,
@@ -2245,6 +2247,10 @@ sub command_line_setup {
     push(@opt_extra_mysqld_opt, "--optimizer_trace=enabled=on,one_line=off");
     # Some queries yield big traces:
     push(@opt_extra_mysqld_opt, "--optimizer-trace-max-mem-size=1000000");
+  }
+
+  if ($opt_flashback_area) {
+    push(@opt_extra_mysqld_opt, "--opt_flashback_area=1");
   }
 
   # Check valgrind arguments
@@ -7499,6 +7505,8 @@ sub start_mysqltest ($) {
   if ($opt_hypergraph) {
     mtr_add_arg($args, "--hypergraph");
   }
+
+  $ENV{'FLASHBACK_AREA'} = 1 if ($opt_flashback_area);
 
   foreach my $arg (@opt_extra_mysqltest_opt) {
     mtr_add_arg($args, $arg);

@@ -132,6 +132,7 @@ Database: information_schema
 | INNODB_TABLESPACES_BRIEF                   |
 | INNODB_TABLESPACE_MASTER_KEY               |
 | INNODB_TABLESTATS                          |
+| INNODB_TABLE_STATUS                        |
 | INNODB_TEMP_TABLE_INFO                     |
 | INNODB_TRX                                 |
 | INNODB_VIRTUAL                             |
@@ -229,6 +230,7 @@ Database: INFORMATION_SCHEMA
 | INNODB_TABLESPACES_BRIEF                   |
 | INNODB_TABLESPACE_MASTER_KEY               |
 | INNODB_TABLESTATS                          |
+| INNODB_TABLE_STATUS                        |
 | INNODB_TEMP_TABLE_INFO                     |
 | INNODB_TRX                                 |
 | INNODB_VIRTUAL                             |

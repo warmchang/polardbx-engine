@@ -1007,6 +1007,8 @@ The following options may be given as the first argument:
  --opt-enable-rds-priv-strategy 
  When this option is enabled,it will protect reserved
  account and privileges
+ --opt-flashback-area 
+ Enable flashback area when a new table is created. 
  --opt-force-index-pct-cached 
  force cached table index in memory when estimate query
  cost
@@ -1438,6 +1440,9 @@ The following options may be given as the first argument:
  Allocation block size for query parsing and execution
  --query-prealloc-size=# 
  Persistent buffer for query parsing and execution
+ --query-via-flashback-area 
+ Whether queries should be executed via the flashback area
+ of the table during a transaction. 
  --range-alloc-block-size=# 
  Allocation block size for storing ranges during
  optimization
@@ -2369,6 +2374,7 @@ old-alter-table FALSE
 old-style-user-limits FALSE
 only-report-warning-when-skip-sequence TRUE
 opt-enable-rds-priv-strategy FALSE
+opt-flashback-area FALSE
 opt-force-index-pct-cached FALSE
 opt-indexstat TRUE
 opt-outline-enabled TRUE
@@ -2509,6 +2515,7 @@ profiling-history-size 15
 protocol-compression-algorithms zlib,zstd,uncompressed
 query-alloc-block-size 8192
 query-prealloc-size 8192
+query-via-flashback-area FALSE
 range-alloc-block-size 4096
 range-optimizer-max-mem-size 8388608
 rds-audit-log-buffer-size 8388608

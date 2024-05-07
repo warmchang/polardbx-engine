@@ -231,6 +231,7 @@ this program; if not, write to the Free Software Foundation, Inc.,
 #include "srv0file.h"
 
 #include "sql/xa_specification.h"
+#include "sql/dd/lizard_dd_table.h"
 
 #include "sys_vars_ext.h"
 
@@ -816,8 +817,7 @@ static PSI_mutex_info all_innodb_mutexes[] = {
     PSI_MUTEX_KEY(lizard_vision_list_mutex, 0, 0, PSI_DOCUMENT_ME),
     PSI_MUTEX_KEY(gp_sys_mutex, 0, 0, PSI_DOCUMENT_ME),
     PSI_MUTEX_KEY(gp_sys_wait_mutex, 0, 0, PSI_DOCUMENT_ME),
-    PSI_MUTEX_KEY(undo_retention_mutex, 0, 0, PSI_DOCUMENT_ME),
-    PSI_MUTEX_KEY(purge_blocked_stat_mutex, 0, 0, PSI_DOCUMENT_ME)};
+    PSI_MUTEX_KEY(undo_retention_mutex, 0, 0, PSI_DOCUMENT_ME)};
 #endif /* UNIV_PFS_MUTEX */
 
 #ifdef UNIV_PFS_RWLOCK
@@ -12126,6 +12126,11 @@ void innodb_base_col_setup_for_stored(const dict_table_t *table,
     dict_sys_mutex_enter();
     fts_optimize_add_table(table);
     dict_sys_mutex_exit();
+  }
+
+  if (err == DB_SUCCESS) {
+    table->is_2pc_purge =
+        dd_table ? lizard::dd_table_get_flashback_area(*dd_table) : false;
   }
 
   if (err == DB_SUCCESS) {
@@ -24006,7 +24011,7 @@ mysql_declare_plugin(innobase){
     i_s_innodb_tablestats, i_s_innodb_indexes, i_s_innodb_tablespaces,
     i_s_innodb_columns, i_s_innodb_virtual, i_s_innodb_cached_indexes,
     i_s_innodb_session_temp_tablespaces, i_s_innodb_data_file_purge,
-    i_s_innodb_tablespace_master_key
+    i_s_innodb_tablespace_master_key, i_s_innodb_table_status
 
     mysql_declare_plugin_end;
 

@@ -215,7 +215,7 @@ trx_undo_rec_t *trx_undo_get_prev_rec(
 @param[in]      mode            Latch mode: RW_S_LATCH or RW_X_LATCH
 @param[in,out]  mtr             Mini-transaction
 @return undo log record, the page latched, NULL if none */
-static trx_undo_rec_t *trx_undo_get_next_rec_from_next_page(
+trx_undo_rec_t *trx_undo_get_next_rec_from_next_page(
     space_id_t space, const page_size_t &page_size, const page_t *undo_page,
     page_no_t page_no, ulint offset, ulint mode, mtr_t *mtr) {
   const trx_ulogf_t *log_hdr;
@@ -460,6 +460,8 @@ void trx_undo_page_init(page_t *undo_page, /*!< in: undo log segment page */
 
   flst_add_last(seg_hdr + TRX_UNDO_PAGE_LIST, page_hdr + TRX_UNDO_PAGE_NODE,
                 mtr);
+
+  lizard::trx_useg_allocate(*undo_page, block->page.size, mtr);
 
   trx_rsegf_set_nth_undo(rseg_hdr, slot_no, page_get_page_no(*undo_page), mtr);
   *id = slot_no;
@@ -1566,8 +1568,8 @@ trx_undo_t *trx_undo_mem_create(trx_rseg_t *rseg, ulint id, ulint type,
   undo->slot_addr = slot_addr;
 
   /** Lizard: init undo scn */
-  undo->cmmt = COMMIT_MARK_NULL;
-  undo->prev_image = COMMIT_MARK_NULL;
+  undo->cmmt = CMMT_NULL;
+  undo->prev_image = CMMT_NULL;
   undo->txn_ext_storage = TXN_EXT_STORAGE_NONE;
   undo->txn_tags_1 = 0;
 
@@ -1627,8 +1629,8 @@ static void trx_undo_mem_init_for_reuse(
   undo->slot_addr = slot_addr;
 
   /** Lizard: init undo scn */
-  undo->cmmt = COMMIT_MARK_NULL;
-  undo->prev_image = COMMIT_MARK_NULL;
+  undo->cmmt = CMMT_NULL;
+  undo->prev_image = CMMT_NULL;
   undo->txn_ext_storage = TXN_EXT_STORAGE_NONE;
   undo->txn_tags_1 = 0;
 
@@ -1675,7 +1677,7 @@ void trx_undo_mem_free(trx_undo_t *undo) /*!< in: the undo object to be freed */
   ulint offset;
   ulint id;
   page_t *undo_page;
-  commit_mark_t prev_image = COMMIT_MARK_LOST;
+  commit_mark_t prev_image = CMMT_LOST;
   slot_addr_t slot_addr;
   uint8 txn_ext_storage = TXN_EXT_STORAGE_NONE;
 
@@ -1758,7 +1760,7 @@ trx_undo_t *trx_undo_reuse_cached(trx_t *trx, trx_rseg_t *rseg, ulint type,
                                   trx_undo_t::Gtid_storage gtid_storage,
                                   mtr_t *mtr) {
   trx_undo_t *undo;
-  commit_mark_t prev_image = COMMIT_MARK_LOST;
+  commit_mark_t prev_image = CMMT_LOST;
   slot_addr_t slot_addr;
   uint8 txn_ext_storage = TXN_EXT_STORAGE_NONE;
 
@@ -2432,8 +2434,8 @@ bool trx_undo_truncate_tablespace(undo::Tablespace *marked_space) {
     rseg->last_page_no = FIL_NULL;
     rseg->last_offset = 0;
     rseg->last_del_marks = false;
-    rseg->last_scn = 0;
-    rseg->oldest_utc_in_txn_free = 0;
+    rseg->last_ommt.set_null();
+    rseg->last_free_ommt.set_null();
   }
 
   marked_rsegs->x_unlock();

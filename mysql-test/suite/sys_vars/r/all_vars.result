@@ -309,6 +309,8 @@ only_report_warning_when_skip_sequence
 only_report_warning_when_skip_sequence
 opt_enable_rds_priv_strategy
 opt_enable_rds_priv_strategy
+opt_flashback_area
+opt_flashback_area
 opt_force_index_pct_cached
 opt_force_index_pct_cached
 opt_indexstat
@@ -426,6 +428,8 @@ polarx_rpc_tcp_send_buf
 polarx_udf_function_list
 polarx_udf_function_list
 pseudo_slave_mode
+query_via_flashback_area
+query_via_flashback_area
 rds_active_memory_profiling
 rds_active_memory_profiling
 rds_audit_log_buffer_size

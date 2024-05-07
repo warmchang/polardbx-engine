@@ -8,7 +8,7 @@ get_key_value()
 usage()
 {
 cat <<EOF
-Usage: $0 [-t normal|all|ps|push|daily|weekly|release]
+Usage: $0 [-t normal|all|ps|push|daily|weekly|release|fba]
        Or
        $0 [-h | --help]
   -t                      regresstion test type, valid options are:
@@ -59,6 +59,7 @@ extra_mtr_option=""
 if [ x"$test_type" = x"normal" ]; then
   extra_mtr_option=""
   $OPT $extra_mtr_option --vardir=var_normal  &>all.normal
+  $OPT --flashback-area --vardir=var_fba  &>all.fba
 
 elif [ x"$test_type" = x"all" ]; then
   extra_mtr_option="--big-test --testcase-timeout=45"
@@ -74,7 +75,11 @@ elif [ x"$test_type" = x"push" ] || [ x"$test_type" = x"daily" ] || [ x"$test_ty
   export MTR_PARALLEL=32
   ./collections/default.$test_type &>all.$test_type
 
+elif [ x"$test_type" = x"fba" ]; then
+  extra_mtr_option="--flashback-area"
+  $OPT $extra_mtr_option --vardir=var_fba &>all.fba
+
 else
-  echo "Invalid test type, it must be \"normal\" or \"ps\" or \"all\" or \"push\" or \"daily\" or \"weekly\" or \"release\"."
+  echo "Invalid test type, it must be \"normal\" or \"ps\" or \"all\" or \"push\" or \"daily\" or \"weekly\" or \"release\" or \"fba\"."
   exit 1
 fi

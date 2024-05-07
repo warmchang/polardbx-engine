@@ -58,6 +58,7 @@
 #include "sql/replica_read_manager.h"
 #include "sql/xa/lizard_xa_trx.h"
 #include "sql/sql_implicit_element.h"
+#include "sql/dd/lizard_dd_table.h"
 
 #ifdef RDS_HAVE_JEMALLOC
 #include "sql/sql_jemalloc.h"
@@ -622,3 +623,15 @@ static Sys_var_bool Sys_enable_show_ipk_info(
 
 static Sys_var_deprecated_alias Sys_show_ipk_info(
     "show_ipk_info", Sys_enable_show_ipk_info);
+
+static Sys_var_bool Sys_query_via_flashback_area(
+    "query_via_flashback_area",
+    "Whether queries should be executed via the flashback area of the table "
+    "during a transaction. ",
+    SESSION_VAR(opt_query_via_flashback_area), CMD_LINE(OPT_ARG), DEFAULT(0),
+    NO_MUTEX_GUARD, NOT_IN_BINLOG, ON_CHECK(0), ON_UPDATE(0));
+
+static Sys_var_bool Sys_opt_flashback_area(
+    "opt_flashback_area", "Enable flashback area when a new table is created. ",
+    SESSION_VAR(opt_flashback_area), CMD_LINE(OPT_ARG), DEFAULT(0),
+    NO_MUTEX_GUARD, IN_BINLOG, ON_CHECK(0), ON_UPDATE(0));
