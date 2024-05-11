@@ -108,6 +108,7 @@ bool opt_consensuslog_revise;
 bool opt_recover_snapshot = false;
 ulong thread_stack_warning = 65536;
 ulong opt_configured_event_scheduler = Events::EVENTS_OFF;
+bool opt_consensus_reset_mts_info = false;
 
 static bool fix_consensus_checksum(sys_var *, THD *, enum_var_type) {
   consensus_ptr->setChecksumMode(opt_consensus_checksum);

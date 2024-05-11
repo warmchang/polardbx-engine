@@ -102,5 +102,6 @@ extern bool opt_consensuslog_revise;
 extern bool opt_recover_snapshot;
 extern ulong thread_stack_warning;
 extern ulong opt_configured_event_scheduler;
+extern bool opt_consensus_reset_mts_info;
 
 #endif

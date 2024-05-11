@@ -631,6 +631,7 @@ bool Slave_worker::reset_recovery_info() {
 
   set_group_master_log_name("");
   set_group_master_log_pos(0);
+  set_consensus_apply_index(0);
 
   return flush_info(true);
 }

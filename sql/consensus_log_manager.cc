@@ -39,6 +39,7 @@ this program; if not, write to the Free Software Foundation, Inc.,
 #include "sql/consensus_admin.h"
 #include "sql/rpl_info_factory.h"
 #include "sql/rpl_mi.h"
+#include "sql/rpl_rli_pdb.h"
 #include "sql_parse.h"
 #include "sys_vars_consensus.h"
 
@@ -373,6 +374,19 @@ int ConsensusLogManager::init_service() {
         consensus_info->set_cluster_learner_info(std::string(opt_cluster_info));
         consensus_info->set_cluster_info("");
       }
+
+      // this flag is used in situation that recovery from a backup
+      // without binlog copied.
+      // Binlog (also work as relaylog in PolarDB-X DN) is needed in mts
+      // recovery. As MySQL use RelayLog for mts reovery.
+      if (opt_consensus_reset_mts_info) {
+        for (uint id = 0; id < rli_info->recovery_parallel_workers; id++) {
+          Slave_worker *worker = Rpl_info_factory::create_worker(
+              opt_rli_repository_id, id, rli_info, false);
+          worker->reset_recovery_info();
+        }
+      }
+
       // if change meta, flush sys info, force quit
       consensus_info->flush_info(true, true);
       xp::warn(ER_XP_0) << "Force change meta to system table successfully.";
