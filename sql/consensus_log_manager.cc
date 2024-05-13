@@ -866,9 +866,12 @@ int ConsensusLogManager::truncate_log(uint64 consensus_index) {
       << ", error: " << error
       << ", consensus index: " << consensus_index
       << ", status: " << status
-      << ", relay_log name: " << ((rli_info && rli_info->applier_reader) ? rli_info->applier_reader->get_log_info()->log_file_name : "")
-      << ", relaylog_reader_position: " << ((rli_info && rli_info->applier_reader) ? rli_info->applier_reader->relaylog_reader_position() : 0)
-      << ", relay_log->position: " << (rli_info ? rli_info->relay_log.get_binlog_file()->position() : 0)
+      << ", applier_reader relaylog name: " 
+      << ((rli_info && rli_info->applier_reader) ? rli_info->applier_reader->get_log_info()->log_file_name : "")
+      << ", applier_reader relaylog position: " 
+      << ((rli_info && rli_info->applier_reader) ? rli_info->applier_reader->relaylog_reader_position() : 0)
+      << ", relay_log name: " << (rli_info ? rli_info->relay_log.get_binlog_file()->get_binlog_name() : 0)
+      << ", relay_log position: " << (rli_info ? rli_info->relay_log.get_binlog_file()->position() : 0)
       << ", binlog name: " << binlog->get_binlog_file()->get_binlog_name()
       << ", binlog->position: " << binlog->get_binlog_file()->position();
 
@@ -936,9 +939,12 @@ int ConsensusLogManager::truncate_log(uint64 consensus_index) {
       << ", error: " << error
       << ", consensus index: " << consensus_index
       << ", status: " << status
-      << ", relay_log name: " << ((rli_info && rli_info->applier_reader) ? rli_info->applier_reader->get_log_info()->log_file_name : "")
-      << ", relaylog_reader_position: " << ((rli_info && rli_info->applier_reader) ? rli_info->applier_reader->relaylog_reader_position() : 0)
-      << ", relay_log->position: " << (rli_info ? rli_info->relay_log.get_binlog_file()->position() : 0)
+      << ", applier_reader relaylog name: " 
+      << ((rli_info && rli_info->applier_reader) ? rli_info->applier_reader->get_log_info()->log_file_name : "")
+      << ", applier_reader relaylog position: " 
+      << ((rli_info && rli_info->applier_reader) ? rli_info->applier_reader->relaylog_reader_position() : 0)
+      << ", relay_log name: " << (rli_info ? rli_info->relay_log.get_binlog_file()->get_binlog_name() : 0)
+      << ", relay_log position: " << (rli_info ? rli_info->relay_log.get_binlog_file()->position() : 0)
       << ", binlog name: " << binlog->get_binlog_file()->get_binlog_name()
       << ", binlog->position: " << binlog->get_binlog_file()->position();
 

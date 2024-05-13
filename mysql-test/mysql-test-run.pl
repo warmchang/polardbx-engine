@@ -5146,7 +5146,7 @@ sub run_testcase ($) {
       }
       last if (defined $mysqld_oldleader);
       $err_cnt++;
-      if ($err_cnt < 5) {
+      if ($err_cnt < $opt_start_timeout) {
         mtr_report("Fail to find old leader, try again...");
       } else {
         mtr_warning("Fail to find old leader after $err_cnt times trying!!!");
@@ -6210,7 +6210,7 @@ sub check_expected_crash_and_restart($$) {
               }
               last if (defined $mysqld_oldleader);
               $err_cnt++;
-              if ($err_cnt < 5) {
+              if ($err_cnt < $opt_start_timeout) {
                 mtr_report("Fail to find old leader, try again...");
               } else {
                 mtr_warning("Fail to find old leader after $err_cnt times trying!!!");

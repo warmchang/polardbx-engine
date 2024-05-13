@@ -7007,9 +7007,6 @@ static int init_server_components() {
     }
   }
 
-  /* Initialize the optimizer cost module */
-  init_optimizer_cost_module(true);
-
   ReplicaInitializer replica_initializer(
       opt_initialize, /*opt_skip_replica_start*/ true, rpl_channel_filters,
       &opt_replica_skip_errors);
@@ -7018,6 +7015,11 @@ static int init_server_components() {
   if (!opt_initialize && !opt_consensus_force_recovery &&
       consensus_log_manager.init_consensus_info())
     unireg_abort(MYSQLD_ABORT_EXIT);
+
+  /* Save pid of this process in a file, because init_service maybe wait long time*/
+  if (!opt_initialize && create_pid_file()) {
+    unireg_abort(MYSQLD_ABORT_EXIT);
+  }
 
   int consensus_error = consensus_log_manager.init_service();
   if (consensus_error < 0)
@@ -7112,6 +7114,8 @@ static int init_server_components() {
   rpl_source_io_monitor = new Source_IO_monitor();
   udf_load_service.init();
 
+  /* Initialize the optimizer cost module */
+  init_optimizer_cost_module(true);
   ft_init_stopwords();
 
   init_max_user_conn();
@@ -8209,10 +8213,10 @@ int mysqld_main(int argc, char **argv)
 
   bool abort = false;
 
-  /* Save pid of this process in a file */
-  if (!opt_initialize) {
-    if (create_pid_file()) abort = true;
-  }
+  // /* Save pid of this process in a file */
+  // if (!opt_initialize) {
+  //   if (create_pid_file()) abort = true;
+  // }
 
   /* Read the optimizer cost model configuration tables */
   if (!opt_initialize) reload_optimizer_cost_constants();
