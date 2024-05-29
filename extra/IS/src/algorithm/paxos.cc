@@ -2036,6 +2036,7 @@ int Paxos::onAppendLog(PaxosMsg *msg, PaxosMsg *rsp) {
         currentTerm_.load(), msg->term(), lastLogIndex);
     return 0;
   }
+  assert(msg->entries_size() > 0);
 
   if (prevLogIndex > lastLogIndex) {
     uint64_t msgEntrieSize = msg->entries_size();
