@@ -37,7 +37,7 @@ sleep 5;
     lock_status,
     lock_data
   FROM performance_schema.data_locks
-  ORDER BY 1,2,3;
+  ORDER BY ENGINE_TRANSACTION_ID,index_name,index_name,lock_type,lock_mode,lock_status,lock_data;
 
   SET GLOBAL innodb_pfs_data_locks_max_locks_per_batch = 3;
   SELECT
@@ -48,7 +48,7 @@ sleep 5;
     lock_status,
     lock_data
   FROM performance_schema.data_locks
-  ORDER BY 1,2,3;
+  ORDER BY ENGINE_TRANSACTION_ID,index_name,index_name,lock_type,lock_mode,lock_status,lock_data;
 
 --connection C1
   ROLLBACK;
