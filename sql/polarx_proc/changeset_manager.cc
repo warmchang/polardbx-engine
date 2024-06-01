@@ -134,7 +134,7 @@ int ChangesetManager::fence_change(const std::string &table_name) {
 int ChangesetManager::fetch_change(
     const std::string &table_name, bool delete_last_cs,
     std::vector<ChangesetResult *> &changes,
-    TABLE_SHARE *table_share) {
+    TABLE *table) {
   if (current_thd->db().str == nullptr) {
     my_error(ER_CHANGESET_COMMAND_ERROR, MYF(0), "please use database first");
     return 1;
@@ -145,7 +145,7 @@ int ChangesetManager::fetch_change(
     return 1;
   }
 
-  fetch_changeset(full_table_name, delete_last_cs, changes, table_share);
+  fetch_changeset(full_table_name, delete_last_cs, changes, table);
   return 0;
 }
 
@@ -423,14 +423,14 @@ inline void ChangesetManager::commit(const DBTableName &full_table_name,
 
 void ChangesetManager::fetch_changeset(
     const DBTableName &full_table_name, bool delete_last_cs,
-    std::vector<ChangesetResult *> &res, TABLE_SHARE *table_share) {
+    std::vector<ChangesetResult *> &res, TABLE *table) {
   polarx_rpc::CautoSpinRWLock lock(rw_lock, false, 2000);
   auto cs = get_changeset_ptr(full_table_name);
   if (cs == nullptr) {
     return;
   }
 
-  cs->fetch_pk(delete_last_cs, res, table_share);
+  cs->fetch_pk(delete_last_cs, res, table);
 }
 
 Changeset::Stats ChangesetManager::fetch_changeset_stats(

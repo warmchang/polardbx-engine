@@ -34,7 +34,7 @@ class ChangesetManager {
 
   int fetch_change(const std::string &table_name, bool delete_last_cs,
                    std::vector<ChangesetResult *> &changes,
-                   TABLE_SHARE *table_share);
+                   TABLE *table);
 
   int fetch_times(const std::string &table_name, Changeset::Stats &stats);
 
@@ -117,7 +117,7 @@ class ChangesetManager {
 
   void fetch_changeset(const DBTableName &full_table_name, bool delete_last_cs,
                        std::vector<ChangesetResult *> &res,
-                       TABLE_SHARE *table_share);
+                       TABLE *table);
 
   Changeset::Stats fetch_changeset_stats(const DBTableName &full_table_name);
 

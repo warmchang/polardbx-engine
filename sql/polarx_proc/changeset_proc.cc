@@ -220,8 +220,7 @@ void Sql_cmd_changeset_proc_fetch::send_result(THD *thd, bool error) {
   gChangesetManager.open_table(table_name, &table, TL_READ);
 
   std::vector<ChangesetResult *> changes;
-  if (gChangesetManager.fetch_change(table_name, delete_last_cs, changes,
-                                     table->s)) {
+  if (gChangesetManager.fetch_change(table_name, delete_last_cs, changes, table)) {
     my_printf_error(ER_CHANGESET_COMMAND_ERROR, "changeset fetch failed", 0);
     return;
   }
@@ -240,6 +239,9 @@ void Sql_cmd_changeset_proc_fetch::send_result(THD *thd, bool error) {
     if (m_proc->send_result_metadata(thd)) return;
   }
 
+  std::sort(changes.begin(), changes.end(), [](const ChangesetResult* a, const ChangesetResult* b) {
+        return *a < *b;
+    });
   for (auto row : changes) {
     proto->start_row();
     proto->store(row->get_op_string().data(), &my_charset_utf8mb3_bin);

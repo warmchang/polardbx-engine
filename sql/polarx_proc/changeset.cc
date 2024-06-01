@@ -231,7 +231,7 @@ void Changeset::rm_all_changeset_files() {
 
 void Changeset::fetch_pk(bool delete_last_cs,
                          std::vector<ChangesetResult *> &res,
-                         TABLE_SHARE *table_share) {
+                         TABLE *table) {
   MutexLock lock(&mutex);
 
   // free last fetch changeset data
@@ -246,9 +246,9 @@ void Changeset::fetch_pk(bool delete_last_cs,
   // 4. imm memory table (imm_pk_map)
   // 5. memory table (mem_pk_map)
   if (tmp_file_name != nullptr) {
-    get_result_list(tmp_file_name, res, table_share);
+    get_result_list(tmp_file_name, res, table);
   } else if (!tmp_map.empty()) {
-    get_result_list(tmp_map, res, table_share);
+    get_result_list(tmp_map, res, table);
   } else if (!file_list.empty()) {
     auto &item = file_list.front();
 
@@ -258,7 +258,7 @@ void Changeset::fetch_pk(bool delete_last_cs,
 
     tmp_file_name = item.first;
 
-    get_result_list(tmp_file_name, res, table_share);
+    get_result_list(tmp_file_name, res, table);
 
     file_list.pop_front();
   } else if (!imm_empty.load(std::memory_order_acquire)) {
@@ -277,22 +277,20 @@ void Changeset::fetch_pk(bool delete_last_cs,
 
     tmp_file_name = item.first;
 
-    get_result_list(tmp_file_name, res, table_share);
+    get_result_list(tmp_file_name, res, table);
 
     file_list.pop_front();
   } else {
     // swap tmp
     swap_pk();
 
-    get_result_list(tmp_map, res, table_share);
+    get_result_list(tmp_map, res, table);
   }
 }
 
 void Changeset::get_result_list(
     std::unordered_map<std::string, std::unique_ptr<Change>> &pk_map,
-    std::vector<ChangesetResult *> &res, TABLE_SHARE *table_share) {
-  uint primary_key = table_share->primary_key;
-  KEY *key_info = &table_share->key_info[primary_key];
+    std::vector<ChangesetResult *> &res, TABLE *table) {
 
   mutex.Unlock();
 
@@ -304,7 +302,7 @@ void Changeset::get_result_list(
     // only pk
     while (change != nullptr) {
       std::list<Field *> pk_field =
-          make_pk_fields(key_info, key, current_thd->mem_root);
+          make_pk_fields(table, key, current_thd->mem_root);
       res.push_back(new ChangesetResult(change->get_change_type(), pk_field));
       change = change->get_next();
     }
@@ -315,9 +313,7 @@ void Changeset::get_result_list(
 
 void Changeset::get_result_list(const char *file_name,
                                 std::vector<ChangesetResult *> &res,
-                                TABLE_SHARE *table_share) {
-  uint primary_key = table_share->primary_key;
-  KEY *key_info = &table_share->key_info[primary_key];
+                                TABLE *table) {
 
   mutex.Unlock();
 
@@ -343,7 +339,7 @@ void Changeset::get_result_list(const char *file_name,
             MYF(0));
 
     std::list<Field *> pk_field =
-        make_pk_fields(key_info, buffer, current_thd->mem_root);
+        make_pk_fields(table, buffer, current_thd->mem_root);
 
     res.push_back(new ChangesetResult(t, pk_field));
   }
@@ -393,12 +389,17 @@ Changeset::Changeset()
 
 Changeset::~Changeset() { close(); }
 
-std::list<Field *> Changeset::make_pk_fields(KEY *key_info, uchar *pk,
+std::list<Field *> Changeset::make_pk_fields(TABLE *table, uchar *pk,
                                              MEM_ROOT *mem_root) {
+  TABLE_SHARE *table_share = table->s;
+  uint primary_key = table_share->primary_key;
+  KEY *key_info = &table_share->key_info[primary_key];
+
   std::list<Field *> ret;
   for (uint i = 0; i < key_info->actual_key_parts; ++i) {
     // make field
     Field *field = key_info->key_part[i].field->clone(mem_root);
+    field->table = table;
     uint16 length = key_info->key_part[i].length;
 
     uchar *buffer = (uchar *)my_malloc(key_memory_CS_RESULT_BUFFER, length,
