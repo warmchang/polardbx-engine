@@ -102,8 +102,6 @@ bool Changeset_proc_fetch::my_send_result_metadata(
   }
   for (const auto &field : fields) {
     switch (field->type()) {
-      case MYSQL_TYPE_BIT:
-      case MYSQL_TYPE_GEOMETRY:
       case MYSQL_TYPE_YEAR:
       case MYSQL_TYPE_TINY:
       case MYSQL_TYPE_LONG:
@@ -129,13 +127,22 @@ bool Changeset_proc_fetch::my_send_result_metadata(
           item->decimals = field->field_length;
         break;
       }
-      case MYSQL_TYPE_FLOAT:
+      case MYSQL_TYPE_FLOAT: {
+        const Name_string field_name(field->field_name,
+                                     strlen(field->field_name));
+        if ((item = new Item_float(field_name, 0.0, DECIMAL_NOT_SPECIFIED,
+                                   field->field_length)) == nullptr)
+          DBUG_RETURN(NULL);
+        item->set_data_type_float();
+        break;
+      }
       case MYSQL_TYPE_DOUBLE: {
         const Name_string field_name(field->field_name,
                                      strlen(field->field_name));
         if ((item = new Item_float(field_name, 0.0, DECIMAL_NOT_SPECIFIED,
                                    field->field_length)) == nullptr)
           DBUG_RETURN(NULL);
+        item->set_data_type_double();
         break;
       }
       case MYSQL_TYPE_DECIMAL:
@@ -158,6 +165,8 @@ bool Changeset_proc_fetch::my_send_result_metadata(
           DBUG_RETURN(0);
         }
         break;
+      case MYSQL_TYPE_BIT:
+      case MYSQL_TYPE_GEOMETRY:
       case MYSQL_TYPE_VARCHAR:
         if (!(item = new Item_empty_string(
                   field->field_name, field->char_length(), field->charset()))) {
@@ -246,7 +255,6 @@ void Sql_cmd_changeset_proc_fetch::send_result(THD *thd, bool error) {
     proto->start_row();
     proto->store(row->get_op_string().data(), &my_charset_utf8mb3_bin);
     for (auto pk : row->pk_field_list) {
-      pk->table = table;
       pk->send_to_protocol(proto);
     }
     proto->end_row();
