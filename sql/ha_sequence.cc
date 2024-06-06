@@ -1438,6 +1438,21 @@ int ha_sequence::external_lock(THD *thd, int lock_type) {
 }
 
 /**
+  start stmt
+
+  @param[in]      thd         User connection
+  @param[in]      lock_typ    Lock type
+
+  @retval         0         Success
+  @retval         ~0        Failure
+*/
+int ha_sequence::start_stmt(THD *thd, thr_lock_type lock_type) {
+  DBUG_ENTER("ha_sequence::start_stmt");
+  assert(m_file);
+  DBUG_RETURN(m_file->start_stmt(thd, lock_type));
+}
+
+/**
   Scrolling the sequence cache by update the base table through autonomous
   transaction.
 
