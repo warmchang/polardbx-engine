@@ -443,6 +443,7 @@ SET @@session.lc_time_names=0/*!*/;
 SET @@session.collation_database=DEFAULT/*!*/;
 /*!80011 SET @@session.default_collation_for_utf8mb4=255*//*!*/;
 /*!80013 SET @@session.sql_require_primary_key=0*//*!*/;
+/*!80032 SET @@session.opt_flashback_area=0*//*!*/;
 CREATE TABLE t1 (c01 BIT)
 /*!*/;
 # at #
@@ -544,6 +545,7 @@ SET @@SESSION.GTID_NEXT= '#'/*!*/;
 # # server id #  end_log_pos # CRC32 # 	Query	thread_id=#	exec_time=#	error_code=0	Xid = #
 SET TIMESTAMP=#/*!*/;
 /*!80013 SET @@session.sql_require_primary_key=0*//*!*/;
+/*!80032 SET @@session.opt_flashback_area=0*//*!*/;
 CREATE TABLE t1 (c01 BIT(7))
 /*!*/;
 # at #
@@ -895,6 +897,7 @@ SET @@SESSION.GTID_NEXT= '#'/*!*/;
 # # server id #  end_log_pos # CRC32 # 	Query	thread_id=#	exec_time=#	error_code=0	Xid = #
 SET TIMESTAMP=#/*!*/;
 /*!80013 SET @@session.sql_require_primary_key=0*//*!*/;
+/*!80032 SET @@session.opt_flashback_area=0*//*!*/;
 CREATE TABLE t1 (a BIT(20), b CHAR(2))
 /*!*/;
 # at #
@@ -966,6 +969,7 @@ SET @@SESSION.GTID_NEXT= '#'/*!*/;
 # # server id #  end_log_pos # CRC32 # 	Query	thread_id=#	exec_time=#	error_code=0	Xid = #
 SET TIMESTAMP=#/*!*/;
 /*!80013 SET @@session.sql_require_primary_key=0*//*!*/;
+/*!80032 SET @@session.opt_flashback_area=0*//*!*/;
 CREATE TABLE t1 (c02 BIT(64))
 /*!*/;
 # at #
@@ -1129,6 +1133,7 @@ SET @@SESSION.GTID_NEXT= '#'/*!*/;
 # # server id #  end_log_pos # CRC32 # 	Query	thread_id=#	exec_time=#	error_code=0	Xid = #
 SET TIMESTAMP=#/*!*/;
 /*!80013 SET @@session.sql_require_primary_key=0*//*!*/;
+/*!80032 SET @@session.opt_flashback_area=0*//*!*/;
 CREATE TABLE t1 (c03 TINYINT)
 /*!*/;
 # at #
@@ -1300,6 +1305,7 @@ SET @@SESSION.GTID_NEXT= '#'/*!*/;
 # # server id #  end_log_pos # CRC32 # 	Query	thread_id=#	exec_time=#	error_code=0	Xid = #
 SET TIMESTAMP=#/*!*/;
 /*!80013 SET @@session.sql_require_primary_key=0*//*!*/;
+/*!80032 SET @@session.opt_flashback_area=0*//*!*/;
 CREATE TABLE t1 (c04 TINYINT UNSIGNED)
 /*!*/;
 # at #
@@ -1404,6 +1410,7 @@ SET @@SESSION.GTID_NEXT= '#'/*!*/;
 # # server id #  end_log_pos # CRC32 # 	Query	thread_id=#	exec_time=#	error_code=0	Xid = #
 SET TIMESTAMP=#/*!*/;
 /*!80013 SET @@session.sql_require_primary_key=0*//*!*/;
+/*!80032 SET @@session.opt_flashback_area=0*//*!*/;
 CREATE TABLE t1 (c06 BOOL)
 /*!*/;
 # at #
@@ -1505,6 +1512,7 @@ SET @@SESSION.GTID_NEXT= '#'/*!*/;
 # # server id #  end_log_pos # CRC32 # 	Query	thread_id=#	exec_time=#	error_code=0	Xid = #
 SET TIMESTAMP=#/*!*/;
 /*!80013 SET @@session.sql_require_primary_key=0*//*!*/;
+/*!80032 SET @@session.opt_flashback_area=0*//*!*/;
 CREATE TABLE t1 (c07 SMALLINT)
 /*!*/;
 # at #
@@ -1606,6 +1614,7 @@ SET @@SESSION.GTID_NEXT= '#'/*!*/;
 # # server id #  end_log_pos # CRC32 # 	Query	thread_id=#	exec_time=#	error_code=0	Xid = #
 SET TIMESTAMP=#/*!*/;
 /*!80013 SET @@session.sql_require_primary_key=0*//*!*/;
+/*!80032 SET @@session.opt_flashback_area=0*//*!*/;
 CREATE TABLE t1 (c08 SMALLINT UNSIGNED)
 /*!*/;
 # at #
@@ -1743,6 +1752,7 @@ SET @@SESSION.GTID_NEXT= '#'/*!*/;
 # # server id #  end_log_pos # CRC32 # 	Query	thread_id=#	exec_time=#	error_code=0	Xid = #
 SET TIMESTAMP=#/*!*/;
 /*!80013 SET @@session.sql_require_primary_key=0*//*!*/;
+/*!80032 SET @@session.opt_flashback_area=0*//*!*/;
 CREATE TABLE t1 (c10 MEDIUMINT)
 /*!*/;
 # at #
@@ -1844,6 +1854,7 @@ SET @@SESSION.GTID_NEXT= '#'/*!*/;
 # # server id #  end_log_pos # CRC32 # 	Query	thread_id=#	exec_time=#	error_code=0	Xid = #
 SET TIMESTAMP=#/*!*/;
 /*!80013 SET @@session.sql_require_primary_key=0*//*!*/;
+/*!80032 SET @@session.opt_flashback_area=0*//*!*/;
 CREATE TABLE t1 (c11 MEDIUMINT UNSIGNED)
 /*!*/;
 # at #
@@ -1981,6 +1992,7 @@ SET @@SESSION.GTID_NEXT= '#'/*!*/;
 # # server id #  end_log_pos # CRC32 # 	Query	thread_id=#	exec_time=#	error_code=0	Xid = #
 SET TIMESTAMP=#/*!*/;
 /*!80013 SET @@session.sql_require_primary_key=0*//*!*/;
+/*!80032 SET @@session.opt_flashback_area=0*//*!*/;
 CREATE TABLE t1 (c13 INT)
 /*!*/;
 # at #
@@ -2082,6 +2094,7 @@ SET @@SESSION.GTID_NEXT= '#'/*!*/;
 # # server id #  end_log_pos # CRC32 # 	Query	thread_id=#	exec_time=#	error_code=0	Xid = #
 SET TIMESTAMP=#/*!*/;
 /*!80013 SET @@session.sql_require_primary_key=0*//*!*/;
+/*!80032 SET @@session.opt_flashback_area=0*//*!*/;
 CREATE TABLE t1 (c14 INT UNSIGNED)
 /*!*/;
 # at #
@@ -2219,6 +2232,7 @@ SET @@SESSION.GTID_NEXT= '#'/*!*/;
 # # server id #  end_log_pos # CRC32 # 	Query	thread_id=#	exec_time=#	error_code=0	Xid = #
 SET TIMESTAMP=#/*!*/;
 /*!80013 SET @@session.sql_require_primary_key=0*//*!*/;
+/*!80032 SET @@session.opt_flashback_area=0*//*!*/;
 CREATE TABLE t1 (c16 BIGINT)
 /*!*/;
 # at #
@@ -2320,6 +2334,7 @@ SET @@SESSION.GTID_NEXT= '#'/*!*/;
 # # server id #  end_log_pos # CRC32 # 	Query	thread_id=#	exec_time=#	error_code=0	Xid = #
 SET TIMESTAMP=#/*!*/;
 /*!80013 SET @@session.sql_require_primary_key=0*//*!*/;
+/*!80032 SET @@session.opt_flashback_area=0*//*!*/;
 CREATE TABLE t1 (c17 BIGINT UNSIGNED)
 /*!*/;
 # at #
@@ -2457,6 +2472,7 @@ SET @@SESSION.GTID_NEXT= '#'/*!*/;
 # # server id #  end_log_pos # CRC32 # 	Query	thread_id=#	exec_time=#	error_code=0	Xid = #
 SET TIMESTAMP=#/*!*/;
 /*!80013 SET @@session.sql_require_primary_key=0*//*!*/;
+/*!80032 SET @@session.opt_flashback_area=0*//*!*/;
 CREATE TABLE t1 (c19 FLOAT)
 /*!*/;
 # at #
@@ -2558,6 +2574,7 @@ SET @@SESSION.GTID_NEXT= '#'/*!*/;
 # # server id #  end_log_pos # CRC32 # 	Query	thread_id=#	exec_time=#	error_code=0	Xid = #
 SET TIMESTAMP=#/*!*/;
 /*!80013 SET @@session.sql_require_primary_key=0*//*!*/;
+/*!80032 SET @@session.opt_flashback_area=0*//*!*/;
 CREATE TABLE t1 (c22 DOUBLE)
 /*!*/;
 # at #
@@ -2659,6 +2676,7 @@ SET @@SESSION.GTID_NEXT= '#'/*!*/;
 # # server id #  end_log_pos # CRC32 # 	Query	thread_id=#	exec_time=#	error_code=0	Xid = #
 SET TIMESTAMP=#/*!*/;
 /*!80013 SET @@session.sql_require_primary_key=0*//*!*/;
+/*!80032 SET @@session.opt_flashback_area=0*//*!*/;
 CREATE TABLE t1 (c25 DECIMAL(10,5))
 /*!*/;
 # at #
@@ -2791,6 +2809,7 @@ SET @@SESSION.GTID_NEXT= '#'/*!*/;
 # # server id #  end_log_pos # CRC32 # 	Query	thread_id=#	exec_time=#	error_code=0	Xid = #
 SET TIMESTAMP=#/*!*/;
 /*!80013 SET @@session.sql_require_primary_key=0*//*!*/;
+/*!80032 SET @@session.opt_flashback_area=0*//*!*/;
 CREATE TABLE t1 (c28 DATE)
 /*!*/;
 # at #
@@ -2892,6 +2911,7 @@ SET @@SESSION.GTID_NEXT= '#'/*!*/;
 # # server id #  end_log_pos # CRC32 # 	Query	thread_id=#	exec_time=#	error_code=0	Xid = #
 SET TIMESTAMP=#/*!*/;
 /*!80013 SET @@session.sql_require_primary_key=0*//*!*/;
+/*!80032 SET @@session.opt_flashback_area=0*//*!*/;
 CREATE TABLE t1 (c29 DATETIME)
 /*!*/;
 # at #
@@ -2995,6 +3015,7 @@ SET @@SESSION.GTID_NEXT= '#'/*!*/;
 SET TIMESTAMP=#/*!*/;
 SET @@session.explicit_defaults_for_timestamp=1/*!*/;
 /*!80013 SET @@session.sql_require_primary_key=0*//*!*/;
+/*!80032 SET @@session.opt_flashback_area=0*//*!*/;
 CREATE TABLE t1 (c30 TIMESTAMP)
 /*!*/;
 # at #
@@ -3096,6 +3117,7 @@ SET @@SESSION.GTID_NEXT= '#'/*!*/;
 # # server id #  end_log_pos # CRC32 # 	Query	thread_id=#	exec_time=#	error_code=0	Xid = #
 SET TIMESTAMP=#/*!*/;
 /*!80013 SET @@session.sql_require_primary_key=0*//*!*/;
+/*!80032 SET @@session.opt_flashback_area=0*//*!*/;
 CREATE TABLE t1 (c31 TIME)
 /*!*/;
 # at #
@@ -3197,6 +3219,7 @@ SET @@SESSION.GTID_NEXT= '#'/*!*/;
 # # server id #  end_log_pos # CRC32 # 	Query	thread_id=#	exec_time=#	error_code=0	Xid = #
 SET TIMESTAMP=#/*!*/;
 /*!80013 SET @@session.sql_require_primary_key=0*//*!*/;
+/*!80032 SET @@session.opt_flashback_area=0*//*!*/;
 CREATE TABLE t1 (c32 YEAR)
 /*!*/;
 # at #
@@ -3298,6 +3321,7 @@ SET @@SESSION.GTID_NEXT= '#'/*!*/;
 # # server id #  end_log_pos # CRC32 # 	Query	thread_id=#	exec_time=#	error_code=0	Xid = #
 SET TIMESTAMP=#/*!*/;
 /*!80013 SET @@session.sql_require_primary_key=0*//*!*/;
+/*!80032 SET @@session.opt_flashback_area=0*//*!*/;
 CREATE TABLE t1 (c33 CHAR)
 /*!*/;
 # at #
@@ -3399,6 +3423,7 @@ SET @@SESSION.GTID_NEXT= '#'/*!*/;
 # # server id #  end_log_pos # CRC32 # 	Query	thread_id=#	exec_time=#	error_code=0	Xid = #
 SET TIMESTAMP=#/*!*/;
 /*!80013 SET @@session.sql_require_primary_key=0*//*!*/;
+/*!80032 SET @@session.opt_flashback_area=0*//*!*/;
 CREATE TABLE t1 (c34 CHAR(0))
 /*!*/;
 # at #
@@ -3500,6 +3525,7 @@ SET @@SESSION.GTID_NEXT= '#'/*!*/;
 # # server id #  end_log_pos # CRC32 # 	Query	thread_id=#	exec_time=#	error_code=0	Xid = #
 SET TIMESTAMP=#/*!*/;
 /*!80013 SET @@session.sql_require_primary_key=0*//*!*/;
+/*!80032 SET @@session.opt_flashback_area=0*//*!*/;
 CREATE TABLE t1 (c35 CHAR(1))
 /*!*/;
 # at #
@@ -3601,6 +3627,7 @@ SET @@SESSION.GTID_NEXT= '#'/*!*/;
 # # server id #  end_log_pos # CRC32 # 	Query	thread_id=#	exec_time=#	error_code=0	Xid = #
 SET TIMESTAMP=#/*!*/;
 /*!80013 SET @@session.sql_require_primary_key=0*//*!*/;
+/*!80032 SET @@session.opt_flashback_area=0*//*!*/;
 CREATE TABLE t1 (c36 CHAR(255))
 /*!*/;
 # at #
@@ -3702,6 +3729,7 @@ SET @@SESSION.GTID_NEXT= '#'/*!*/;
 # # server id #  end_log_pos # CRC32 # 	Query	thread_id=#	exec_time=#	error_code=0	Xid = #
 SET TIMESTAMP=#/*!*/;
 /*!80013 SET @@session.sql_require_primary_key=0*//*!*/;
+/*!80032 SET @@session.opt_flashback_area=0*//*!*/;
 CREATE TABLE t1 (c37 NATIONAL CHAR)
 /*!*/;
 # at #
@@ -3803,6 +3831,7 @@ SET @@SESSION.GTID_NEXT= '#'/*!*/;
 # # server id #  end_log_pos # CRC32 # 	Query	thread_id=#	exec_time=#	error_code=0	Xid = #
 SET TIMESTAMP=#/*!*/;
 /*!80013 SET @@session.sql_require_primary_key=0*//*!*/;
+/*!80032 SET @@session.opt_flashback_area=0*//*!*/;
 CREATE TABLE t1 (c38 CHAR(0) CHARACTER SET utf8mb4)
 /*!*/;
 # at #
@@ -3904,6 +3933,7 @@ SET @@SESSION.GTID_NEXT= '#'/*!*/;
 # # server id #  end_log_pos # CRC32 # 	Query	thread_id=#	exec_time=#	error_code=0	Xid = #
 SET TIMESTAMP=#/*!*/;
 /*!80013 SET @@session.sql_require_primary_key=0*//*!*/;
+/*!80032 SET @@session.opt_flashback_area=0*//*!*/;
 CREATE TABLE t1 (c39 CHAR(1) CHARACTER SET utf8mb4)
 /*!*/;
 # at #
@@ -4005,6 +4035,7 @@ SET @@SESSION.GTID_NEXT= '#'/*!*/;
 # # server id #  end_log_pos # CRC32 # 	Query	thread_id=#	exec_time=#	error_code=0	Xid = #
 SET TIMESTAMP=#/*!*/;
 /*!80013 SET @@session.sql_require_primary_key=0*//*!*/;
+/*!80032 SET @@session.opt_flashback_area=0*//*!*/;
 CREATE TABLE t1 (c40 CHAR(255) CHARACTER SET utf8mb4)
 /*!*/;
 # at #
@@ -4140,6 +4171,7 @@ SET @@SESSION.GTID_NEXT= '#'/*!*/;
 # # server id #  end_log_pos # CRC32 # 	Query	thread_id=#	exec_time=#	error_code=0	Xid = #
 SET TIMESTAMP=#/*!*/;
 /*!80013 SET @@session.sql_require_primary_key=0*//*!*/;
+/*!80032 SET @@session.opt_flashback_area=0*//*!*/;
 CREATE TABLE t1 (c41 CHAR CHARACTER SET UCS2)
 /*!*/;
 # at #
@@ -4241,6 +4273,7 @@ SET @@SESSION.GTID_NEXT= '#'/*!*/;
 # # server id #  end_log_pos # CRC32 # 	Query	thread_id=#	exec_time=#	error_code=0	Xid = #
 SET TIMESTAMP=#/*!*/;
 /*!80013 SET @@session.sql_require_primary_key=0*//*!*/;
+/*!80032 SET @@session.opt_flashback_area=0*//*!*/;
 CREATE TABLE t1 (c42 CHAR(0) CHARACTER SET UCS2)
 /*!*/;
 # at #
@@ -4342,6 +4375,7 @@ SET @@SESSION.GTID_NEXT= '#'/*!*/;
 # # server id #  end_log_pos # CRC32 # 	Query	thread_id=#	exec_time=#	error_code=0	Xid = #
 SET TIMESTAMP=#/*!*/;
 /*!80013 SET @@session.sql_require_primary_key=0*//*!*/;
+/*!80032 SET @@session.opt_flashback_area=0*//*!*/;
 CREATE TABLE t1 (c43 CHAR(1) CHARACTER SET UCS2)
 /*!*/;
 # at #
@@ -4443,6 +4477,7 @@ SET @@SESSION.GTID_NEXT= '#'/*!*/;
 # # server id #  end_log_pos # CRC32 # 	Query	thread_id=#	exec_time=#	error_code=0	Xid = #
 SET TIMESTAMP=#/*!*/;
 /*!80013 SET @@session.sql_require_primary_key=0*//*!*/;
+/*!80032 SET @@session.opt_flashback_area=0*//*!*/;
 CREATE TABLE t1 (c44 CHAR(255) CHARACTER SET UCS2)
 /*!*/;
 # at #
@@ -4578,6 +4613,7 @@ SET @@SESSION.GTID_NEXT= '#'/*!*/;
 # # server id #  end_log_pos # CRC32 # 	Query	thread_id=#	exec_time=#	error_code=0	Xid = #
 SET TIMESTAMP=#/*!*/;
 /*!80013 SET @@session.sql_require_primary_key=0*//*!*/;
+/*!80032 SET @@session.opt_flashback_area=0*//*!*/;
 CREATE TABLE t1 (c45 VARCHAR(0))
 /*!*/;
 # at #
@@ -4679,6 +4715,7 @@ SET @@SESSION.GTID_NEXT= '#'/*!*/;
 # # server id #  end_log_pos # CRC32 # 	Query	thread_id=#	exec_time=#	error_code=0	Xid = #
 SET TIMESTAMP=#/*!*/;
 /*!80013 SET @@session.sql_require_primary_key=0*//*!*/;
+/*!80032 SET @@session.opt_flashback_area=0*//*!*/;
 CREATE TABLE t1 (c46 VARCHAR(1))
 /*!*/;
 # at #
@@ -4780,6 +4817,7 @@ SET @@SESSION.GTID_NEXT= '#'/*!*/;
 # # server id #  end_log_pos # CRC32 # 	Query	thread_id=#	exec_time=#	error_code=0	Xid = #
 SET TIMESTAMP=#/*!*/;
 /*!80013 SET @@session.sql_require_primary_key=0*//*!*/;
+/*!80032 SET @@session.opt_flashback_area=0*//*!*/;
 CREATE TABLE t1 (c47 VARCHAR(255))
 /*!*/;
 # at #
@@ -4881,6 +4919,7 @@ SET @@SESSION.GTID_NEXT= '#'/*!*/;
 # # server id #  end_log_pos # CRC32 # 	Query	thread_id=#	exec_time=#	error_code=0	Xid = #
 SET TIMESTAMP=#/*!*/;
 /*!80013 SET @@session.sql_require_primary_key=0*//*!*/;
+/*!80032 SET @@session.opt_flashback_area=0*//*!*/;
 CREATE TABLE t1 (c48 VARCHAR(261))
 /*!*/;
 # at #
@@ -4982,6 +5021,7 @@ SET @@SESSION.GTID_NEXT= '#'/*!*/;
 # # server id #  end_log_pos # CRC32 # 	Query	thread_id=#	exec_time=#	error_code=0	Xid = #
 SET TIMESTAMP=#/*!*/;
 /*!80013 SET @@session.sql_require_primary_key=0*//*!*/;
+/*!80032 SET @@session.opt_flashback_area=0*//*!*/;
 CREATE TABLE t1 (c49 VARCHAR(0) CHARACTER SET utf8mb4)
 /*!*/;
 # at #
@@ -5083,6 +5123,7 @@ SET @@SESSION.GTID_NEXT= '#'/*!*/;
 # # server id #  end_log_pos # CRC32 # 	Query	thread_id=#	exec_time=#	error_code=0	Xid = #
 SET TIMESTAMP=#/*!*/;
 /*!80013 SET @@session.sql_require_primary_key=0*//*!*/;
+/*!80032 SET @@session.opt_flashback_area=0*//*!*/;
 CREATE TABLE t1 (c50 VARCHAR(1) CHARACTER SET utf8mb4)
 /*!*/;
 # at #
@@ -5184,6 +5225,7 @@ SET @@SESSION.GTID_NEXT= '#'/*!*/;
 # # server id #  end_log_pos # CRC32 # 	Query	thread_id=#	exec_time=#	error_code=0	Xid = #
 SET TIMESTAMP=#/*!*/;
 /*!80013 SET @@session.sql_require_primary_key=0*//*!*/;
+/*!80032 SET @@session.opt_flashback_area=0*//*!*/;
 CREATE TABLE t1 (c51 VARCHAR(255) CHARACTER SET utf8mb4)
 /*!*/;
 # at #
@@ -5319,6 +5361,7 @@ SET @@SESSION.GTID_NEXT= '#'/*!*/;
 # # server id #  end_log_pos # CRC32 # 	Query	thread_id=#	exec_time=#	error_code=0	Xid = #
 SET TIMESTAMP=#/*!*/;
 /*!80013 SET @@session.sql_require_primary_key=0*//*!*/;
+/*!80032 SET @@session.opt_flashback_area=0*//*!*/;
 CREATE TABLE t1 (c52 VARCHAR(261) CHARACTER SET utf8mb4)
 /*!*/;
 # at #
@@ -5454,6 +5497,7 @@ SET @@SESSION.GTID_NEXT= '#'/*!*/;
 # # server id #  end_log_pos # CRC32 # 	Query	thread_id=#	exec_time=#	error_code=0	Xid = #
 SET TIMESTAMP=#/*!*/;
 /*!80013 SET @@session.sql_require_primary_key=0*//*!*/;
+/*!80032 SET @@session.opt_flashback_area=0*//*!*/;
 CREATE TABLE t1 (c53 VARCHAR(0) CHARACTER SET ucs2)
 /*!*/;
 # at #
@@ -5555,6 +5599,7 @@ SET @@SESSION.GTID_NEXT= '#'/*!*/;
 # # server id #  end_log_pos # CRC32 # 	Query	thread_id=#	exec_time=#	error_code=0	Xid = #
 SET TIMESTAMP=#/*!*/;
 /*!80013 SET @@session.sql_require_primary_key=0*//*!*/;
+/*!80032 SET @@session.opt_flashback_area=0*//*!*/;
 CREATE TABLE t1 (c54 VARCHAR(1) CHARACTER SET ucs2)
 /*!*/;
 # at #
@@ -5656,6 +5701,7 @@ SET @@SESSION.GTID_NEXT= '#'/*!*/;
 # # server id #  end_log_pos # CRC32 # 	Query	thread_id=#	exec_time=#	error_code=0	Xid = #
 SET TIMESTAMP=#/*!*/;
 /*!80013 SET @@session.sql_require_primary_key=0*//*!*/;
+/*!80032 SET @@session.opt_flashback_area=0*//*!*/;
 CREATE TABLE t1 (c55 VARCHAR(255) CHARACTER SET ucs2)
 /*!*/;
 # at #
@@ -5757,6 +5803,7 @@ SET @@SESSION.GTID_NEXT= '#'/*!*/;
 # # server id #  end_log_pos # CRC32 # 	Query	thread_id=#	exec_time=#	error_code=0	Xid = #
 SET TIMESTAMP=#/*!*/;
 /*!80013 SET @@session.sql_require_primary_key=0*//*!*/;
+/*!80032 SET @@session.opt_flashback_area=0*//*!*/;
 CREATE TABLE t1 (c56 VARCHAR(261) CHARACTER SET ucs2)
 /*!*/;
 # at #
@@ -5858,6 +5905,7 @@ SET @@SESSION.GTID_NEXT= '#'/*!*/;
 # # server id #  end_log_pos # CRC32 # 	Query	thread_id=#	exec_time=#	error_code=0	Xid = #
 SET TIMESTAMP=#/*!*/;
 /*!80013 SET @@session.sql_require_primary_key=0*//*!*/;
+/*!80032 SET @@session.opt_flashback_area=0*//*!*/;
 CREATE TABLE t1 (c57 BINARY)
 /*!*/;
 # at #
@@ -6021,6 +6069,7 @@ SET @@SESSION.GTID_NEXT= '#'/*!*/;
 # # server id #  end_log_pos # CRC32 # 	Query	thread_id=#	exec_time=#	error_code=0	Xid = #
 SET TIMESTAMP=#/*!*/;
 /*!80013 SET @@session.sql_require_primary_key=0*//*!*/;
+/*!80032 SET @@session.opt_flashback_area=0*//*!*/;
 CREATE TABLE t1 (c58 BINARY(0))
 /*!*/;
 # at #
@@ -6122,6 +6171,7 @@ SET @@SESSION.GTID_NEXT= '#'/*!*/;
 # # server id #  end_log_pos # CRC32 # 	Query	thread_id=#	exec_time=#	error_code=0	Xid = #
 SET TIMESTAMP=#/*!*/;
 /*!80013 SET @@session.sql_require_primary_key=0*//*!*/;
+/*!80032 SET @@session.opt_flashback_area=0*//*!*/;
 CREATE TABLE t1 (c59 BINARY(1))
 /*!*/;
 # at #
@@ -6285,6 +6335,7 @@ SET @@SESSION.GTID_NEXT= '#'/*!*/;
 # # server id #  end_log_pos # CRC32 # 	Query	thread_id=#	exec_time=#	error_code=0	Xid = #
 SET TIMESTAMP=#/*!*/;
 /*!80013 SET @@session.sql_require_primary_key=0*//*!*/;
+/*!80032 SET @@session.opt_flashback_area=0*//*!*/;
 CREATE TABLE t1 (c60 BINARY(255))
 /*!*/;
 # at #
@@ -6448,6 +6499,7 @@ SET @@SESSION.GTID_NEXT= '#'/*!*/;
 # # server id #  end_log_pos # CRC32 # 	Query	thread_id=#	exec_time=#	error_code=0	Xid = #
 SET TIMESTAMP=#/*!*/;
 /*!80013 SET @@session.sql_require_primary_key=0*//*!*/;
+/*!80032 SET @@session.opt_flashback_area=0*//*!*/;
 CREATE TABLE t1 (c61 VARBINARY(0))
 /*!*/;
 # at #
@@ -6549,6 +6601,7 @@ SET @@SESSION.GTID_NEXT= '#'/*!*/;
 # # server id #  end_log_pos # CRC32 # 	Query	thread_id=#	exec_time=#	error_code=0	Xid = #
 SET TIMESTAMP=#/*!*/;
 /*!80013 SET @@session.sql_require_primary_key=0*//*!*/;
+/*!80032 SET @@session.opt_flashback_area=0*//*!*/;
 CREATE TABLE t1 (c62 VARBINARY(1))
 /*!*/;
 # at #
@@ -6712,6 +6765,7 @@ SET @@SESSION.GTID_NEXT= '#'/*!*/;
 # # server id #  end_log_pos # CRC32 # 	Query	thread_id=#	exec_time=#	error_code=0	Xid = #
 SET TIMESTAMP=#/*!*/;
 /*!80013 SET @@session.sql_require_primary_key=0*//*!*/;
+/*!80032 SET @@session.opt_flashback_area=0*//*!*/;
 CREATE TABLE t1 (c63 VARBINARY(255))
 /*!*/;
 # at #
@@ -6875,6 +6929,7 @@ SET @@SESSION.GTID_NEXT= '#'/*!*/;
 # # server id #  end_log_pos # CRC32 # 	Query	thread_id=#	exec_time=#	error_code=0	Xid = #
 SET TIMESTAMP=#/*!*/;
 /*!80013 SET @@session.sql_require_primary_key=0*//*!*/;
+/*!80032 SET @@session.opt_flashback_area=0*//*!*/;
 CREATE TABLE t1 (c65 TINYBLOB)
 /*!*/;
 # at #
@@ -6976,6 +7031,7 @@ SET @@SESSION.GTID_NEXT= '#'/*!*/;
 # # server id #  end_log_pos # CRC32 # 	Query	thread_id=#	exec_time=#	error_code=0	Xid = #
 SET TIMESTAMP=#/*!*/;
 /*!80013 SET @@session.sql_require_primary_key=0*//*!*/;
+/*!80032 SET @@session.opt_flashback_area=0*//*!*/;
 CREATE TABLE t1 (c68 BLOB)
 /*!*/;
 # at #
@@ -7077,6 +7133,7 @@ SET @@SESSION.GTID_NEXT= '#'/*!*/;
 # # server id #  end_log_pos # CRC32 # 	Query	thread_id=#	exec_time=#	error_code=0	Xid = #
 SET TIMESTAMP=#/*!*/;
 /*!80013 SET @@session.sql_require_primary_key=0*//*!*/;
+/*!80032 SET @@session.opt_flashback_area=0*//*!*/;
 CREATE TABLE t1 (c71 MEDIUMBLOB)
 /*!*/;
 # at #
@@ -7178,6 +7235,7 @@ SET @@SESSION.GTID_NEXT= '#'/*!*/;
 # # server id #  end_log_pos # CRC32 # 	Query	thread_id=#	exec_time=#	error_code=0	Xid = #
 SET TIMESTAMP=#/*!*/;
 /*!80013 SET @@session.sql_require_primary_key=0*//*!*/;
+/*!80032 SET @@session.opt_flashback_area=0*//*!*/;
 CREATE TABLE t1 (c74 LONGBLOB)
 /*!*/;
 # at #
@@ -7279,6 +7337,7 @@ SET @@SESSION.GTID_NEXT= '#'/*!*/;
 # # server id #  end_log_pos # CRC32 # 	Query	thread_id=#	exec_time=#	error_code=0	Xid = #
 SET TIMESTAMP=#/*!*/;
 /*!80013 SET @@session.sql_require_primary_key=0*//*!*/;
+/*!80032 SET @@session.opt_flashback_area=0*//*!*/;
 CREATE TABLE t1 (c66 TINYTEXT)
 /*!*/;
 # at #
@@ -7380,6 +7439,7 @@ SET @@SESSION.GTID_NEXT= '#'/*!*/;
 # # server id #  end_log_pos # CRC32 # 	Query	thread_id=#	exec_time=#	error_code=0	Xid = #
 SET TIMESTAMP=#/*!*/;
 /*!80013 SET @@session.sql_require_primary_key=0*//*!*/;
+/*!80032 SET @@session.opt_flashback_area=0*//*!*/;
 CREATE TABLE t1 (c69 TEXT)
 /*!*/;
 # at #
@@ -7481,6 +7541,7 @@ SET @@SESSION.GTID_NEXT= '#'/*!*/;
 # # server id #  end_log_pos # CRC32 # 	Query	thread_id=#	exec_time=#	error_code=0	Xid = #
 SET TIMESTAMP=#/*!*/;
 /*!80013 SET @@session.sql_require_primary_key=0*//*!*/;
+/*!80032 SET @@session.opt_flashback_area=0*//*!*/;
 CREATE TABLE t1 (c72 MEDIUMTEXT)
 /*!*/;
 # at #
@@ -7582,6 +7643,7 @@ SET @@SESSION.GTID_NEXT= '#'/*!*/;
 # # server id #  end_log_pos # CRC32 # 	Query	thread_id=#	exec_time=#	error_code=0	Xid = #
 SET TIMESTAMP=#/*!*/;
 /*!80013 SET @@session.sql_require_primary_key=0*//*!*/;
+/*!80032 SET @@session.opt_flashback_area=0*//*!*/;
 CREATE TABLE t1 (c75 LONGTEXT)
 /*!*/;
 # at #
@@ -7683,6 +7745,7 @@ SET @@SESSION.GTID_NEXT= '#'/*!*/;
 # # server id #  end_log_pos # CRC32 # 	Query	thread_id=#	exec_time=#	error_code=0	Xid = #
 SET TIMESTAMP=#/*!*/;
 /*!80013 SET @@session.sql_require_primary_key=0*//*!*/;
+/*!80032 SET @@session.opt_flashback_area=0*//*!*/;
 CREATE TABLE t1 (c67 TINYTEXT CHARACTER SET UCS2)
 /*!*/;
 # at #
@@ -7784,6 +7847,7 @@ SET @@SESSION.GTID_NEXT= '#'/*!*/;
 # # server id #  end_log_pos # CRC32 # 	Query	thread_id=#	exec_time=#	error_code=0	Xid = #
 SET TIMESTAMP=#/*!*/;
 /*!80013 SET @@session.sql_require_primary_key=0*//*!*/;
+/*!80032 SET @@session.opt_flashback_area=0*//*!*/;
 CREATE TABLE t1 (c70 TEXT CHARACTER SET UCS2)
 /*!*/;
 # at #
@@ -7885,6 +7949,7 @@ SET @@SESSION.GTID_NEXT= '#'/*!*/;
 # # server id #  end_log_pos # CRC32 # 	Query	thread_id=#	exec_time=#	error_code=0	Xid = #
 SET TIMESTAMP=#/*!*/;
 /*!80013 SET @@session.sql_require_primary_key=0*//*!*/;
+/*!80032 SET @@session.opt_flashback_area=0*//*!*/;
 CREATE TABLE t1 (c73 MEDIUMTEXT CHARACTER SET UCS2)
 /*!*/;
 # at #
@@ -7986,6 +8051,7 @@ SET @@SESSION.GTID_NEXT= '#'/*!*/;
 # # server id #  end_log_pos # CRC32 # 	Query	thread_id=#	exec_time=#	error_code=0	Xid = #
 SET TIMESTAMP=#/*!*/;
 /*!80013 SET @@session.sql_require_primary_key=0*//*!*/;
+/*!80032 SET @@session.opt_flashback_area=0*//*!*/;
 CREATE TABLE t1 (c76 LONGTEXT CHARACTER SET UCS2)
 /*!*/;
 # at #
@@ -8087,6 +8153,7 @@ SET @@SESSION.GTID_NEXT= '#'/*!*/;
 # # server id #  end_log_pos # CRC32 # 	Query	thread_id=#	exec_time=#	error_code=0	Xid = #
 SET TIMESTAMP=#/*!*/;
 /*!80013 SET @@session.sql_require_primary_key=0*//*!*/;
+/*!80032 SET @@session.opt_flashback_area=0*//*!*/;
 CREATE TABLE t1 (c77 ENUM('a','b','c'))
 /*!*/;
 # at #
@@ -8188,6 +8255,7 @@ SET @@SESSION.GTID_NEXT= '#'/*!*/;
 # # server id #  end_log_pos # CRC32 # 	Query	thread_id=#	exec_time=#	error_code=0	Xid = #
 SET TIMESTAMP=#/*!*/;
 /*!80013 SET @@session.sql_require_primary_key=0*//*!*/;
+/*!80032 SET @@session.opt_flashback_area=0*//*!*/;
 CREATE TABLE t1 (c78 SET('a','b','c','d','e','f'))
 /*!*/;
 # at #
@@ -8475,6 +8543,7 @@ SET @@SESSION.GTID_NEXT= '#'/*!*/;
 # # server id #  end_log_pos # CRC32 # 	Query	thread_id=#	exec_time=#	error_code=0	Xid = #
 SET TIMESTAMP=#/*!*/;
 /*!80013 SET @@session.sql_require_primary_key=0*//*!*/;
+/*!80032 SET @@session.opt_flashback_area=0*//*!*/;
 CREATE TABLE t1 (
 c79 TIME(6), c80 TIME(5), c81 TIME(4),
 c82 TIME(3), c83 TIME(2), c84 TIME(1)
@@ -8626,6 +8695,7 @@ SET @@SESSION.GTID_NEXT= '#'/*!*/;
 # # server id #  end_log_pos # CRC32 # 	Query	thread_id=#	exec_time=#	error_code=0	Xid = #
 SET TIMESTAMP=#/*!*/;
 /*!80013 SET @@session.sql_require_primary_key=0*//*!*/;
+/*!80032 SET @@session.opt_flashback_area=0*//*!*/;
 CREATE TABLE t1 (
 c85 DATETIME(6), c86 DATETIME(5), c87 DATETIME(4),
 c88 DATETIME(3), c89 DATETIME(2), c90 DATETIME(1)
@@ -8778,6 +8848,7 @@ SET TIMESTAMP=#/*!*/;
 SET @@session.sql_mode=1073741824/*!*/;
 SET @@session.explicit_defaults_for_timestamp=1/*!*/;
 /*!80013 SET @@session.sql_require_primary_key=0*//*!*/;
+/*!80032 SET @@session.opt_flashback_area=0*//*!*/;
 CREATE TABLE t1 (
 c85 TIMESTAMP(6), c86 TIMESTAMP(5), c87 TIMESTAMP(4),
 c88 TIMESTAMP(3), c89 TIMESTAMP(2), c90 TIMESTAMP(1)
@@ -8929,6 +9000,7 @@ SET @@SESSION.GTID_NEXT= '#'/*!*/;
 SET TIMESTAMP=#/*!*/;
 SET @@session.sql_mode=1168113696/*!*/;
 /*!80013 SET @@session.sql_require_primary_key=0*//*!*/;
+/*!80032 SET @@session.opt_flashback_area=0*//*!*/;
 CREATE TABLE t1 (a int NOT NULL DEFAULT 0, b int NOT NULL DEFAULT 0)
 /*!*/;
 # at #
@@ -8949,6 +9021,7 @@ SET @@SESSION.GTID_NEXT= '#'/*!*/;
 # # server id #  end_log_pos # CRC32 # 	Query	thread_id=#	exec_time=#	error_code=0	Xid = #
 SET TIMESTAMP=#/*!*/;
 /*!80013 SET @@session.sql_require_primary_key=0*//*!*/;
+/*!80032 SET @@session.opt_flashback_area=0*//*!*/;
 CREATE TABLE t2 (a int NOT NULL DEFAULT 0, b int NOT NULL DEFAULT 0)
 /*!*/;
 # at #
@@ -9177,6 +9250,7 @@ SET @@SESSION.GTID_NEXT= '#'/*!*/;
 # # server id #  end_log_pos # CRC32 # 	Query	thread_id=#	exec_time=#	error_code=0	Xid = #
 SET TIMESTAMP=#/*!*/;
 /*!80013 SET @@session.sql_require_primary_key=0*//*!*/;
+/*!80032 SET @@session.opt_flashback_area=0*//*!*/;
 CREATE TABLE t1(a BINARY(16), b VARBINARY(32))
 /*!*/;
 # at #
@@ -9315,6 +9389,7 @@ SET @@SESSION.GTID_NEXT= '#'/*!*/;
 # # server id #  end_log_pos # CRC32 # 	Query	thread_id=#	exec_time=#	error_code=0	Xid = #
 SET TIMESTAMP=#/*!*/;
 /*!80013 SET @@session.sql_require_primary_key=0*//*!*/;
+/*!80032 SET @@session.opt_flashback_area=0*//*!*/;
 CREATE TABLE t1(i INT, a CHAR(16), b VARCHAR(32))
 /*!*/;
 # at #
