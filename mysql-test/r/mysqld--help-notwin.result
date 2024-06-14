@@ -439,6 +439,8 @@ The following options may be given as the first argument:
  prefetch window size
  --consensus-replicate-with-cache-log 
  set server to replicate with cache log
+ --consensus-reset-mts-info 
+ reset mts info when force change meta
  --consensus-safe-for-reset-master 
  insert Consensus_empty event into binblog after reset
  master
@@ -2202,6 +2204,7 @@ consensus-prefetch-fast-fetch FALSE
 consensus-prefetch-wakeup-ratio 2
 consensus-prefetch-window-size 10
 consensus-replicate-with-cache-log FALSE
+consensus-reset-mts-info FALSE
 consensus-safe-for-reset-master FALSE
 consensus-send-timeout 0
 consensus-sync-follower-meta-interva 1

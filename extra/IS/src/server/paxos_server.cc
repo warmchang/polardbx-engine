@@ -536,9 +536,6 @@ void RemoteServer::sendMsgFuncInternal(bool lockless, bool force, void *ptr,
       heartbeatTimer->restart();
     }
     return;
-  } else if (msg->msgtype() == Paxos::AppendLog && force) {
-    // reset some fields in pkt to make sure follower regard it as heartbeat
-    msg->clear_prevlogterm();
   }
 
   if (paxos->cdrMgr_.inRecovery) {

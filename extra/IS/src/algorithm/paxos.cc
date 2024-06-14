@@ -2036,7 +2036,6 @@ int Paxos::onAppendLog(PaxosMsg *msg, PaxosMsg *rsp) {
         currentTerm_.load(), msg->term(), lastLogIndex);
     return 0;
   }
-  assert(msg->entries_size() > 0);
 
   if (prevLogIndex > lastLogIndex) {
     uint64_t msgEntrieSize = msg->entries_size();
@@ -2291,8 +2290,9 @@ int Paxos::onAppendLog(PaxosMsg *msg, PaxosMsg *rsp) {
             node->entries.begin()->term());
       }
       delete node;
-    } else
+    } else {
       ++(stats_.countOnHeartbeat);
+    }
 
     // rsp->set_lastlogindex(log_->getLastLogIndex());
 
@@ -3065,6 +3065,12 @@ uint64_t Paxos::appendLogFillForEach(PaxosMsg *msg, RemoteServer *server,
         /* XXX in EmptyMode we send 1 entty */
         break;
       }
+    }
+    if (lastSendLogIndex >= nextIndex && size == 0) {
+      msg->clear_prevlogindex();
+      msg->clear_prevlogterm();
+      msg->clear_nocache();
+      return size;
     }
 
     /*
