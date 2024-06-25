@@ -1041,6 +1041,9 @@ ulint trx_erase(ulint n_purge_threads, /*!< in: number of purge tasks
     node->free_lob_pages();
   }
 
+  DBUG_EXECUTE_IF(
+      "crash_during_erase", if (n_pages_handled >= 3) { DBUG_SUICIDE(); });
+
   ut_a(!srv_upgrade_old_undo_found);
   /** trx_erase_truncate will always truncate current sp log, so the current
   sp log must be all erased, which is specified by next_sp_log == true */
