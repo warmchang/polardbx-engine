@@ -39,6 +39,7 @@ this program; if not, write to the Free Software Foundation, Inc.,
 #include "sql/dd/types/column_type_element.h"
 
 #include "btr0pcur.h"
+#include "ddl0impl-builder.h"
 #include "dict0boot.h"
 #include "dict0crea.h"
 #include "dict0dd.h"
@@ -4890,6 +4891,10 @@ dberr_t row_import_for_mysql(dict_table_t *table, dd::Table *table_def,
   table->autoinc_field_no = ULINT_UNDEFINED;
 
   ut_a(err == DB_SUCCESS);
+
+  ib::info() << "Initiating index load operation with a MLOG_INDEX_LOAD redo log.";
+  ddl::Builder::write_redo(index);
+  ib::info() << "The MLOG_INDEX_LOAD redo log has been successfully written and committed.";
 
   /* After discard, sdi_table->ibd_file_missing is set to true.
   This is avoid to purge on SDI tables after discard.
