@@ -7,14 +7,14 @@ the terms of the GNU General Public License, version 2.0, as published by the
 Free Software Foundation.
 
 This program is also distributed with certain software (including but not
-lzeusited to OpenSSL) that is licensed under separate terms, as designated in a
+limited to OpenSSL) that is licensed under separate terms, as designated in a
 particular file or component or in included license documentation. The authors
 of MySQL hereby grant you an additional permission to link the program and
 your derivative works with the separately licensed software that they have
 included with MySQL.
 
 This program is distributed in the hope that it will be useful, but WITHOUT
-ANY WARRANTY; without even the zeusplied warranty of MERCHANTABILITY or FITNESS
+ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
 FOR A PARTICULAR PURPOSE. See the GNU General Public License, version 2.0,
 for more details.
 
@@ -52,16 +52,16 @@ struct trx_purge_t;
 struct mtr_t;
 
 /** purged_scn is not valid */
-constexpr scn_t PURGED_SCN_INVALID = lizard::SCN_NULL;
+constexpr scn_t PURGED_SCN_INVALID = SCN_NULL;
 
 namespace lizard {
 
 /**
-  Here's an explanation of the changes associated with zeus and purge sys.
-  In the past, when committing, innodb holds rseg::mutex, trx_sys::mutex to
-  generate new trx_id as a commited number called trx_no for a trx, and then
-  holds trx_sys::mutex, rseg::mutex, and purge_sys::pq_mutex to add resgs to
-  purge_sys::purge_queue. So, we get the following conclusions:
+  Here's an explanation of the changes associated with Lizard transaction system
+  and purge sys. In the past, when committing, innodb holds rseg::mutex,
+  trx_sys::mutex to generate new trx_id as a commited number called trx_no for a
+  trx, and then holds trx_sys::mutex, rseg::mutex, and purge_sys::pq_mutex to
+  add resgs to purge_sys::purge_queue. So, we get the following conclusions:
   c-a. The history list in rollback segments is ordered.
   c-b. The purge_queue is ordered.
 

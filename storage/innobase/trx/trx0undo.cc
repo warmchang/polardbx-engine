@@ -560,7 +560,7 @@ ulint trx_undo_header_create(page_t *undo_page, /*!< in/out: undo log segment
   if (prev_image) {
     /** Copy commit scn info */
     commit_mark_t cmmt = lizard::trx_undo_hdr_read_cmmt(log_hdr, mtr);
-    if (!commit_mark_is_uninitial(cmmt)) *prev_image = cmmt;
+    if (!cmmt.is_uninitial()) *prev_image = cmmt;
   }
 
   /** Init the scn as NULL */
@@ -1629,10 +1629,13 @@ trx_undo_t *trx_undo_mem_create(trx_rseg_t *rseg, ulint id, ulint type,
   undo->slot_addr = slot_addr;
 
   /** Lizard: init undo scn */
-  undo->cmmt = CMMT_NULL;
-  undo->prev_image = CMMT_NULL;
-  undo->txn_ext_storage = TXN_EXT_STORAGE_NONE;
-  undo->txn_tags_1 = 0;
+  undo->cmmt.reset();
+  undo->prev_image.reset();
+  undo->xes_storage = XES_ALLOCATED_NONE;
+  undo->tags = 0;
+  undo->pmmt.reset();
+  undo->branch.reset();
+  undo->maddr.reset();
 
   /** For txn undo, we initialize the txn fields directly if a physical txn undo
    * header has been created. */
@@ -1690,10 +1693,13 @@ static void trx_undo_mem_init_for_reuse(
   undo->slot_addr = slot_addr;
 
   /** Lizard: init undo scn */
-  undo->cmmt = CMMT_NULL;
-  undo->prev_image = CMMT_NULL;
-  undo->txn_ext_storage = TXN_EXT_STORAGE_NONE;
-  undo->txn_tags_1 = 0;
+  undo->cmmt.reset();
+  undo->prev_image.reset();
+  undo->xes_storage = XES_ALLOCATED_NONE;
+  undo->tags = 0;
+  undo->pmmt.reset();
+  undo->branch.reset();
+  undo->maddr.reset();
 
   /** For txn undo, we initialize the txn fields directly. */
   if (undo->type == TRX_UNDO_TXN) {
@@ -1740,7 +1746,7 @@ void trx_undo_mem_free(trx_undo_t *undo) /*!< in: the undo object to be freed */
   page_t *undo_page;
   commit_mark_t prev_image = CMMT_LOST;
   slot_addr_t slot_addr;
-  uint8 txn_ext_storage = TXN_EXT_STORAGE_NONE;
+  uint8 xes_storage = XES_ALLOCATED_NONE;
 
   ut_ad(mutex_own(&(rseg->mutex)));
 
@@ -1775,10 +1781,10 @@ void trx_undo_mem_free(trx_undo_t *undo) /*!< in: the undo object to be freed */
 
   /** Lizard: special for txn undo */
   if (type == TRX_UNDO_TXN) {
-    txn_ext_storage = TXN_EXT_STORAGE_V1;
+    xes_storage = XES_ALLOCATED_V1;
     /** Add space for txn extension and initialize the fields. */
     lizard::trx_undo_header_add_space_for_txn(
-        rseg, undo_page, mtr, offset, txn_ext_storage, &slot_addr, &prev_image);
+        rseg, undo_page, mtr, offset, xes_storage, &slot_addr, &prev_image);
   } else {
     /** Slot is come from txn undo */
     slot_addr = lizard::trx_undo_hdr_write_slot(undo_page + offset, trx, mtr);
@@ -1791,7 +1797,7 @@ void trx_undo_mem_free(trx_undo_t *undo) /*!< in: the undo object to be freed */
   if (type == TRX_UNDO_TXN) {
     ut_ad((*undo)->flag == TRX_UNDO_FLAG_TXN);
 
-    (*undo)->txn_ext_storage = txn_ext_storage;
+    (*undo)->xes_storage = xes_storage;
 
     lizard::txn_undo_hash_insert(*undo);
 
@@ -1823,7 +1829,7 @@ trx_undo_t *trx_undo_reuse_cached(trx_t *trx, trx_rseg_t *rseg, ulint type,
   trx_undo_t *undo;
   commit_mark_t prev_image = CMMT_LOST;
   slot_addr_t slot_addr;
-  uint8 txn_ext_storage = TXN_EXT_STORAGE_NONE;
+  uint8 xes_storage = XES_ALLOCATED_NONE;
 
   ut_ad(mutex_own(&(rseg->mutex)));
 
@@ -1898,9 +1904,9 @@ trx_undo_t *trx_undo_reuse_cached(trx_t *trx, trx_rseg_t *rseg, ulint type,
     trx_undo_header_add_space_for_xid(undo_page, undo_page + offset, mtr,
                                       gtid_storage);
 
-    txn_ext_storage = TXN_EXT_STORAGE_V1;
+    xes_storage = XES_ALLOCATED_V1;
     lizard::trx_undo_header_add_space_for_txn(
-        rseg, undo_page, mtr, offset, txn_ext_storage, &slot_addr, &prev_image);
+        rseg, undo_page, mtr, offset, xes_storage, &slot_addr, &prev_image);
     ut_ad(slot_addr.is_redo());
     assert_commit_mark_allocated(prev_image);
   }
@@ -1910,7 +1916,7 @@ trx_undo_t *trx_undo_reuse_cached(trx_t *trx, trx_rseg_t *rseg, ulint type,
   undo->m_gtid_storage = gtid_storage;
 
   if (type == TRX_UNDO_TXN) {
-    undo->txn_ext_storage = txn_ext_storage;
+    undo->xes_storage = xes_storage;
     ut_ad(undo->flag == TRX_UNDO_FLAG_TXN);
   }
   return (undo);
@@ -2178,9 +2184,15 @@ page_t *trx_undo_set_prepared_in_tc(trx_t *trx, trx_undo_t *undo, mtr_t *mtr) {
   /* Write GTID information if there. */
   trx_undo_gtid_write(trx, undo_header, undo, mtr, true);
 
+  /** Write async commit information if there, including proposal info and
+  branch info. */
+  lizard::trx_prepare_mark(trx, undo, undo_header, mtr);
+
   undo->set_prepared_in_tc();
 
   mlog_write_ulint(seg_hdr + TRX_UNDO_STATE, undo->state, MLOG_2BYTES, mtr);
+
+  undo_proposal_mark_validation(undo);
 
   return (undo_page);
 }

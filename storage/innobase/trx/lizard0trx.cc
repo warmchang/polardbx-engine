@@ -33,7 +33,15 @@ this program; if not, write to the Free Software Foundation, Inc.,
 #include "lizard0trx.h"
 #include "lizard0cleanout.h"
 #include "lizard0row.h"
+#include "lizard0undo.h"
 #include "trx0trx.h"
+
+#ifndef UNIV_HOTBACKUP
+#include <sql_class.h>
+#endif
+
+/* To get current session thread default THD */
+THD *thd_get_current_thd();
 
 namespace lizard {
 
@@ -69,6 +77,21 @@ void cleanout_rows_at_commit(trx_t *trx) {
                     trx->txn_desc.cmmt.gcn};
 
   commit_cleanout_do(trx, txn_rec);
+}
+
+/** In order to optimize performance of multi-branch execution on one DN,
+ *  XA branchs will be divided into XA MASTER AND XA SLAVE, they can be
+ *  executed perallel and share same SCN when MVCC.
+ *
+ *  Check if trx is xa slave branch.
+ *
+ *  @param[in]	trx
+ *
+ *  @retval	true	yes
+ *  @retval	false	no */
+bool trx_is_xa_slave(const trx_t *trx) {
+  assert_trx_commit_mark_allocated(trx);
+  return !trx->txn_desc.maddr.is_null();
 }
 
 }  // namespace lizard

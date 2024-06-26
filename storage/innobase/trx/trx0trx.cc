@@ -1728,7 +1728,7 @@ static bool trx_write_serialisation_history(
 
     /** Add the rseg into purge queue */
     if (has_collected) {
-      ut_ad(elem.get_scn() != lizard::SCN_NULL);
+      ut_ad(elem.get_scn() != SCN_NULL);
       lizard::trx_add_rsegs_for_purge(cmmt, &elem);
     }
   }

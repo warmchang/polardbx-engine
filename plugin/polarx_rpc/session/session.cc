@@ -386,13 +386,12 @@ err_t Csession::sql_stmt_execute(const PolarXRPC::Sql::StmtExecute &msg) {
     thd->variables.innodb_current_snapshot_gcn = true;
   if (msg.has_snapshot_seq()) {
     thd->variables.innodb_snapshot_gcn = msg.snapshot_seq();
-    thd->owned_vision_gcn.set(
-        MYSQL_CSR_ASSIGNED, thd->variables.innodb_snapshot_gcn, MYSQL_SCN_NULL);
+    thd->owned_vision_gcn = {csr_t::CSR_ASSIGNED,
+                             thd->variables.innodb_snapshot_gcn, SCN_NULL};
   }
   if (msg.has_commit_seq()) {
     thd->variables.innodb_commit_gcn = msg.commit_seq();
-    thd->owned_commit_gcn.set(thd->variables.innodb_commit_gcn,
-                              MYSQL_CSR_ASSIGNED);
+    thd->owned_commit_gcn.assign_from_var(thd->variables.innodb_commit_gcn);
   }
   if (msg.has_query_via_flashback_area() && msg.query_via_flashback_area()) {
     thd->variables.opt_query_via_flashback_area = true;
@@ -620,13 +619,12 @@ err_t Csession::sql_plan_execute(const PolarXRPC::ExecPlan::ExecPlan &msg) {
     thd->variables.innodb_current_snapshot_gcn = true;
   if (msg.has_snapshot_seq()) {
     thd->variables.innodb_snapshot_gcn = msg.snapshot_seq();
-    thd->owned_vision_gcn.set(
-        MYSQL_CSR_ASSIGNED, thd->variables.innodb_snapshot_gcn, MYSQL_SCN_NULL);
+    thd->owned_vision_gcn = {csr_t::CSR_ASSIGNED,
+                             thd->variables.innodb_snapshot_gcn, SCN_NULL};
   }
   if (msg.has_commit_seq()) {
     thd->variables.innodb_commit_gcn = msg.commit_seq();
-    thd->owned_commit_gcn.set(thd->variables.innodb_commit_gcn,
-                              MYSQL_CSR_ASSIGNED);
+    thd->owned_commit_gcn.assign_from_var(thd->variables.innodb_commit_gcn);
   }
   if (msg.has_query_via_flashback_area() && msg.query_via_flashback_area()) {
     thd->variables.opt_query_via_flashback_area = true;

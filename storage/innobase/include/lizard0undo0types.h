@@ -39,8 +39,9 @@ this program; if not, write to the Free Software Foundation, Inc.,
 
 #include "lizard0scn0types.h"
 #include "lizard0txn.h"
+#include "lizard0txn0service.h"
 
-#include "sql/lizard/lizard_rpl_gcn.h"
+#include "sql/lizard/lizard_service.h"
 
 struct trx_rseg_t;
 struct trx_undo_t;
@@ -121,9 +122,6 @@ struct slot_addr_t {
 
 typedef struct slot_addr_t slot_addr_t;
 
-/** Slot ptr in undo header. */
-typedef ib_id_t slot_ptr_t;
-
 /** Compare function */
 inline bool operator==(const slot_addr_t &lhs, const slot_addr_t &rhs) {
   return (lhs.offset == rhs.offset && lhs.page_no == rhs.page_no &&
@@ -164,6 +162,8 @@ struct undo_addr_t {
   bool state;
   /** Commit number source for gcn */
   csr_t csr;
+  /** True if share commit number with others. */
+  bool share_cn;
 
  public:
   undo_addr_t(const slot_addr_t &slot_addr, bool state_arg, csr_t csr_arg)
@@ -171,7 +171,8 @@ struct undo_addr_t {
         page_no(slot_addr.page_no),
         offset(slot_addr.offset),
         state(state_arg),
-        csr(csr_arg) {}
+        csr(csr_arg),
+        share_cn(false) {}
 
   undo_addr_t()
       : space_id(0), page_no(0), offset(0), state(false), csr(CSR_AUTOMATIC) {}
@@ -190,7 +191,8 @@ typedef struct undo_addr_t undo_addr_t;
 
    1  bit     active/commit state (0:active 1:commit)
    1  bit     commit source
-   7  bit     reserved unused
+   1  bit     share commit number
+   6  bit     reserved unused
    7  bit     undo space number (1-127)
    32 bit     page no (4 bytes)
    16 bit     Offset of undo log header (2 bytes)
@@ -206,9 +208,14 @@ typedef struct undo_addr_t undo_addr_t;
 #define UBA_WIDTH_SPACE_ID 7
 
 #define UBA_POS_UNUSED (UBA_POS_SPACE_ID + UBA_WIDTH_SPACE_ID)
-#define UBA_WIDTH_UNUSED 7
+#define UBA_WIDTH_UNUSED 6
 
-#define UBA_POS_CSR (UBA_POS_UNUSED + UBA_WIDTH_UNUSED)
+#define UBA_POS_SHARE_CN (UBA_POS_UNUSED + UBA_WIDTH_UNUSED)
+#define UBA_WIDTH_SHARE_CN 1
+
+#define UBA_MASK_SHARE_CN ((~(~0ULL << UBA_WIDTH_SHARE_CN)) << UBA_POS_SHARE_CN)
+
+#define UBA_POS_CSR (UBA_POS_SHARE_CN + UBA_WIDTH_SHARE_CN)
 #define UBA_WIDTH_CSR 1
 
 #define UBA_MASK_CSR ((~(~0ULL << UBA_WIDTH_CSR)) << UBA_POS_CSR)
@@ -234,8 +241,21 @@ static_assert(UBA_POS_SPACE_ID == 48, "UBA space id from 48th bits");
 /** Undo log header address in record */
 typedef ib_id_t undo_ptr_t;
 
+/** NULL value of slot ptr  */
+constexpr undo_ptr_t UNDO_PTR_NULL = std::numeric_limits<undo_ptr_t>::min();
+
 /** Scn in record */
 typedef scn_t scn_id_t;
+
+/**
+  XA branch info structure:
+  {n_globals, n_locals}
+*/
+
+struct xes_tags_t {
+  bool is_rollback;
+  csr_t csr;
+};
 
 /**
   The transaction description:
@@ -249,17 +269,37 @@ struct txn_desc_t {
   undo_ptr_t undo_ptr;
   /** scn number */
   commit_mark_t cmmt;
+  /** proposal commit number. */
+  proposal_mark_t pmmt;
+  /** branch info */
+  xa_branch_t branch;
+  /** Master txn address for async commit. */
+  xa_addr_t maddr;
 
  public:
-  txn_desc_t();
+  txn_desc_t() : undo_ptr(UNDO_PTR_NULL), cmmt(), pmmt(), branch(), maddr() {}
 
-  void reset();
+  void reset() {
+    undo_ptr = UNDO_PTR_NULL;
+    cmmt.reset();
+    pmmt.reset();
+    branch.reset();
+    maddr.reset();
+  }
+
 
   /** assemble cmmt and undo ptr */
   void assemble(const commit_mark_t &mark, const slot_addr_t &slot_addr);
 
   /** assemble undo ptr */
   void assemble_undo_ptr(const slot_addr_t &slot_addr);
+
+  void resurrect_xa(const proposal_mark_t &pmmt, const xa_branch_t &branch,
+                    const xa_addr_t &maddr);
+
+  void copy_xa_when_prepare(const MyGCN &xa_gcn, const xa_branch_t &xa_branch);
+
+  void copy_xa_when_commit(const MyGCN &xa_gcn, const xa_addr_t &xa_maddr);
 };
 
 /**
@@ -381,6 +421,40 @@ enum txn_state_t {
 };
 
 struct txn_undo_hdr_t {
+ public:
+  txn_undo_hdr_t()
+      : image(),
+        slot_ptr(0),
+        trx_id(0),
+        magic_n(0),
+        prev_image(),
+        state(0),
+        xes_storage(0),
+        tags(0),
+        is_2pp(false),
+        pmmt(),
+        branch(),
+        maddr() {}
+
+  txn_undo_hdr_t(commit_mark_t image_arg, slot_ptr_t slot_ptr_arg,
+                 trx_id_t trx_id_arg, ulint magic_n_arg,
+                 commit_mark_t prev_image_arg, ulint state_arg,
+                 ulint xes_storage_arg, ulint tags_arg, bool is_2pp_arg,
+                 proposal_mark_t pmmt_arg, xa_branch_t branch_arg,
+                 xa_addr_t addr_arg)
+      : image(image_arg),
+        slot_ptr(slot_ptr_arg),
+        trx_id(trx_id_arg),
+        magic_n(magic_n_arg),
+        prev_image(prev_image_arg),
+        state(state_arg),
+        xes_storage(xes_storage_arg),
+        tags(tags_arg),
+        is_2pp(is_2pp_arg),
+        pmmt(pmmt_arg),
+        branch(branch_arg),
+        maddr(addr_arg) {}
+
   /** commit image in txn undo header */
   commit_mark_t image;
   /** slot address */
@@ -395,18 +469,31 @@ struct txn_undo_hdr_t {
   or TXN_UNDO_LOG_PURGED */
   ulint state;
   /** A flag determining how to explain the txn extension */
-  ulint ext_storage;
+  ulint xes_storage;
   /** flags of the TXN. For example: 0x01 means rollback. */
-  ulint tags_1;
+  ulint tags;
   /** true if the TXN is two phase purge. */
   bool is_2pp;
+  /** AC XA PMMT info */
+  proposal_mark_t pmmt;
+  /** XA branch count info */
+  xa_branch_t branch;
+  /** XA master branch info */
+  xa_addr_t maddr;
   /** Return true if the transaction was eventually rolled back. */
   bool is_rollback() const;
   /** Return true if the txn has new_flags. */
-  bool have_tags_1() const;
+  bool tags_allocated() const;
+  bool ac_prepare_allocated() const;
+  bool ac_commit_allocated() const;
 };
 
 struct txn_lookup_t {
+ public:
+  txn_lookup_t()
+      : txn_undo_hdr(),
+        real_image(),
+        real_state(txn_state_t::TXN_STATE_ACTIVE) {}
   /** The raw data in txn header */
   txn_undo_hdr_t txn_undo_hdr;
   /**
@@ -436,15 +523,28 @@ inline csr_t undo_ptr_get_csr(undo_ptr_t undo_ptr) {
   return static_cast<csr_t>((undo_ptr & UBA_MASK_CSR) >> UBA_POS_CSR);
 }
 
-inline void undo_ptr_set_commit(undo_ptr_t *undo_ptr, csr_t csr) {
+inline bool undo_ptr_get_share_cn(undo_ptr_t undo_ptr) {
+  return static_cast<csr_t>((undo_ptr & UBA_MASK_SHARE_CN) >> UBA_POS_SHARE_CN);
+}
+
+inline void undo_ptr_set_commit(undo_ptr_t *undo_ptr, unsigned int csr,
+                                bool share_cn) {
   *undo_ptr |= ((undo_ptr_t)1 << UBA_POS_STATE);
 
   undo_ptr_t value = static_cast<undo_ptr_t>(csr);
   *undo_ptr |= (value << UBA_POS_CSR);
+
+  value = static_cast<undo_ptr_t>(share_cn);
+  *undo_ptr |= (value << UBA_POS_SHARE_CN);
 }
 
-inline undo_ptr_t undo_ptr_get_addr(const undo_ptr_t undo_ptr) {
+/** Retrieve slot address from undo address */
+inline slot_ptr_t undo_ptr_get_slot(const undo_ptr_t &undo_ptr) {
   return ((undo_ptr & UBA_MASK_ADDR) >> UBA_POS_ADDR);
+}
+
+inline bool undo_ptr_is_slot(const undo_ptr_t &undo_ptr) {
+  return !(undo_ptr >> UBA_WIDTH_ADDR);
 }
 
 /**

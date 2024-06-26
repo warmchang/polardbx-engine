@@ -2985,7 +2985,7 @@ static ulint recv_parse_log_rec(mlog_id_t *type, byte *ptr, byte *end_ptr,
     case MLOG_GCN_METADATA:
     case MLOG_GCN_METADATA | MLOG_SINGLE_REC_FLAG:
 
-      gcn_t gcn = lizard::GCN_NULL;
+      gcn_t gcn = GCN_NULL;
 
       new_ptr =
           lizard::mlog_parse_initial_gcn_log_record(ptr, end_ptr, type, &gcn);

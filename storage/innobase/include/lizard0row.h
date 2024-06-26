@@ -486,7 +486,7 @@ ulint row_cleanout_after_read(row_prebuilt_t *prebuilt);
   Collect the page which need to cleanout
 
   @param[in]        trx_id
-  @param[in]        trx_zeus        trx description and state
+  @param[in]        txn rec         trx description and state
   @param[in]        rec             current rec
   @param[in]        index           cluster index
   @parma[in]        offsets         rec_get_offsets(rec, index)

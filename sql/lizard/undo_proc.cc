@@ -30,7 +30,7 @@
 #include "sql/mysqld.h"
 #include "sql/protocol.h"
 
-#include "sql/lizard/lizard_rpl_gcn.h"
+#include "sql/lizard/lizard_service.h"
 
 namespace im {
 
@@ -90,20 +90,18 @@ void Sql_cmd_trunc_status::send_result(THD *thd, bool error) {
         true);
 
     protocol->store_longlong(
-        undo.oldest_history_scn == MYSQL_SCN_NULL ? 0 : undo.oldest_history_scn,
+        undo.oldest_history_scn == SCN_NULL ? 0 : undo.oldest_history_scn,
         true);
-    protocol->store_longlong(undo.oldest_secondary_scn == MYSQL_SCN_NULL
-                                 ? 0
-                                 : undo.oldest_secondary_scn,
-                             true);
+    protocol->store_longlong(
+        undo.oldest_secondary_scn == SCN_NULL ? 0 : undo.oldest_secondary_scn,
+        true);
 
     protocol->store_longlong(
-        undo.oldest_history_gcn == MYSQL_GCN_NULL ? 0 : undo.oldest_history_gcn,
+        undo.oldest_history_gcn == GCN_NULL ? 0 : undo.oldest_history_gcn,
         true);
-    protocol->store_longlong(undo.oldest_secondary_gcn == MYSQL_GCN_NULL
-                                 ? 0
-                                 : undo.oldest_secondary_gcn,
-                             true);
+    protocol->store_longlong(
+        undo.oldest_secondary_gcn == GCN_NULL ? 0 : undo.oldest_secondary_gcn,
+        true);
 
     if (protocol->end_row()) return;
   }

@@ -2328,6 +2328,7 @@ int ha_prepare_low(THD *thd, bool all) {
 
       if (error) break;
     }
+
     DBUG_EXECUTE_IF("crash_commit_after_prepare", DBUG_SUICIDE(););
   }
 

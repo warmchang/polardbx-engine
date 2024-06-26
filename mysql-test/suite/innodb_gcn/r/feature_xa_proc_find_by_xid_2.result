@@ -5,46 +5,44 @@ insert into tt values (1);
 # Case 1: NOT_SUPPORT becase of old txn format
 ######################################
 set session debug = "+d, sim_old_txn_undo_hdr";
-xa start '1';
+xa start 'ac_fbx2_b1';
 update tt set id = id + 1;
-xa end '1';
-xa prepare '1';
-xa commit '1';
+xa end 'ac_fbx2_b1';
+xa prepare 'ac_fbx2_b1';
+xa commit 'ac_fbx2_b1';
 set session debug = "-d, sim_old_txn_undo_hdr";
-call dbms_xa.find_by_xid('1', '', 1);
-Status	GCN	CSR
-NOT_SUPPORT	#	AUTOMATIC_GCN
+call dbms_xa.find_by_xid('ac_fbx2_b1', '', 1);
+STATUS	GCN	CSR	TRX_ID	UBA	N_BRANCH	N_LOCAL_BRANCH	MASTER_TRX_ID	MASTER_UBA
+NOT_SUPPORT	#	NULL	NULL	NULL	NULL	NULL	NULL	NULL
 ######################################
 # Case 2: Attached
 ######################################
 set xa_detach_on_prepare = 0;
-xa start '2';
+xa start 'ac_fbx2_b2';
 update tt set id = id + 1;
-xa end '2';
-xa prepare '2';
-call dbms_xa.find_by_xid('2', '', 1);
-Status	GCN	CSR
-ATTACHED	18446744073709551615	NONE
+xa end 'ac_fbx2_b2';
+xa prepare 'ac_fbx2_b2';
+call dbms_xa.find_by_xid('ac_fbx2_b2', '', 1);
+STATUS	GCN	CSR	TRX_ID	UBA	N_BRANCH	N_LOCAL_BRANCH	MASTER_TRX_ID	MASTER_UBA
+ATTACHED	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL
 set xa_detach_on_prepare = default;
 ######################################
 # Case 3: Detached
 ######################################
-call dbms_xa.find_by_xid('2', '', 1);
-Status	GCN	CSR
-DETACHED	18446744073709551615	NONE
+include/assert.inc [expect_status == actual_status]
 ######################################
 # Case 4: Commit
 ######################################
 SET @base_seq = (SELECT CAST(variable_value AS UNSIGNED) FROM performance_schema.global_status WHERE variable_name = 'Lizard_current_gcn');
-xa commit '2';
+xa commit 'ac_fbx2_b2';
+include/assert.inc [expect_status == actual_status]
 include/assert.inc [expect_gcn == actual_gcn]
-include/assert.inc [expect_state == actual_state]
 ######################################
 # Case 5: NOTSTART_OR_FORGET
 ######################################
-call dbms_xa.find_by_xid('5', '', 1);
-Status	GCN	CSR
-NOTSTART_OR_FORGET	18446744073709551615	NONE
+call dbms_xa.find_by_xid('ac_fbx2_b5', '', 1);
+STATUS	GCN	CSR	TRX_ID	UBA	N_BRANCH	N_LOCAL_BRANCH	MASTER_TRX_ID	MASTER_UBA
+NOTSTART_OR_FORGET	NULL	NULL	NULL	NULL	NULL	NULL	NULL	NULL
 ######################################
 # Case 6: 128 Bytes XID
 ######################################
@@ -53,8 +51,8 @@ update tt set id = id + 1;
 xa end 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
 xa prepare 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
 xa commit 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+include/assert.inc [expect_status == actual_status]
 include/assert.inc [expect_gcn == actual_gcn]
-include/assert.inc [expect_state == actual_state]
 # cleanup
 set global innodb_undo_retention = default;
 drop table tt;

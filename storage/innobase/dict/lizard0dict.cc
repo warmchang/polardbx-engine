@@ -174,8 +174,8 @@ bool dd_index_modificatsion_visible(dict_index_t *index, const trx_t *trx,
     index->txn.scn.store(rec_txn.scn);
     index->txn.gcn.store(rec_txn.gcn);
 
-    ut_ad(undo_ptr_get_addr(index->txn.uba.load()) ==
-          undo_ptr_get_addr(rec_txn.undo_ptr));
+    ut_ad(undo_ptr_get_slot(index->txn.uba.load()) ==
+          undo_ptr_get_slot(rec_txn.undo_ptr));
 
     /** Copy onto index->txn from lookup. */
     index->txn.uba.store(rec_txn.undo_ptr);

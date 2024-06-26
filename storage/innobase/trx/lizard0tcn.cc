@@ -80,14 +80,15 @@ bool trx_search_tcn(txn_rec_t *txn_rec, btr_pcur_t *pcur,
     tcn = cont->search(txn_rec->trx_id);
 
     if (tcn.trx_id == txn_rec->trx_id) {
-      undo_ptr_set_commit(&txn_rec->undo_ptr, tcn.csr);
+      undo_ptr_set_commit(&txn_rec->undo_ptr, tcn.csr, tcn.share_cn);
       txn_rec->scn = tcn.scn;
       txn_rec->gcn = tcn.gcn;
 
       ut_a(txn_rec->scn != SCN_NULL);
       ut_a(txn_rec->gcn != GCN_NULL);
       if (txn_lookup) {
-        txn_lookup->real_image = {tcn.scn, US_UNDO_LOST, tcn.gcn, tcn.csr};
+        txn_lookup->real_image = {tcn.scn, US_UNDO_LOST, tcn.gcn,
+                                  uint2csr(tcn.csr)};
         txn_lookup->real_state = TXN_STATE_COMMITTED;
       }
 
@@ -136,7 +137,7 @@ void trx_cache_tcn(trx_t *trx) {
     trx_id_t trx_id = trx->id;
 
     if (trx_id != 0 && cmmt.scn != SCN_NULL && cmmt.gcn != GCN_NULL) {
-      tcn_t value(trx_id, cmmt);
+      tcn_t value(trx_id, cmmt, lizard::trx_is_xa_slave(trx));
       global_tcn_cache->insert(value);
       TCN_CACHE_AGGR(innodb_tcn_cache_level, EVICT);
     }

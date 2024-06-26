@@ -64,6 +64,8 @@
 #include "sql/sql_jemalloc.h"
 #endif
 
+#include "sql/lizard/lizard_hb_freezer.h"
+
 /* Global scope variables */
 char innodb_version[SERVER_VERSION_LENGTH];
 
@@ -275,11 +277,11 @@ static Sys_var_charptr Sys_client_endpoint_ip(
     DEFAULT(0), NO_MUTEX_GUARD, NOT_IN_BINLOG, ON_CHECK(0), ON_UPDATE(0));
 
 static bool set_owned_vision_gcn_on_update(sys_var *, THD *thd, enum_var_type) {
-  if (thd->variables.innodb_snapshot_gcn == MYSQL_GCN_NULL) {
+  if (thd->variables.innodb_snapshot_gcn == GCN_NULL) {
     thd->owned_vision_gcn.reset();
   } else {
-    thd->owned_vision_gcn.set(
-        MYSQL_CSR_ASSIGNED, thd->variables.innodb_snapshot_gcn, MYSQL_SCN_NULL);
+    thd->owned_vision_gcn = {csr_t::CSR_ASSIGNED,
+                             thd->variables.innodb_snapshot_gcn, SCN_NULL};
   }
   return false;
 }
@@ -287,20 +289,23 @@ static bool set_owned_vision_gcn_on_update(sys_var *, THD *thd, enum_var_type) {
 static Sys_var_ulonglong Sys_innodb_snapshot_seq(
     "innodb_snapshot_seq", "Innodb snapshot sequence.",
     HINT_UPDATEABLE SESSION_ONLY(innodb_snapshot_gcn), CMD_LINE(REQUIRED_ARG),
-    VALID_RANGE(MYSQL_GCN_MIN, MYSQL_GCN_NULL), DEFAULT(MYSQL_GCN_NULL),
+    VALID_RANGE(GCN_INITIAL, GCN_NULL), DEFAULT(GCN_NULL),
     BLOCK_SIZE(1), NO_MUTEX_GUARD, NOT_IN_BINLOG, ON_CHECK(0),
     ON_UPDATE(set_owned_vision_gcn_on_update));
 
 static bool set_owned_commit_gcn_on_update(sys_var *, THD *thd, enum_var_type) {
-  thd->owned_commit_gcn.set(thd->variables.innodb_commit_gcn,
-                            MYSQL_CSR_ASSIGNED);
+  if (thd->variables.innodb_commit_gcn == GCN_NULL) {
+    thd->owned_commit_gcn.reset();
+  } else {
+    thd->owned_commit_gcn.assign_from_var(thd->variables.innodb_commit_gcn);
+  }
   return false;
 }
 
 static Sys_var_ulonglong Sys_innodb_commit_seq(
     "innodb_commit_seq", "Innodb commit sequence",
     HINT_UPDATEABLE SESSION_ONLY(innodb_commit_gcn), CMD_LINE(REQUIRED_ARG),
-    VALID_RANGE(MYSQL_GCN_MIN, MYSQL_GCN_NULL), DEFAULT(MYSQL_GCN_NULL),
+    VALID_RANGE(GCN_INITIAL, GCN_NULL), DEFAULT(GCN_NULL),
     BLOCK_SIZE(1), NO_MUTEX_GUARD, NOT_IN_BINLOG, ON_CHECK(0),
     ON_UPDATE(set_owned_commit_gcn_on_update));
 
@@ -325,21 +330,21 @@ static Sys_var_bool Sys_innodb_current_snapshot_gcn(
 */
 bool freeze_db_if_no_cn_heartbeat_enable_on_update(sys_var *, THD *,
                                                    enum_var_type) {
-  const bool is_enable = lizard::xa::no_heartbeat_freeze;
+  const bool is_enable = lizard::no_heartbeat_freeze;
 
   /** 1. Pretend to send heartbeat. */
   if (is_enable) {
-    lizard::xa::hb_freezer_heartbeat();
+    lizard::hb_freezer_heartbeat();
   }
 
-  lizard::xa::opt_no_heartbeat_freeze = lizard::xa::no_heartbeat_freeze;
+  lizard::opt_no_heartbeat_freeze = lizard::no_heartbeat_freeze;
   return false;
 }
 static Sys_var_bool Sys_freeze_db_if_no_cn_heartbeat_enable(
     "innodb_freeze_db_if_no_cn_heartbeat_enable",
     "If set to true, will freeze purge sys and updating "
     "if there is no heartbeat.",
-    GLOBAL_VAR(lizard::xa::no_heartbeat_freeze), CMD_LINE(OPT_ARG),
+    GLOBAL_VAR(lizard::no_heartbeat_freeze), CMD_LINE(OPT_ARG),
     DEFAULT(false), NO_MUTEX_GUARD, NOT_IN_BINLOG, ON_CHECK(0),
     ON_UPDATE(freeze_db_if_no_cn_heartbeat_enable_on_update));
 
@@ -347,7 +352,7 @@ static Sys_var_ulonglong Sys_freeze_db_if_no_cn_heartbeat_timeout_sec(
     "innodb_freeze_db_if_no_cn_heartbeat_timeout_sec",
     "If the heartbeat has not been received after the "
     "timeout, freezing the purge sys and updating.",
-    GLOBAL_VAR(lizard::xa::opt_no_heartbeat_freeze_timeout),
+    GLOBAL_VAR(lizard::opt_no_heartbeat_freeze_timeout),
     CMD_LINE(REQUIRED_ARG), VALID_RANGE(1, 24 * 60 * 60), DEFAULT(10),
     BLOCK_SIZE(1), NO_MUTEX_GUARD, NOT_IN_BINLOG, ON_CHECK(0), ON_UPDATE(0));
 

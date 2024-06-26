@@ -63,25 +63,30 @@ typedef struct tcn_t {
   /** Transaction global commit number that has committed. */
   gcn_t gcn;
   /** Commit number source for gcn */
-  csr_t csr;
+  unsigned int csr : 1;
+  /** Check if share commit number. */
+  unsigned int share_cn : 1;
 
   explicit tcn_t() {
     trx_id = 0;
     scn = SCN_NULL;
     gcn = GCN_NULL;
     csr = CSR_AUTOMATIC;
+    share_cn = 0;
   }
   explicit tcn_t(txn_commit_t cmmt) {
     trx_id = cmmt.trx_id;
     scn = cmmt.scn;
     gcn = cmmt.gcn;
     csr = undo_ptr_get_csr(cmmt.undo_ptr);
+    share_cn = undo_ptr_get_share_cn(cmmt.undo_ptr);
   }
-  explicit tcn_t(trx_id_t id, commit_mark_t cmmt) {
+  explicit tcn_t(trx_id_t id, commit_mark_t cmmt, bool share_commit_number) {
     trx_id = id;
     scn = cmmt.scn;
     gcn = cmmt.gcn;
     csr = cmmt.csr;
+    share_cn = share_commit_number;
   }
   trx_id_t key() { return trx_id; }
 } tcn_t;
@@ -100,7 +105,9 @@ typedef struct tcn_node_t {
   /** Transaction global commit number that has committed. */
   gcn_t gcn;
 
-  csr_t csr;
+  unsigned int csr : 1;
+
+  unsigned int share_cn : 1;
 
   explicit tcn_node_t() {
     hash = nullptr;
@@ -110,6 +117,7 @@ typedef struct tcn_node_t {
     scn = SCN_NULL;
     gcn = GCN_NULL;
     csr = CSR_AUTOMATIC;
+    share_cn = 0;
   }
 
   trx_id_t key() { return trx_id; }
@@ -120,6 +128,7 @@ typedef struct tcn_node_t {
     scn = tcn.scn;
     gcn = tcn.gcn;
     csr = tcn.csr;
+    share_cn = tcn.share_cn;
   }
 
   void copy_to(tcn_t &tcn) const {
@@ -127,6 +136,7 @@ typedef struct tcn_node_t {
     tcn.scn = scn;
     tcn.gcn = gcn;
     tcn.csr = csr;
+    tcn.share_cn = share_cn;
   }
 } tcn_node_t;
 

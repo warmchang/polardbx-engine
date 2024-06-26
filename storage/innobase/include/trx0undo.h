@@ -468,19 +468,38 @@ struct trx_undo_t {
     TXN ext_storage, only useful on TXN.
 
     Format:
-    bit_0, TXN_EXT_FLAG_HAVE_TAGS_1
-    bit_1~bit_7, unused for now.
+    bit_0, XES_ALLOCATED_TAGS
+    bit_1, XES_ALLOCATED_AC_PREPARE
+    bit_2, XES_ALLOCATED_AC_COMMIT
+    bit_3~bit_7, unused for now.
   */
-  uint8_t txn_ext_storage;
-
+  uint8_t xes_storage;
+  bool tags_allocated() const;
+  bool ac_prepare_allocated() const;
+  bool ac_commit_allocated() const;
+  void allocate_tags();
+  void allocate_ac_prepare();
+  void allocate_ac_commit();
   /**
-    TXN_UNDO_LOG_TAGS_1 in TXN. Only valid if TXN_EXT_FLAG_HAVE_TAGS_1 is set.
+    Only valid if TXN_EXT_FLAG_HAVE_TAGS_1 is set.
 
     Format:
-    bit_0, TXN_NEW_TAGS_1_ROLLBACK.
-    bit_1~bit_15, unused for now.
+    bit_0, XES_TAGS_ROLLBACK
+    bit_1, XES_TAGS_AC_ASSIGNED
+    bit_2~bit_15, unused for now.
   */
-  uint16_t txn_tags_1;
+  uint16_t tags;
+  void set_rollback_on_tags();
+  void set_ac_csr_assigned_on_tags();
+  bool ac_csr_assigned_on_tags() const;
+
+  proposal_mark_t pmmt;
+
+  /** XA branch count info  */
+  xa_branch_t branch;
+
+  /** Master branch info */
+  xa_addr_t maddr;
 };
 
 UT_LIST_NODE_GETTER_DEFINITION(trx_undo_t, undo_list)

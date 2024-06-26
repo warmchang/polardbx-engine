@@ -1004,6 +1004,8 @@ MySQL clients support the protocol:
 #include "sql/sql_jemalloc.h"
 #endif
 
+#include "sql/lizard/lizard_hb_freezer.h"
+
 using std::max;
 using std::min;
 using std::vector;
@@ -11418,7 +11420,7 @@ static int get_options(int *argc_ptr, char ***argv_ptr) {
   read_only = super_read_only ? super_read_only : read_only;
   opt_readonly = read_only;
 
-  lizard::xa::opt_no_heartbeat_freeze = lizard::xa::no_heartbeat_freeze;
+  lizard::opt_no_heartbeat_freeze = lizard::no_heartbeat_freeze;
   return 0;
 }
 

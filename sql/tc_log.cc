@@ -188,7 +188,7 @@ bool commit_one_ht(THD *thd, plugin_ref plugin, void *arg) {
   auto ht = plugin_data<handlerton *>(plugin);
 
   XA_specification xa_spec;
-  xa_spec.set_gcn(thd->owned_commit_gcn);
+  xa_spec.set_when_commit(thd->owned_commit_gcn, thd->owned_master_addr);
 
   if (ht->commit_by_xid != nullptr && ht->state == SHOW_OPTION_YES &&
       ht->recover != nullptr) {
@@ -213,7 +213,7 @@ bool rollback_one_ht(THD *thd, plugin_ref plugin, void *arg) {
   auto ht = plugin_data<handlerton *>(plugin);
 
   XA_specification xa_spec;
-  xa_spec.set_gcn(thd->owned_commit_gcn);
+  xa_spec.set_when_commit(thd->owned_commit_gcn, thd->owned_master_addr);
 
   if (ht->rollback_by_xid != nullptr && ht->state == SHOW_OPTION_YES &&
       ht->recover != nullptr) {

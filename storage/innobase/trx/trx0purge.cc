@@ -71,8 +71,10 @@ this program; if not, write to the Free Software Foundation, Inc.,
 #include "lizard0undo.h"
 #include "lizard0xa.h"
 
-#include "lizard_iface.h"
 #include "lizard0erase.h"
+#include "sql/lizard/lizard_service.h"
+
+#include "sql/lizard/lizard_hb_freezer.h"
 
 /** Maximum allowable purge history length.  <=0 means 'infinite'. */
 ulong srv_max_purge_lag = 0;
@@ -2259,7 +2261,7 @@ void Purge_groups_t::distribute_if_needed() {
     return &trx_purge_blocked_rec;
   }
 
-  if (lizard::xa::hb_freezer_determine_freeze()) {
+  if (lizard::hb_freezer_determine_freeze()) {
     return &trx_purge_blocked_rec;
   }
 
@@ -2330,7 +2332,7 @@ static ulint trx_purge_attach_undo_recs(const ulint n_purge_threads,
     UNDO logs once we have purged the records. */
 
     if (trx_purge_check_limit()) {
-      ut_a(purge_sys->iter.ommt.scn != lizard::SCN_NULL);
+      ut_a(purge_sys->iter.ommt.scn != SCN_NULL);
       purge_sys->limit = purge_sys->iter;
     }
 

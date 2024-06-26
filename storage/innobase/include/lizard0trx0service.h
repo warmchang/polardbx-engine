@@ -1,6 +1,6 @@
 /*****************************************************************************
 
-Copyright (c) 2013, 2023, Alibaba and/or its affiliates. All Rights Reserved.
+Copyright (c) 2013, 2024, Alibaba and/or its affiliates. All Rights Reserved.
 
 This program is free software; you can redistribute it and/or modify it under
 the terms of the GNU General Public License, version 2.0, as published by the
@@ -23,25 +23,20 @@ this program; if not, write to the Free Software Foundation, Inc.,
 51 Franklin St, Fifth Floor, Boston, MA 02110-1301  USA
 
 *****************************************************************************/
-#ifndef LIZARD_IFACE_INCLUDED
-#define LIZARD_IFACE_INCLUDED
 
-#include <stdarg.h>
-#include <stdint.h>
-#include <stdio.h>
-#include <string.h>
+/** @file include/lizard0trx0service.h
+  Lizard transaction related structure.
 
-#include <limits>
-#include <numeric>
+ Created 2024-06-04 by Jianwei.zhao
+ *******************************************************/
 
-#include "sql/lizard/lizard_rpl_gcn.h"
+#ifndef lizard0trx0service_h
+#define lizard0trx0service_h
 
-namespace lizard {
-namespace xa {
+#include "inttypes.h"
 
-extern bool hb_freezer_determine_freeze();
+typedef uint64_t trx_id_t;
 
-}  // namespace xa
-}  // namespace lizard
+
 
 #endif

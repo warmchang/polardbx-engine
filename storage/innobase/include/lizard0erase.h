@@ -51,7 +51,7 @@ class THD;
 typedef purge_iter_t erase_iter_t;
 
 /** erased_scn is not valid */
-constexpr scn_t ERASED_SCN_INVALID = lizard::SCN_NULL;
+constexpr scn_t ERASED_SCN_INVALID = SCN_NULL;
 
 namespace lizard {
 

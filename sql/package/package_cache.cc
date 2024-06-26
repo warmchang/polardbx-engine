@@ -154,8 +154,14 @@ void package_context_init() {
   /* dbms_xa.send_heartbeat() */
   register_package<Proc, Xa_proc_send_heartbeat>(XA_PROC_SCHEMA);
 
-  /* dbms_xa.Xa_proc_advance_gcn_no_flush() */
+  /* dbms_xa.advance_gcn_no_flush() */
   register_package<Proc, Xa_proc_advance_gcn_no_flush>(XA_PROC_SCHEMA);
+
+  /* dbms_xa.ac_prepare */
+  register_package<Proc, Xa_proc_ac_prepare>(XA_PROC_SCHEMA);
+
+  /* dbms_xa.ac_commit */
+  register_package<Proc, Xa_proc_ac_commit>(XA_PROC_SCHEMA);
 
   /* dbms_trans.returning() */
   register_package<Proc, Trans_proc_returning>(TRANS_PROC_SCHEMA);

@@ -6622,7 +6622,7 @@ bool XA_prepare_log_event::do_commit(THD *thd_arg) {
   if (!one_phase) {
     /** Before applying XA end on the slave, trx slot should be also allocated
     if not. */
-    if ((error = lizard::xa::apply_trx_for_xa(thd, &xid, nullptr))) {
+    if ((error = lizard::xa::apply_trx_for_xa(thd, &xid, nullptr, nullptr))) {
       return error;
     }
 

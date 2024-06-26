@@ -2138,6 +2138,23 @@ const char *thd_innodb_tmpdir(THD *thd) {
   return (innodb_session->m_trx);
 }
 
+[[nodiscard]] innodb_session_t *&thd_to_innodb_session_if_have(THD *thd) {
+  innodb_session_t *&innodb_session =
+      *(innodb_session_t **)thd_ha_data(thd, innodb_hton_ptr);
+
+  return innodb_session;
+}
+
+[[nodiscard]] trx_t *thd_to_trx_if_have(THD *thd) {
+  innodb_session_t *&innodb_session = thd_to_innodb_session_if_have(thd);
+
+  if (innodb_session == nullptr) {
+    return nullptr;
+  }
+
+  return (innodb_session->m_trx);
+}
+
 ulong thd_parallel_read_threads(THD *thd) {
   return THDVAR(thd, parallel_read_threads);
 }
@@ -6052,8 +6069,7 @@ static int innobase_commit(handlerton *hton, /*!< in: InnoDB handlerton */
 
     assert_trx_commit_mark_initial(trx);
     if (trx_is_started(trx)) {
-      ut_ad(trx->txn_desc.cmmt.gcn == lizard::GCN_NULL);
-      trx->txn_desc.cmmt.copy_from_my_gcn(&thd->owned_commit_gcn);
+      innobase_copy_user_commit(thd, trx);
     }
 
     innobase_commit_low(trx);
@@ -6155,8 +6171,7 @@ static int innobase_rollback(handlerton *hton, /*!< in: InnoDB handlerton */
       !thd_test_options(thd, OPTION_NOT_AUTOCOMMIT | OPTION_BEGIN)) {
     assert_trx_commit_mark_initial(trx);
     if (trx_is_started(trx)) {
-      ut_ad(trx->txn_desc.cmmt.gcn == lizard::GCN_NULL);
-      trx->txn_desc.cmmt.copy_from_my_gcn(&thd->owned_commit_gcn);
+      innobase_copy_user_commit(thd, trx);
     }
 
     error = trx_rollback_for_mysql(trx);
@@ -6201,7 +6216,10 @@ static int innobase_rollback_trx(trx_t *trx) /*!< in: transaction */
     lock_unlock_table_autoinc(trx);
   }
 
-  if (trx_is_rseg_updated(trx)) {
+  /** Lizard: If force to assigin TXN for an empty transaction, like
+  call ac_prepare(...). There might be a transation that is only with txn
+  rseg. */
+  if (trx_is_rseg_updated(trx) || lizard::trx_is_txn_rseg_updated(trx)) {
     error = trx_rollback_for_mysql(trx);
   } else {
     trx->will_lock = 0;
@@ -20453,6 +20471,7 @@ static xa_status_code innobase_commit_by_xid(
     {
       TrxInInnoDB trx_in_innodb(trx);
 
+      /** Get commit GCN and XA master address from xa spec. */
       lizard::Guard_xa_specification guard(trx, xa_spec, false);
 
       innobase_commit_low(trx);
@@ -20513,6 +20532,8 @@ static int innobase_set_prepared_in_tc(handlerton *hton, THD *thd) {
   innobase_srv_conc_force_exit_innodb(trx);
 
   ut_ad(trx_is_registered_for_2pc(trx) || thd == nullptr);
+
+  innobase_copy_user_prepare(thd, trx);
 
   dberr_t err = trx_set_prepared_in_tc_for_mysql(trx);
   ut_ad(err != DB_FORCED_ABORT);

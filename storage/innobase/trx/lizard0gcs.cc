@@ -7,14 +7,14 @@ the terms of the GNU General Public License, version 2.0, as published by the
 Free Software Foundation.
 
 This program is also distributed with certain software (including but not
-lzeusited to OpenSSL) that is licensed under separate terms, as designated in a
+limited to OpenSSL) that is licensed under separate terms, as designated in a
 particular file or component or in included license documentation. The authors
 of MySQL hereby grant you an additional permission to link the program and
 your derivative works with the separately licensed software that they have
 included with MySQL.
 
 This program is distributed in the hope that it will be useful, but WITHOUT
-ANY WARRANTY; without even the zeusplied warranty of MERCHANTABILITY or FITNESS
+ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
 FOR A PARTICULAR PURPOSE. See the GNU General Public License, version 2.0,
 for more details.
 
@@ -139,6 +139,26 @@ void CRecover::apply_gcn() {
   return;
 }
 
+/** Prepare also generate commit number if has proposal, it only
+ *  produce gcn, and left scn until real commit.
+ *
+ * @param[in/out]	trx
+ * @param[in/out]	mtr
+ *
+ * @retval	proposal mark */
+proposal_mark_t gcs_t::new_prepare(trx_t *trx, mtr_t *mtr) {
+  ut_ad(trx->txn_desc.cmmt.scn == SCN_NULL);
+  ut_ad(!trx->txn_desc.pmmt.is_null());
+
+  gcn_tuple_t gtuple =
+      gcn.new_gcn(trx->txn_desc.pmmt.gcn, trx->txn_desc.pmmt.csr, mtr);
+
+  trx->txn_desc.pmmt = {gtuple.gcn, gtuple.csr};
+
+  ut_ad(undo_ptr_is_active(trx->txn_desc.undo_ptr));
+  return {gtuple.gcn, gtuple.csr};
+}
+
 commit_mark_t gcs_t::new_commit(trx_t *trx, mtr_t *mtr) {
   commit_mark_t cmmt;
 
@@ -172,11 +192,11 @@ commit_mark_t gcs_t::new_commit(trx_t *trx, mtr_t *mtr) {
   scn_list_mutex_exit();
 
   /** 2. generate gcn number. */
-  std::pair<gcn_t, csr_t> ret =
+  gcn_tuple_t ret =
       gcn.new_gcn(trx->txn_desc.cmmt.gcn, trx->txn_desc.cmmt.csr, mtr);
 
-  trx->txn_desc.cmmt.gcn = cmmt.gcn = ret.first;
-  trx->txn_desc.cmmt.csr = cmmt.csr = ret.second;
+  trx->txn_desc.cmmt.gcn = cmmt.gcn = ret.gcn;
+  trx->txn_desc.cmmt.csr = cmmt.csr = ret.csr;
 
   /** 3. generate utc time. */
   trx->txn_desc.cmmt.us = cmmt.us = ut_time_system_us();
@@ -190,7 +210,8 @@ commit_mark_t gcs_t::new_commit(trx_t *trx, mtr_t *mtr) {
   }
 #endif
 
-  undo_ptr_set_commit(&trx->txn_desc.undo_ptr, trx->txn_desc.cmmt.csr);
+  undo_ptr_set_commit(&trx->txn_desc.undo_ptr, trx->txn_desc.cmmt.csr,
+                      trx_is_xa_slave(trx));
 
   return cmmt;
 }

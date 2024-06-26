@@ -42,7 +42,6 @@ this program; if not, write to the Free Software Foundation, Inc.,
 #include "dict0dict.h"
 #include "mem0mem.h"
 
-#include "lizard0txn0types.h"
 #include "lizard0undo0types.h"
 #include "lizard0dd0policy.h"
 

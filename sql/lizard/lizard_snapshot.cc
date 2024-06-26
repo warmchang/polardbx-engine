@@ -24,8 +24,7 @@ this program; if not, write to the Free Software Foundation, Inc.,
 
 *****************************************************************************/
 
-#include "lizard_iface.h"
-
+#include "sql/lizard/lizard_service.h"
 #include "sql/lizard/lizard_snapshot.h"
 
 #include "sql/item.h"
@@ -367,7 +366,7 @@ int Snapshot_gcn_hint::evoke_vision(TABLE *table, THD *thd) {
  *  @retval	false	normal
  */
 bool Snapshot_scn_vision::too_old() const {
-  assert(m_scn != MYSQL_SCN_NULL);
+  assert(m_scn != SCN_NULL);
 
   if (innodb_hton->ext.snapshot_scn_too_old(m_scn, m_flashback_area)) {
     return true;
@@ -377,7 +376,7 @@ bool Snapshot_scn_vision::too_old() const {
 
 void Snapshot_scn_vision::after_activate() {
   handlerton *ttse = innodb_hton;
-  my_trx_id_t tid = ttse->ext.search_up_limit_tid_for_scn(*this);
+  trx_id_t tid = ttse->ext.search_up_limit_tid_for_scn(*this);
   set_up_limit_tid(tid);
   return;
 }
@@ -389,18 +388,17 @@ void Snapshot_scn_vision::after_activate() {
  */
 bool Snapshot_gcn_vision::too_old() const {
   switch (m_csr) {
-    case MYSQL_CSR_AUTOMATIC:
-      assert(m_current_scn != MYSQL_SCN_NULL && m_gcn != MYSQL_GCN_NULL);
+    case CSR_AUTOMATIC:
+      assert(m_current_scn != SCN_NULL && m_gcn != GCN_NULL);
       return innodb_hton->ext.snapshot_scn_too_old(m_current_scn,
                                                    m_flashback_area) ||
              innodb_hton->ext.snapshot_automatic_gcn_too_old(
                  m_gcn, m_flashback_area);
-    case MYSQL_CSR_ASSIGNED:
-      assert(m_current_scn == MYSQL_SCN_NULL && m_gcn != MYSQL_GCN_NULL);
+    case CSR_ASSIGNED:
+      assert(m_current_scn == SCN_NULL && m_gcn != GCN_NULL);
       return innodb_hton->ext.snapshot_assigned_gcn_too_old(
           m_gcn, m_flashback_area);
     default:
-      assert(m_csr == MYSQL_CSR_NONE);
       return true;
   }
 
@@ -411,7 +409,8 @@ bool Snapshot_gcn_vision::too_old() const {
 void Snapshot_gcn_vision::after_activate() {
   handlerton *ttse = innodb_hton;
   assert(ttse);
-  my_trx_id_t tid = ttse->ext.search_up_limit_tid_for_gcn(*this);
+
+  trx_id_t tid = ttse->ext.search_up_limit_tid_for_gcn(*this);
   set_up_limit_tid(tid);
   return;
 }
@@ -475,8 +474,8 @@ void simulate_snapshot_clause(THD *thd, Table_ref *all_tables) {
   internally */
   if (thd->owned_vision_gcn.is_null() &&
       thd->variables.innodb_current_snapshot_gcn) {
-    thd->owned_vision_gcn.set(MYSQL_CSR_AUTOMATIC, innodb_hton->ext.load_gcn(),
-                              innodb_hton->ext.load_scn());
+    thd->owned_vision_gcn = {csr_t::CSR_AUTOMATIC, innodb_hton->ext.load_gcn(),
+                             innodb_hton->ext.load_scn()};
   } else if (!thd->owned_vision_gcn.is_null()) {
     handlerton *ttse = innodb_hton;
     ttse->ext.set_gcn_if_bigger(thd->owned_vision_gcn.gcn);
@@ -502,9 +501,9 @@ int Table_snapshot::exchange_timestamp_vision_to_scn_vision(
   handlerton *ttse = innodb_hton;
 
   bool flashback_area = (*vision)->get_flashback_area();
-  my_utc_t utc_second = (*vision)->val_int();
-  my_scn_t scn;
+  utc_t utc_second = (*vision)->val_int();
 
+  scn_t scn;
   error = ttse->ext.convert_timestamp_to_scn(thd, utc_second, &scn);
   if (!error) {
     /** Change the vision. */

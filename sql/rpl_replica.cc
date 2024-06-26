@@ -178,6 +178,7 @@
 #include "sql/replica_read_manager.h"
 #include "sql/rpl_rli_ext.h"
 #include "storage/innobase/include/ut0dbg.h"
+#include "sql/lizard/lizard_hb_freezer.h"
 
 struct mysql_cond_t;
 struct mysql_mutex_t;
@@ -7339,7 +7340,7 @@ extern "C" void *handle_slave_sql(void *arg) {
       assert(rli->info_thd == thd);
       THD_CHECK_SENTRY(thd);
 
-      if (lizard::xa::cn_heartbeat_timeout_freeze_applying_event(thd)) continue;
+      if (lizard::cn_heartbeat_timeout_freeze_applying_event(thd)) continue;
 
       if (saved_skip && rli->slave_skip_counter == 0) {
         LogErr(INFORMATION_LEVEL, ER_RPL_SLAVE_SKIP_COUNTER_EXECUTED,

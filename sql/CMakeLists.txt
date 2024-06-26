@@ -703,6 +703,7 @@ SET(SQL_SHARED_SOURCES
   timestamp_service.cc
   tso/tso_proc.cc
   lizard/lizard_snapshot.cc
+  lizard/lizard_hb_freezer.cc
   lizard_rpl_binlog_sender.cc
   lizard_rpl_rli.cc
   sql_common_ext.cc
@@ -727,6 +728,8 @@ SET(SQL_SHARED_SOURCES
   inventory/inventory_hint_parse.cc
   inventory/inventory_hint.cc
   lizard/undo_proc.cc
+  lizard_sql_class.cc
+  lizard/lizard_service.cc
 )
 
 IF(BUILD_IS_SINGLE_CONFIG)

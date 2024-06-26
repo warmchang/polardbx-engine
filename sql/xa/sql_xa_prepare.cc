@@ -179,6 +179,9 @@ bool Sql_cmd_xa_prepare::trans_xa_prepare(THD *thd) {
       ::process_xa_prepare(thd))
     return true;
 
+  // Lizard: Save proposal gcn info to avoid losing it
+  set_proposal_gcn(thd->owned_commit_gcn);
+
   xid_state->set_state(XID_STATE::XA_PREPARED);
   MYSQL_SET_TRANSACTION_XA_STATE(thd->m_transaction_psi,
                                  (int)xid_state->get_state());

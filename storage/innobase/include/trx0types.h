@@ -45,7 +45,8 @@ this program; if not, write to the Free Software Foundation, Inc.,
 #include <vector>
 
 #include "lizard0scn0types.h"
-#include "lizard0txn0types.h"
+#include "lizard0txn0service.h"
+#include "lizard0trx0service.h"
 
 /** printf(3) format used for printing DB_TRX_ID and other system fields */
 #define TRX_ID_FMT IB_ID_FMT
@@ -136,8 +137,11 @@ struct trx_named_savept_t;
 
 /** Row identifier (DB_ROW_ID, DATA_ROW_ID) */
 typedef ib_id_t row_id_t;
+
 /** Transaction identifier (DB_TRX_ID, DATA_TRX_ID) */
-typedef ib_id_t trx_id_t;
+//Lizard: see lizard0trx0service.h
+//typedef ib_id_t trx_id_t;
+
 /** Rollback pointer (DB_ROLL_PTR, DATA_ROLL_PTR) */
 typedef ib_id_t roll_ptr_t;
 /** Undo number */

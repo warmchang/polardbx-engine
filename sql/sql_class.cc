@@ -374,6 +374,8 @@ void THD::Transaction_state::backup(THD *thd) {
   this->m_transaction_rollback_request = thd->transaction_rollback_request;
 
   this->m_ppi_transaction = thd->ppi_transaction;
+
+  this->owned_commit_gcn = thd->owned_commit_gcn;
 }
 
 void THD::Transaction_state::restore(THD *thd) {
@@ -394,6 +396,8 @@ void THD::Transaction_state::restore(THD *thd) {
   thd->transaction_rollback_request = this->m_transaction_rollback_request;
 
   thd->ppi_transaction = this->m_ppi_transaction;
+
+  thd->owned_commit_gcn = this->owned_commit_gcn;
 }
 
 THD::Attachable_trx::Attachable_trx(THD *thd, Attachable_trx *prev_trx)
@@ -491,6 +495,8 @@ THD::Attachable_trx::Attachable_trx(THD *thd, Attachable_trx *prev_trx)
   m_thd->transaction_rollback_request = false;
 
   m_thd->ppi_transaction = nullptr;
+
+  m_thd->owned_commit_gcn.reset();
 
   PPI_TRANSACTION_CALL(backup_transaction)(m_thd->ppi_thread);
 

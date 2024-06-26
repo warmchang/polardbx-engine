@@ -376,7 +376,7 @@ commit_mark_t trx_erase_get_last_log(trx_rseg_t *rseg, fil_addr_t &addr,
 static trx_rseg_t *trx_erase_find_oldest_log(fil_addr_t &log_addr,
                                              commit_mark_t &cmmt) {
   trx_rseg_t *rseg = nullptr;
-  cmmt = CMMT_NULL;
+  cmmt.reset();
 
   mutex_enter(&undo::ddl_mutex);
   undo::spaces->s_lock();
