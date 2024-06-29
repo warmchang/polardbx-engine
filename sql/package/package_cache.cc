@@ -225,6 +225,8 @@ void package_context_init() {
       CONSENSUS_PROC_SCHEMA);
   register_package<Proc, Consensus_proc_force_single_mode>(
       CONSENSUS_PROC_SCHEMA);
+  register_package<Proc, Consensus_proc_force_learner_node>(
+      CONSENSUS_PROC_SCHEMA);
   register_package<Proc, Consensus_proc_fix_cluster_id>(CONSENSUS_PROC_SCHEMA);
   register_package<Proc, Consensus_proc_fix_matchindex>(CONSENSUS_PROC_SCHEMA);
   register_package<Proc, Consensus_proc_show_global>(CONSENSUS_PROC_SCHEMA);
