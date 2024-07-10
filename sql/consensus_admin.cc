@@ -580,10 +580,12 @@ int check_exec_consensus_log_end_condition(Relay_log_info *rli,
       // determine whether exit
       uint64 stop_term = consensus_log_manager.get_stop_term();
       long time_diff = (long)(time(0) - rli->last_master_timestamp);
-      if (stop_term == UINT64_MAX) {
+      if (stop_term == UINT64_MAX && 0 == opt_consensus_stop_apply_index) {
         my_sleep(opt_consensus_check_commit_index_interval);
         continue;
       } else if (consensus_log_manager.get_apply_term() >= stop_term ||
+                 (0 < opt_consensus_stop_apply_index &&
+                  opt_consensus_stop_apply_index <= consensus_log_manager.get_real_apply_index()) ||
                  opt_consensus_leader_stop_apply ||
                  (opt_consensus_leader_stop_apply_time &&
                   (time_diff < (long)opt_consensus_leader_stop_apply_time))) {
@@ -591,8 +593,10 @@ int check_exec_consensus_log_end_condition(Relay_log_info *rli,
             << "Apply thread stop, opt_consensus_leader_stop_apply: "
             << (opt_consensus_leader_stop_apply ? "true" : "false")
             << ", seconds_behind_master: " << time_diff
-            << ", opt_consensus_leader_stop_apply_time: "
-            << opt_consensus_leader_stop_apply_time;
+            << ", consensus_leader_stop_apply_time: "
+            << opt_consensus_leader_stop_apply_time
+            << ", consensus_stop_apply_index: "
+            << opt_consensus_stop_apply_index;
         opt_consensus_leader_stop_apply = false;
         mysql_mutex_lock(consensus_log_manager.get_apply_thread_lock());
         mysql_cond_broadcast(consensus_log_manager.get_catchup_cond());

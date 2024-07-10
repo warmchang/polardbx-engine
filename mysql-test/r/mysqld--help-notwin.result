@@ -284,6 +284,8 @@ The following options may be given as the first argument:
  --cluster-current-term=# 
  Cluster nodes current term  information
  --cluster-dump-meta Cluster dump meta
+ --cluster-follower-force-recover-index=# 
+ Cluster restore from follower set apply index point
  --cluster-force-change-meta 
  Cluster force to change meta
  --cluster-force-recover-index=# 
@@ -418,6 +420,8 @@ The following options may be given as the first argument:
  compression, 2: zstd compression) threshold checksum,    
  if ip:port is *:* it means set option to entire
  cluster.
+ --consensus-mts-force-apply-index=# 
+ Update consensus_apply_index in slave_relay_log_info
  --consensus-new-follower-threshold[=#] 
  Max delay index to allow a learner becomes a follower
  --consensus-old-compact-mode 
@@ -446,6 +450,8 @@ The following options may be given as the first argument:
  master
  --consensus-send-timeout=# 
  Consensus send packet timeout
+ --consensus-stop-apply-index[=#] 
+ member stop apply index
  --consensus-sync-follower-meta-interva[=#] 
  Interval of leader sync follower's meta for learner
  source
@@ -2140,6 +2146,7 @@ chroot (No default value)
 client-endpoint-ip (No default value)
 cluster-current-term 0
 cluster-dump-meta FALSE
+cluster-follower-force-recover-index 0
 cluster-force-change-meta FALSE
 cluster-force-recover-index 0
 cluster-force-single-mode FALSE
@@ -2195,6 +2202,7 @@ consensus-max-log-size 20971520
 consensus-max-packet-size 131072
 consensus-min-delay-index 5000
 consensus-msg-compress-option (No default value)
+consensus-mts-force-apply-index 0
 consensus-new-follower-threshold 10000
 consensus-old-compact-mode TRUE
 consensus-optimistic-heartbeat FALSE
@@ -2207,6 +2215,7 @@ consensus-replicate-with-cache-log FALSE
 consensus-reset-mts-info FALSE
 consensus-safe-for-reset-master FALSE
 consensus-send-timeout 0
+consensus-stop-apply-index 0
 consensus-sync-follower-meta-interva 1
 consensus-worker-thread-cnt 3
 consensuslog-revise TRUE
