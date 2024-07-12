@@ -88,13 +88,13 @@ if [ "${TEST_TYPE_ENUM}" -eq "${MERGE_PRECHECK}" ]; then
 else
   COMPILER_FLAGS=("${DEBUG_COMPILER_FLAGS[@]}")
   CMAKE_FLAGS=("${DEBUG_CMAKE_FLAGS[@]}")
-  if [ "${TEST_TYPE_ENUM}" -eq "${DAILY_REGRESSION}" ] ||
-    [ "${TEST_TYPE_ENUM}" -eq "${MANUAL}" ] ||
+  if [ "${TEST_TYPE_ENUM}" -eq "${MANUAL}" ] ||
     [ "${TEST_TYPE_ENUM}" -eq "${MANUAL_ALL}" ] ; then
     CMAKE_FLAGS+=(
       "-DENABLE_GCOV=0"
     )
-  elif [ "${TEST_TYPE_ENUM}" -eq "${MERGE_TEST_COVERAGE}" ]; then
+  elif [ "${TEST_TYPE_ENUM}" -eq "${DAILY_REGRESSION}" ] ||
+    [ "${TEST_TYPE_ENUM}" -eq "${MERGE_TEST_COVERAGE}" ]; then
     CMAKE_FLAGS+=(
       "-DENABLE_GCOV=1"
     )

@@ -1,22 +1,27 @@
 #!/usr/bin/bash
 source cicd/common.sh
 
-if [ "${TEST_TYPE_ENUM}" -ne "${MERGE_TEST_COVERAGE}" ]; then
+if [ "${TEST_TYPE_ENUM}" -ne "${MERGE_TEST_COVERAGE}" ] || 
+   [ "${TEST_TYPE_ENUM}" -ne "${DAILY_REGRESSION}" ]; then
   exit 0
 fi
 
-echo "MERGE_ID: ${MERGE_ID}"
+if [ "${TEST_TYPE_ENUM}" -eq "${MERGE_TEST_COVERAGE}"]; then
+  echo "MERGE_ID: ${MERGE_ID}"
+  MERGE_COMMITS=$(curl -k -s "https://code.aone.alibaba-inc.com/api/v4/projects/2694395/merge_request/${MERGE_ID}/push_records" | jq -r jq -r '.[] | {disappear_from_push_id: .commits[0].disappear_from_push_id, new_revision: .new_revision}')
+  LAST_COMMID_ID=$(git log -n 1 --format=%H)
+  LAST_COMMIT_TIME=$(git log -1 --format=%cd --date=format:'%Y-%m-%d %H:%M:%S')
+  LAST_COMMIT_EMAIL=$(git log -1 --pretty=format:'%ce')
 
-FIRST_COMMIT_ID=$(curl -k -s "https://qingzhou.aliyun-inc.com:5199/restapi/aliyun/commit_aone_issue?mr_id=${MERGE_ID}" | jq -r '.data[0].commit_id')
-LAST_COMMID_ID=$(git log -n 1 --format=%H)
-LAST_COMMIT_TIME=$(git log -1 --format=%cd --date=format:'%Y-%m-%d %H:%M:%S')
-LAST_COMMIT_EMAIL=$(git log -1 --pretty=format:'%ce')
+  cp cicd/cc_gen.sh ${CICD_BUILD_ROOT}
+  chmod +x ${CICD_BUILD_ROOT}/cc_gen.sh
 
-cp cicd/cc_gen.sh ${CICD_BUILD_ROOT}
-chmod +x ${CICD_BUILD_ROOT}/cc_gen.sh
+  cd ${CICD_BUILD_ROOT}
+  ./cc_gen.sh -c "${FIRST_COMMIT_ID}"
 
-cd ${CICD_BUILD_ROOT}
-./cc_gen.sh -c "${FIRST_COMMIT_ID}"
+else 
+  ./cc_gen.sh
+fi
 
 # PUSH RESULT
 result=$(
