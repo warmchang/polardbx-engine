@@ -351,12 +351,14 @@ static bool invalid_on_consensus_limited(enum_sql_command cmd,
   return (cmd > SQLCOM_SELECT && cmd <= SQLCOM_DROP_INDEX) ||
          (cmd == SQLCOM_LOAD) || (cmd == SQLCOM_GRANT) ||
          (cmd == SQLCOM_CHANGE_MASTER) ||
+         (cmd == SQLCOM_RENAME_TABLE) ||
          (cmd >= SQLCOM_CREATE_DB && cmd < SQLCOM_CHECK) ||
          (cmd >= SQLCOM_ASSIGN_TO_KEYCACHE && cmd < SQLCOM_FLUSH) ||
          (cmd >= SQLCOM_DELETE_MULTI && cmd <= SQLCOM_UPDATE_MULTI) ||
          (cmd >= SQLCOM_CREATE_USER && cmd <= SQLCOM_REVOKE_ALL) ||
          (cmd >= SQLCOM_CREATE_PROCEDURE && cmd <= SQLCOM_SHOW_STATUS_FUNC) ||
          (cmd >= SQLCOM_CREATE_VIEW && cmd <= SQLCOM_DROP_TRIGGER) ||
+         (cmd >= SQLCOM_XA_START && cmd <= SQLCOM_XA_ROLLBACK) ||
          (cmd == SQLCOM_ALTER_TABLESPACE) ||
          (cmd == SQLCOM_BINLOG_BASE64_EVENT) ||
          (cmd >= SQLCOM_CREATE_SERVER && cmd <= SQLCOM_DROP_EVENT) ||
