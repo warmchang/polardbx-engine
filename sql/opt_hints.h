@@ -153,6 +153,7 @@ class Opt_hints_map {
 class Opt_hints_key;
 class PT_hint;
 class PT_hint_max_execution_time;
+class PT_hint_sample_percentage;
 
 /**
   Opt_hints class is used as ancestor for Opt_hints_global,
@@ -362,6 +363,7 @@ class Opt_hints_global : public Opt_hints {
   im::Ccl_queue_hint *ccl_queue_hint;
   Sample_percentage_hint *sample_hint;
   im::Inventory_hint *inventory_hint;
+  PT_hint_sample_percentage *sample_percentage;
 
   Opt_hints_global(MEM_ROOT *mem_root_arg)
       : Opt_hints(nullptr, nullptr, mem_root_arg) {
@@ -370,6 +372,7 @@ class Opt_hints_global : public Opt_hints {
     ccl_queue_hint = nullptr;
     sample_hint = nullptr;
     inventory_hint = NULL;
+    sample_percentage = NULL;
   }
 
   void append_name(const THD *, String *) override {}

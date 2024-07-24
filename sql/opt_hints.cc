@@ -198,7 +198,7 @@ void Opt_hints::check_unresolved(THD *thd) {
 
 PT_hint *Opt_hints_global::get_complex_hints(opt_hints_enum type) {
   if (type == MAX_EXEC_TIME_HINT_ENUM) return max_exec_time;
-
+  if (type == SAMPLE_PERCENTAGE_HINT_ENUM) return sample_percentage;
   assert(0);
   return nullptr;
 }
