@@ -2773,7 +2773,8 @@ void row_mysql_unlock_data_dictionary(trx_t *trx) /*!< in/out: transaction */
 dberr_t row_create_table_for_mysql(dict_table_t *&table,
                                    const char *compression,
                                    const HA_CREATE_INFO *create_info,
-                                   trx_t *trx, mem_heap_t *heap) {
+                                   trx_t *trx, mem_heap_t *heap,
+                                   const lizard::Ha_ddl_policy *ddl_policy) {
   dberr_t err;
 
   ut_ad(!dict_sys_mutex_own());
@@ -2811,6 +2812,9 @@ dberr_t row_create_table_for_mysql(dict_table_t *&table,
     table = nullptr;
     return err;
   }
+
+  lizard::dd_fill_dict_table_fba(
+      lizard::ha_ddl_create_table_policy(ddl_policy, table), table);
 
   bool free_heap = false;
   if (heap == nullptr) {
@@ -3058,7 +3062,8 @@ dberr_t row_create_index_for_mysql(
     idx = dict_table_get_index_on_name(table, index_name);
 
     ut_ad(idx);
-    err = fts_create_index_tables_low(trx, idx, table->name.m_name, table->id);
+    err = fts_create_index_tables_low(trx, idx, table->name.m_name, table->id,
+                                      ddl_policy);
   }
 
 error_handling:

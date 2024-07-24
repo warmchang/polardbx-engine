@@ -105,8 +105,6 @@ this program; if not, write to the Free Software Foundation, Inc.,
 #include "ha_innopart.h"
 #include "partition_info.h"
 
-#include "sql/dd/lizard_dd_table.h"
-
 /** Function to convert the Instant_Type to a comparable int */
 inline uint16_t instant_type_to_int(Instant_Type type) {
   return (static_cast<typename std::underlying_type<Log_Type>::type>(type));
@@ -4654,9 +4652,6 @@ template <typename Table>
     /* TODO: Fix this problematic assignment */
     ctx->new_table->dd_space_id = new_dd_tab->tablespace_id();
 
-    ctx->new_table->is_2pp =
-        lizard::dd_table_get_flashback_area(*new_dd_tab);
-
     /* The rebuilt indexed_table will use the renamed
     column names. */
     ctx->col_names = nullptr;
@@ -4811,7 +4806,7 @@ template <typename Table>
 
     error = row_create_table_for_mysql(ctx->new_table, compression,
                                        ha_alter_info->create_info, ctx->trx,
-                                       nullptr);
+                                       nullptr, ha_alter_info->ddl_policy);
 
     dict_sys_mutex_enter();
 
@@ -5031,7 +5026,8 @@ template <typename Table>
     the trx_t::dict_operation flag on success. */
 
     dict_sys_mutex_exit();
-    error = fts_create_index_tables(ctx->trx, fts_index);
+    error =
+        fts_create_index_tables(ctx->trx, fts_index, ha_alter_info->ddl_policy);
     dict_sys_mutex_enter();
 
     DBUG_EXECUTE_IF("innodb_test_fail_after_fts_index_table",
@@ -5051,7 +5047,8 @@ template <typename Table>
 
       if (!exist_fts_common) {
         error = fts_create_common_tables(ctx->trx, ctx->new_table,
-                                         user_table->name.m_name, true);
+                                         user_table->name.m_name, true,
+                                         ha_alter_info->ddl_policy);
 
         DBUG_EXECUTE_IF("innodb_test_fail_after_fts_common_table",
                         error = DB_LOCK_WAIT_TIMEOUT;);
@@ -11088,6 +11085,9 @@ int ha_innopart::exchange_partition_low(uint part_id, dd::Table *part_table,
   }
 
   dd_part_adjust_table_id(part_table);
+
+  /** Swap the flashback area between partition and table */
+  lizard::dd_exchange_table_fba(dd_part->options(), swap_table->options());
 
 func_exit:
   free(swap_name);

@@ -392,7 +392,13 @@ ST_FIELD_INFO innodb_table_status_fields_info[] = {
      STRUCT_FLD(field_flags, MY_I_S_MAYBE_NULL), STRUCT_FLD(old_name, ""),
      STRUCT_FLD(open_method, 0)},
 
-#define IDX_TS_OPTIONS 2
+#define IDX_TS_PARTITION_NAME 2
+    {STRUCT_FLD(field_name, "PARTITION_NAME"), STRUCT_FLD(field_length, 1024),
+     STRUCT_FLD(field_type, MYSQL_TYPE_STRING), STRUCT_FLD(value, 0),
+     STRUCT_FLD(field_flags, MY_I_S_MAYBE_NULL), STRUCT_FLD(old_name, ""),
+     STRUCT_FLD(open_method, 0)},
+
+#define IDX_TS_OPTIONS 3
     {STRUCT_FLD(field_name, "options"), STRUCT_FLD(field_length, 8192),
      STRUCT_FLD(field_type, MYSQL_TYPE_STRING), STRUCT_FLD(value, 0),
      STRUCT_FLD(field_flags, MY_I_S_MAYBE_NULL), STRUCT_FLD(old_name, ""),
@@ -426,7 +432,7 @@ static int innodb_table_status_fill_table(THD *thd,
     DBUG_RETURN(1);
   }
 
-  for (auto dd_table: dd_tables) {
+  for (auto dd_table : dd_tables) {
     auto it = schema_map.find(dd_table->schema_id());
     if (it == schema_map.end()) {
       continue;
@@ -438,6 +444,8 @@ static int innodb_table_status_fill_table(THD *thd,
     OK(field_store_string(fields[IDX_TS_TABLE_NAME], dd_table->name().c_str()));
     fields[IDX_TS_TABLE_NAME]->set_notnull();
 
+    fields[IDX_TS_PARTITION_NAME]->set_null();
+
     dd::String_type options = dd_table->options().raw_string();
     if (options.empty()) {
       fields[IDX_TS_OPTIONS]->set_null();
@@ -447,6 +455,29 @@ static int innodb_table_status_fill_table(THD *thd,
     }
 
     OK(schema_table_store_record(thd, table));
+
+    for (auto dd_par : dd_table->partitions()) {
+      OK(field_store_string(fields[IDX_TS_SCHEMA_NAME], it->second.c_str()));
+      fields[IDX_TS_SCHEMA_NAME]->set_notnull();
+
+      OK(field_store_string(fields[IDX_TS_TABLE_NAME],
+                            dd_table->name().c_str()));
+      fields[IDX_TS_TABLE_NAME]->set_notnull();
+
+      OK(field_store_string(fields[IDX_TS_PARTITION_NAME],
+                            dd_par->name().c_str()));
+      fields[IDX_TS_PARTITION_NAME]->set_notnull();
+
+      dd::String_type options = dd_par->options().raw_string();
+      if (options.empty()) {
+        fields[IDX_TS_OPTIONS]->set_null();
+      } else {
+        OK(field_store_string(fields[IDX_TS_OPTIONS], options.c_str()));
+        fields[IDX_TS_OPTIONS]->set_notnull();
+      }
+
+      OK(schema_table_store_record(thd, table));
+    }
   }
 
   DBUG_RETURN(0);

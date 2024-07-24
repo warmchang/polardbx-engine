@@ -325,7 +325,7 @@ c1
                 "is_generated": false,
                 "ordinal_position": 1,
                 "comment": "",
-                "options": "flags=0;",
+                "options": "IFT=0;flags=0;",
                 "se_private_data": "gcn=18446744073709551615;ID
                 "type": 1,
                 "algorithm": 2,
@@ -434,7 +434,7 @@ c1
         "CREATED
         "LAST_ALTERED
         "hID
-        "options": "avg_row_length=0;encrypt_type=N;flashback_area=1;key_block_size=0;keys_disabled=0;pack_record=0;stats_auto_recalc=0;stats_sample_pages=0;",
+        "options": "avg_row_length=0;encrypt_type=N;key_block_size=0;keys_disabled=0;pack_record=0;stats_auto_recalc=0;stats_sample_pages=0;",
         "columns": [
             {
                 "name": "a",
@@ -755,7 +755,7 @@ c1
                 "description_utf8": "1000",
                 "engine": "InnoDB",
                 "comment": "",
-                "options": "",
+                "options": "flashback_area=1;",
                 "se_private_data": "",
                 "values": [
                     {
@@ -768,7 +768,7 @@ c1
                 ],
                 "indexes": [
                     {
-                        "options": "",
+                        "options": "IFT=0;",
                         "se_private_data": "gcn=18446744073709551615;ID
                         "index_opx": 0,
                         "tablespace_ref": "test/pt1#p#p1"
@@ -784,7 +784,7 @@ c1
                 "description_utf8": "2000",
                 "engine": "InnoDB",
                 "comment": "",
-                "options": "",
+                "options": "flashback_area=1;",
                 "se_private_data": "",
                 "values": [
                     {
@@ -797,7 +797,7 @@ c1
                 ],
                 "indexes": [
                     {
-                        "options": "",
+                        "options": "IFT=0;",
                         "se_private_data": "gcn=18446744073709551615;ID
                         "index_opx": 0,
                         "tablespace_ref": "test/pt1#p#p2"
@@ -813,7 +813,7 @@ c1
                 "description_utf8": "3000",
                 "engine": "InnoDB",
                 "comment": "",
-                "options": "",
+                "options": "flashback_area=1;",
                 "se_private_data": "",
                 "values": [
                     {
@@ -826,7 +826,7 @@ c1
                 ],
                 "indexes": [
                     {
-                        "options": "",
+                        "options": "IFT=0;",
                         "se_private_data": "gcn=18446744073709551615;ID
                         "index_opx": 0,
                         "tablespace_ref": "test/pt1#p#p3"
@@ -886,7 +886,7 @@ c1
         "CREATED
         "LAST_ALTERED
         "hID
-        "options": "avg_row_length=0;encrypt_type=N;flashback_area=1;key_block_size=0;keys_disabled=0;pack_record=0;stats_auto_recalc=0;stats_sample_pages=0;",
+        "options": "avg_row_length=0;encrypt_type=N;key_block_size=0;keys_disabled=0;pack_record=0;stats_auto_recalc=0;stats_sample_pages=0;",
         "columns": [
             {
                 "name": "c1",
@@ -1301,12 +1301,12 @@ c1
                         "description_utf8": "",
                         "engine": "InnoDB",
                         "comment": "",
-                        "options": "",
+                        "options": "flashback_area=1;",
                         "se_private_data": "",
                         "values": [],
                         "indexes": [
                             {
-                                "options": "",
+                                "options": "IFT=0;",
                                 "se_private_data": "gcn=18446744073709551615;ID
                                 "index_opx": 0,
                                 "tablespace_ref": "src/src_t2#p#p0#sp#p0sp0"
@@ -1322,12 +1322,12 @@ c1
                         "description_utf8": "",
                         "engine": "InnoDB",
                         "comment": "",
-                        "options": "",
+                        "options": "flashback_area=1;",
                         "se_private_data": "",
                         "values": [],
                         "indexes": [
                             {
-                                "options": "",
+                                "options": "IFT=0;",
                                 "se_private_data": "gcn=18446744073709551615;ID
                                 "index_opx": 0,
                                 "tablespace_ref": "src/src_t2#p#p0#sp#p0sp1"
@@ -1343,12 +1343,12 @@ c1
                         "description_utf8": "",
                         "engine": "InnoDB",
                         "comment": "",
-                        "options": "",
+                        "options": "flashback_area=1;",
                         "se_private_data": "",
                         "values": [],
                         "indexes": [
                             {
-                                "options": "",
+                                "options": "IFT=0;",
                                 "se_private_data": "gcn=18446744073709551615;ID
                                 "index_opx": 0,
                                 "tablespace_ref": "src/src_t2#p#p0#sp#p0sp2"
@@ -1415,12 +1415,12 @@ c1
                         "description_utf8": "",
                         "engine": "InnoDB",
                         "comment": "",
-                        "options": "",
+                        "options": "flashback_area=1;",
                         "se_private_data": "",
                         "values": [],
                         "indexes": [
                             {
-                                "options": "",
+                                "options": "IFT=0;",
                                 "se_private_data": "gcn=18446744073709551615;ID
                                 "index_opx": 0,
                                 "tablespace_ref": "src/src_t2#p#p1#sp#p1sp0"
@@ -1436,12 +1436,12 @@ c1
                         "description_utf8": "",
                         "engine": "InnoDB",
                         "comment": "",
-                        "options": "",
+                        "options": "flashback_area=1;",
                         "se_private_data": "",
                         "values": [],
                         "indexes": [
                             {
-                                "options": "",
+                                "options": "IFT=0;",
                                 "se_private_data": "gcn=18446744073709551615;ID
                                 "index_opx": 0,
                                 "tablespace_ref": "src/src_t2#p#p1#sp#p1sp1"
@@ -1457,12 +1457,12 @@ c1
                         "description_utf8": "",
                         "engine": "InnoDB",
                         "comment": "",
-                        "options": "",
+                        "options": "flashback_area=1;",
                         "se_private_data": "",
                         "values": [],
                         "indexes": [
                             {
-                                "options": "",
+                                "options": "IFT=0;",
                                 "se_private_data": "gcn=18446744073709551615;ID
                                 "index_opx": 0,
                                 "tablespace_ref": "src/src_t2#p#p1#sp#p1sp2"
@@ -1831,7 +1831,7 @@ c1
                 "is_generated": false,
                 "ordinal_position": 1,
                 "comment": "",
-                "options": "flags=0;",
+                "options": "IFT=0;flags=0;",
                 "se_private_data": "gcn=18446744073709551615;ID
                 "type": 1,
                 "algorithm": 2,
@@ -1940,7 +1940,7 @@ c1
         "CREATED
         "LAST_ALTERED
         "hID
-        "options": "avg_row_length=0;encrypt_type=N;flashback_area=1;key_block_size=0;keys_disabled=0;pack_record=0;stats_auto_recalc=0;stats_sample_pages=0;",
+        "options": "avg_row_length=0;encrypt_type=N;key_block_size=0;keys_disabled=0;pack_record=0;stats_auto_recalc=0;stats_sample_pages=0;",
         "columns": [
             {
                 "name": "a",
@@ -2261,7 +2261,7 @@ c1
                 "description_utf8": "1000",
                 "engine": "InnoDB",
                 "comment": "",
-                "options": "",
+                "options": "flashback_area=1;",
                 "se_private_data": "",
                 "values": [
                     {
@@ -2274,7 +2274,7 @@ c1
                 ],
                 "indexes": [
                     {
-                        "options": "",
+                        "options": "IFT=0;",
                         "se_private_data": "gcn=18446744073709551615;ID
                         "index_opx": 0,
                         "tablespace_ref": "test/pt1#p#p1"
@@ -2290,7 +2290,7 @@ c1
                 "description_utf8": "2000",
                 "engine": "InnoDB",
                 "comment": "",
-                "options": "",
+                "options": "flashback_area=1;",
                 "se_private_data": "",
                 "values": [
                     {
@@ -2303,7 +2303,7 @@ c1
                 ],
                 "indexes": [
                     {
-                        "options": "",
+                        "options": "IFT=0;",
                         "se_private_data": "gcn=18446744073709551615;ID
                         "index_opx": 0,
                         "tablespace_ref": "test/pt1#p#p2"
@@ -2319,7 +2319,7 @@ c1
                 "description_utf8": "3000",
                 "engine": "InnoDB",
                 "comment": "",
-                "options": "",
+                "options": "flashback_area=1;",
                 "se_private_data": "",
                 "values": [
                     {
@@ -2332,7 +2332,7 @@ c1
                 ],
                 "indexes": [
                     {
-                        "options": "",
+                        "options": "IFT=0;",
                         "se_private_data": "gcn=18446744073709551615;ID
                         "index_opx": 0,
                         "tablespace_ref": "test/pt1#p#p3"
@@ -2391,7 +2391,7 @@ c1
         "CREATED
         "LAST_ALTERED
         "hID
-        "options": "avg_row_length=0;encrypt_type=N;flashback_area=1;key_block_size=0;keys_disabled=0;pack_record=0;stats_auto_recalc=0;stats_sample_pages=0;",
+        "options": "avg_row_length=0;encrypt_type=N;key_block_size=0;keys_disabled=0;pack_record=0;stats_auto_recalc=0;stats_sample_pages=0;",
         "columns": [
             {
                 "name": "c1",
@@ -2806,12 +2806,12 @@ c1
                         "description_utf8": "",
                         "engine": "InnoDB",
                         "comment": "",
-                        "options": "",
+                        "options": "flashback_area=1;",
                         "se_private_data": "discard=0;",
                         "values": [],
                         "indexes": [
                             {
-                                "options": "",
+                                "options": "IFT=0;",
                                 "se_private_data": "gcn=18446744073709551615;ID
                                 "index_opx": 0,
                                 "tablespace_ref": "dst/dst_t2#p#p0#sp#p0sp0"
@@ -2827,12 +2827,12 @@ c1
                         "description_utf8": "",
                         "engine": "InnoDB",
                         "comment": "",
-                        "options": "",
+                        "options": "flashback_area=1;",
                         "se_private_data": "discard=0;",
                         "values": [],
                         "indexes": [
                             {
-                                "options": "",
+                                "options": "IFT=0;",
                                 "se_private_data": "gcn=18446744073709551615;ID
                                 "index_opx": 0,
                                 "tablespace_ref": "dst/dst_t2#p#p0#sp#p0sp1"
@@ -2848,12 +2848,12 @@ c1
                         "description_utf8": "",
                         "engine": "InnoDB",
                         "comment": "",
-                        "options": "",
+                        "options": "flashback_area=1;",
                         "se_private_data": "discard=0;",
                         "values": [],
                         "indexes": [
                             {
-                                "options": "",
+                                "options": "IFT=0;",
                                 "se_private_data": "gcn=18446744073709551615;ID
                                 "index_opx": 0,
                                 "tablespace_ref": "dst/dst_t2#p#p0#sp#p0sp2"
@@ -2920,12 +2920,12 @@ c1
                         "description_utf8": "",
                         "engine": "InnoDB",
                         "comment": "",
-                        "options": "",
+                        "options": "flashback_area=1;",
                         "se_private_data": "discard=0;",
                         "values": [],
                         "indexes": [
                             {
-                                "options": "",
+                                "options": "IFT=0;",
                                 "se_private_data": "gcn=18446744073709551615;ID
                                 "index_opx": 0,
                                 "tablespace_ref": "dst/dst_t2#p#p1#sp#p1sp0"
@@ -2941,12 +2941,12 @@ c1
                         "description_utf8": "",
                         "engine": "InnoDB",
                         "comment": "",
-                        "options": "",
+                        "options": "flashback_area=1;",
                         "se_private_data": "",
                         "values": [],
                         "indexes": [
                             {
-                                "options": "",
+                                "options": "IFT=0;",
                                 "se_private_data": "gcn=18446744073709551615;ID
                                 "index_opx": 0,
                                 "tablespace_ref": "dst/dst_t2#p#p1#sp#p1sp1"
@@ -2962,12 +2962,12 @@ c1
                         "description_utf8": "",
                         "engine": "InnoDB",
                         "comment": "",
-                        "options": "",
+                        "options": "flashback_area=1;",
                         "se_private_data": "",
                         "values": [],
                         "indexes": [
                             {
-                                "options": "",
+                                "options": "IFT=0;",
                                 "se_private_data": "gcn=18446744073709551615;ID
                                 "index_opx": 0,
                                 "tablespace_ref": "dst/dst_t2#p#p1#sp#p1sp2"

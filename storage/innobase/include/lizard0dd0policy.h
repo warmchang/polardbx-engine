@@ -32,6 +32,7 @@ this program; if not, write to the Free Software Foundation, Inc.,
 #ifndef LIZARD_DD_POLICY_INCLUDED
 #define LIZARD_DD_POLICY_INCLUDED
 
+#include "dd/types/table.h"
 #include "sql/dd/lizard_policy_types.h"
 
 namespace lizard {
@@ -46,12 +47,23 @@ extern bool validate_dd_index_policy(dd::Properties *options,
 template <typename Table>
 extern Indexes_policy dd_fill_indexes_policy(const Table *dd_table);
 
-extern const Table_policy ha_ddl_create_table_policy(Ha_ddl_policy *ddl_policy,
-                                                     const dict_table_t *table);
+/**
+  Fill table_policy from a dd::Table or dd::Partition object.
+  This function should be called when open a table.
+
+  @param[in,out]  table_policy       table policy to be filled
+  @param[in]      dd_table           dd::table or dd::parititon
+*/
+template <typename Table>
+extern void dd_fill_table_policy(Table_policy &table_policy,
+                                 const Table &dd_table);
+
+extern const Table_policy ha_ddl_create_table_policy(
+    const Ha_ddl_policy *ddl_policy, const dict_table_t *table);
 
 extern const Index_policy ha_ddl_create_index_policy(Ha_ddl_policy *ddl_policy,
                                                      const dict_table_t *table,
                                                      const dict_index_t *index);
-}
+}  // namespace lizard
 
 #endif

@@ -609,6 +609,9 @@ struct System_status_var {
   /* Number of statements sent from the client. */
   ulonglong questions;
 
+  /** Number of queries via flashback area. */
+  ulonglong flashback_area_query_cnt;
+
   /// How many queries have been executed on a secondary storage engine.
   ulonglong secondary_engine_execution_count;
 
@@ -622,9 +625,6 @@ struct System_status_var {
   */
   double last_query_cost;
   ulonglong last_query_partial_plans;
-
-  /** Number of queries via flashback area in the session. */
-  ulonglong flashback_area_query_cnt;
 };
 
 /*

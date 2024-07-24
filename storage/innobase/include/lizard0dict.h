@@ -271,6 +271,55 @@ extern void dd_copy_index_format(dd::Properties &new_dd_options,
 extern void dd_exchange_index_format(dd::Properties &part_dd_options,
                                      dd::Properties &swap_dd_options);
 
+/**
+  Instantiate table related metadata about flashback area
+  @param[in]      table_policy  table config info
+  @param[in]      table         InnoDB table definition, dict_table_t to fill
+*/
+extern void dd_fill_dict_table_fba(const Table_policy &table_policy,
+                                   dict_table_t *table);
+
+/**
+  Write lizard metadata of a table to dd::Table or dd::Partition_table for
+  partition tables.
+
+  @param[in,out]  dd_options  dd_options which might carry flashback area info
+  @param[in]      index       InnoDB index object
+*/
+extern void dd_write_table_fba(dd::Properties *options,
+                               const dict_table_t *table);
+
+/**
+  Copy the flashback area option from an old dd table to a new dd table.
+
+  @param[in]          old_dd_tab     old dd::table or dd::partition
+  @param[in,out]      new_dd_tab     new dd::table or dd::partition
+*/
+template <typename Table>
+extern void dd_copy_table_fba(const Table &old_dd_tab, Table &new_dd_tab);
+
+/**
+  Check whether the flashback area option is consistent between the DD object
+  and the InnoDB table object.
+
+  @param[in,out]  table             Innodb table object
+  @param[in]      dd_table          dd::table or dd::parititon
+
+  @return `true` if the flashback area options are consistent, `false`
+  otherwise.
+*/
+template <typename Table>
+extern bool dd_check_table_fba(const dict_table_t *table,
+                               const Table *dd_table);
+
+/**
+  Exchange flashback area option between Partition table and Swap table.
+  @param[in,out]   part_dd_options  dd options from dd::Partition_table
+  @param[in,out]   swap_dd_options  dd options from dd::table
+*/
+extern void dd_exchange_table_fba(dd::Properties &part_dd_options,
+                                  dd::Properties &swap_dd_options);
+
 #if defined UNIV_DEBUG || defined LIZARD_DEBUG
 /**
   Check the dict_table_t object

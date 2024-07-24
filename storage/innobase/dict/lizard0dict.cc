@@ -448,6 +448,77 @@ void dd_exchange_index_format(dd::Properties &part_dd_options,
   swap_dd_options.set(OPTION_IFT, part_format);
 }
 
+static bool dd_table_options_has_fba(const dd::Properties *options) {
+  bool fba = false;
+
+  if (options->exists(TABLE_OPTION_FBA)) {
+    options->get(TABLE_OPTION_FBA, &fba);
+    return fba;
+  } else {
+    return false;
+  }
+}
+
+void dd_fill_dict_table_fba(const Table_policy &table_policy,
+                            dict_table_t *table) {
+  /** Promise only fill once. */
+  ut_a(table->is_2pp == false);
+  ut_a(table_policy.inited());
+
+  if (table_policy.has_fba()) {
+    ut_ad(!table->is_temporary());
+    ut_ad(!table->is_system_table);
+    ut_ad(!table->is_intrinsic());
+  }
+
+  table->is_2pp = table_policy.has_fba();
+}
+
+void dd_write_table_fba(dd::Properties *options, const dict_table_t *table) {
+  // ut_ad(!dd_table_options_has_fba(options));
+
+  options->set(TABLE_OPTION_FBA, table->is_2pp);
+}
+
+template <typename Table>
+void dd_copy_table_fba(const Table &old_dd_tab, Table &new_dd_tab) {
+  new_dd_tab.options().set(TABLE_OPTION_FBA,
+                           dd_table_options_has_fba(&old_dd_tab.options()));
+}
+
+template void dd_copy_table_fba<dd::Table>(const dd::Table &old_dd_tab,
+                                           dd::Table &new_dd_tab);
+
+template void dd_copy_table_fba<dd::Partition>(const dd::Partition &old_dd_tab,
+                                               dd::Partition &new_dd_tab);
+
+template <typename Table>
+bool dd_check_table_fba(const dict_table_t *table, const Table *dd_table) {
+  return (table->is_2pp == dd_table_options_has_fba(&dd_table->options()));
+}
+
+template bool dd_check_table_fba<dd::Table>(const dict_table_t *table,
+                                            const dd::Table *dd_table);
+
+template bool dd_check_table_fba<dd::Partition>(const dict_table_t *table,
+                                                const dd::Partition *dd_table);
+
+void dd_exchange_table_fba(dd::Properties &part_dd_options,
+                           dd::Properties &swap_dd_options) {
+  bool part_fba = false;
+  bool swap_fba = false;
+  if (part_dd_options.exists(TABLE_OPTION_FBA)) {
+    part_dd_options.get(TABLE_OPTION_FBA, &part_fba);
+  }
+
+  if (swap_dd_options.exists(TABLE_OPTION_FBA)) {
+    swap_dd_options.get(TABLE_OPTION_FBA, &swap_fba);
+  }
+
+  part_dd_options.set(TABLE_OPTION_FBA, swap_fba);
+  swap_dd_options.set(TABLE_OPTION_FBA, part_fba);
+}
+
 #if defined UNIV_DEBUG || defined LIZARD_DEBUG
 /**
   Check the dict_table_t object

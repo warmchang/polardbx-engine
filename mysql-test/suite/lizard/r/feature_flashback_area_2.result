@@ -12,14 +12,14 @@ create table bar (c1 int, c2 int, primary key(c1), key(c2));
 insert into bar values (1, 1);
 insert into bar values (2, 2);
 select * from information_schema.innodb_table_status where table_name='bar';
-SCHEMA_NAME	TABLE_NAME	options
-test	bar	avg_row_length=0;encrypt_type=N;flashback_area=1;key_block_size=0;keys_disabled=0;pack_record=0;stats_auto_recalc=0;stats_sample_pages=0;
+SCHEMA_NAME	TABLE_NAME	PARTITION_NAME	options
+test	bar	NULL	avg_row_length=0;encrypt_type=N;flashback_area=1;key_block_size=0;keys_disabled=0;pack_record=0;stats_auto_recalc=0;stats_sample_pages=0;
 
 === test flashback to a future moment ===
 set query_via_flashback_area = 1;
 select * from bar as of timestamp date_add(now(), interval 2 hour);
 ERROR HY000: The snapshot to find is out of range, please adjust scn history configuration
-SHOW STATUS WHERE Variable_name = 'flashback_area_query_cnt';
+SHOW GLOBAL STATUS WHERE Variable_name = 'flashback_area_query_cnt';
 Variable_name	Value
 Flashback_area_query_cnt	1
 
@@ -39,14 +39,14 @@ select * from bar as of timestamp @past_timestamp;
 c1	c2
 1	3
 2	2
-SHOW STATUS WHERE Variable_name = 'flashback_area_query_cnt';
+SHOW GLOBAL STATUS WHERE Variable_name = 'flashback_area_query_cnt';
 Variable_name	Value
 Flashback_area_query_cnt	2
 set query_via_flashback_area = 1;
 select c1 from bar as of timestamp @past_timestamp force index(c2) where c2 = 3;
 c1
 1
-SHOW STATUS WHERE Variable_name = 'flashback_area_query_cnt';
+SHOW GLOBAL STATUS WHERE Variable_name = 'flashback_area_query_cnt';
 Variable_name	Value
 Flashback_area_query_cnt	3
 
@@ -57,19 +57,22 @@ update bar set c2 = 5 where c1 = 1;
 set query_via_flashback_area = 1;
 select * from bar as of timestamp @past_timestamp;
 ERROR HY000: Snapshot too old
-SHOW STATUS WHERE Variable_name = 'flashback_area_query_cnt';
+SHOW GLOBAL STATUS WHERE Variable_name = 'flashback_area_query_cnt';
 Variable_name	Value
 Flashback_area_query_cnt	4
 set query_via_flashback_area = 1;
 select c1 from bar as of timestamp @past_timestamp force index(c2) where c2 = 4;
 ERROR HY000: Snapshot too old
-SHOW STATUS WHERE Variable_name = 'flashback_area_query_cnt';
+SHOW GLOBAL STATUS WHERE Variable_name = 'flashback_area_query_cnt';
 Variable_name	Value
 Flashback_area_query_cnt	5
 drop table bar;
-====================================================
+
+========================================================
 Test flashback_area across different DDL operations.
-====================================================
+The ALTER TABLE statement will modify the flashback_area
+option only if the table needs to be rebuilt.
+========================================================
 set opt_flashback_area = 1;
 set global innodb_undo_retention = 0;
 set global innodb_txn_retention = 36000;
@@ -89,145 +92,332 @@ create table t6 like t1;
 create table t7 like t1;
 create table t8 like t1;
 create table t9 like t1;
-create table t10 like t1;
 insert into t6 select * from t1;
 insert into t7 select * from t1;
 insert into t8 select * from t1;
 insert into t9 select * from t1;
-insert into t10 select * from t1;
 select * from information_schema.innodb_table_status where schema_name='test';
-SCHEMA_NAME	TABLE_NAME	options
-test	t1	avg_row_length=0;encrypt_type=N;flashback_area=1;key_block_size=0;keys_disabled=0;pack_record=0;stats_auto_recalc=0;stats_sample_pages=0;
-test	t2	avg_row_length=0;encrypt_type=N;flashback_area=1;key_block_size=0;keys_disabled=0;pack_record=0;stats_auto_recalc=0;stats_sample_pages=0;
-test	t3	avg_row_length=0;encrypt_type=N;flashback_area=1;key_block_size=0;keys_disabled=0;pack_record=0;stats_auto_recalc=0;stats_sample_pages=0;
-test	t4	avg_row_length=0;encrypt_type=N;flashback_area=1;key_block_size=0;keys_disabled=0;pack_record=0;stats_auto_recalc=0;stats_sample_pages=0;
-test	t5	avg_row_length=0;encrypt_type=N;flashback_area=1;key_block_size=0;keys_disabled=0;pack_record=0;stats_auto_recalc=0;stats_sample_pages=0;
-test	t6	avg_row_length=0;encrypt_type=N;key_block_size=0;keys_disabled=0;pack_record=0;stats_auto_recalc=0;stats_sample_pages=0;
-test	t7	avg_row_length=0;encrypt_type=N;key_block_size=0;keys_disabled=0;pack_record=0;stats_auto_recalc=0;stats_sample_pages=0;
-test	t8	avg_row_length=0;encrypt_type=N;key_block_size=0;keys_disabled=0;pack_record=0;stats_auto_recalc=0;stats_sample_pages=0;
-test	t9	avg_row_length=0;encrypt_type=N;key_block_size=0;keys_disabled=0;pack_record=0;stats_auto_recalc=0;stats_sample_pages=0;
-test	t10	avg_row_length=0;encrypt_type=N;key_block_size=0;keys_disabled=0;pack_record=0;stats_auto_recalc=0;stats_sample_pages=0;
+SCHEMA_NAME	TABLE_NAME	PARTITION_NAME	options
+test	t1	NULL	avg_row_length=0;encrypt_type=N;flashback_area=1;key_block_size=0;keys_disabled=0;pack_record=0;stats_auto_recalc=0;stats_sample_pages=0;
+test	t2	NULL	avg_row_length=0;encrypt_type=N;flashback_area=1;key_block_size=0;keys_disabled=0;pack_record=0;stats_auto_recalc=0;stats_sample_pages=0;
+test	t3	NULL	avg_row_length=0;encrypt_type=N;flashback_area=1;key_block_size=0;keys_disabled=0;pack_record=0;stats_auto_recalc=0;stats_sample_pages=0;
+test	t4	NULL	avg_row_length=0;encrypt_type=N;flashback_area=1;key_block_size=0;keys_disabled=0;pack_record=0;stats_auto_recalc=0;stats_sample_pages=0;
+test	t5	NULL	avg_row_length=0;encrypt_type=N;flashback_area=1;key_block_size=0;keys_disabled=0;pack_record=0;stats_auto_recalc=0;stats_sample_pages=0;
+test	t6	NULL	avg_row_length=0;encrypt_type=N;flashback_area=0;key_block_size=0;keys_disabled=0;pack_record=0;stats_auto_recalc=0;stats_sample_pages=0;
+test	t7	NULL	avg_row_length=0;encrypt_type=N;flashback_area=0;key_block_size=0;keys_disabled=0;pack_record=0;stats_auto_recalc=0;stats_sample_pages=0;
+test	t8	NULL	avg_row_length=0;encrypt_type=N;flashback_area=0;key_block_size=0;keys_disabled=0;pack_record=0;stats_auto_recalc=0;stats_sample_pages=0;
+test	t9	NULL	avg_row_length=0;encrypt_type=N;flashback_area=0;key_block_size=0;keys_disabled=0;pack_record=0;stats_auto_recalc=0;stats_sample_pages=0;
 set global innodb_undo_retention = 3600;
-set opt_flashback_area = 0;
 set @past_timestamps = (select now());
-=== t2 ===
-alter table t2 add c3 int default 100;
-select * from information_schema.innodb_table_status where table_name='t2';
-SCHEMA_NAME	TABLE_NAME	options
-test	t2	avg_row_length=0;encrypt_type=N;key_block_size=0;keys_disabled=0;pack_record=0;stats_auto_recalc=0;stats_sample_pages=0;
+
+=== Operations with "ALGORITHM = copy" always rebuild the table. ===
+include/assert.inc [The options for test.t1. should match the expected FBA=1 condition]
+set opt_flashback_area = 0;
+alter table t1 add c3 int default 100, ALGORITHM = copy;
+include/assert.inc [The options for test.t1. should match the expected FBA=0 condition]
 set query_via_flashback_area = 1;
-select * from t2 as of timestamp @past_timestamps;
+select * from t1 as of timestamp @past_timestamps;
 ERROR HY000: The definition of the table required by the flashback query has changed
-SHOW STATUS WHERE Variable_name = 'flashback_area_query_cnt';
-Variable_name	Value
-Flashback_area_query_cnt	0
-=== t3 ===
-alter table t3 add c3 int default 100, ALGORITHM = copy;
-select * from information_schema.innodb_table_status where table_name='t3';
-SCHEMA_NAME	TABLE_NAME	options
-test	t3	avg_row_length=0;encrypt_type=N;key_block_size=0;keys_disabled=0;pack_record=0;stats_auto_recalc=0;stats_sample_pages=0;
-set query_via_flashback_area = 1;
-select * from t3 as of timestamp @past_timestamps;
-ERROR HY000: The definition of the table required by the flashback query has changed
-SHOW STATUS WHERE Variable_name = 'flashback_area_query_cnt';
-Variable_name	Value
-Flashback_area_query_cnt	0
-=== t4 ===
-drop table t4;
-create table t4 as select * from t1;
-select * from information_schema.innodb_table_status where table_name='t4';
-SCHEMA_NAME	TABLE_NAME	options
-test	t4	avg_row_length=0;encrypt_type=N;key_block_size=0;keys_disabled=0;pack_record=0;stats_auto_recalc=0;stats_sample_pages=0;
-set query_via_flashback_area = 1;
-select * from t4 as of timestamp @past_timestamps;
-ERROR HY000: The definition of the table required by the flashback query has changed
-SHOW STATUS WHERE Variable_name = 'flashback_area_query_cnt';
-Variable_name	Value
-Flashback_area_query_cnt	0
-=== t5 ===
-alter table t5 add c3 int after c1;
-select * from information_schema.innodb_table_status where table_name='t5';
-SCHEMA_NAME	TABLE_NAME	options
-test	t5	avg_row_length=0;encrypt_type=N;key_block_size=0;keys_disabled=0;pack_record=0;stats_auto_recalc=0;stats_sample_pages=0;
-set query_via_flashback_area = 1;
-select * from t5 as of timestamp @past_timestamps;
-ERROR HY000: The definition of the table required by the flashback query has changed
-SHOW STATUS WHERE Variable_name = 'flashback_area_query_cnt';
-Variable_name	Value
-Flashback_area_query_cnt	0
-=== t6 ===
-set global innodb_undo_retention = 0;
-set opt_flashback_area = 1;
-alter table t6 add index sec(c2);
-select * from information_schema.innodb_table_status where table_name='t6';
-SCHEMA_NAME	TABLE_NAME	options
-test	t6	avg_row_length=0;encrypt_type=N;flashback_area=1;key_block_size=0;keys_disabled=0;pack_record=0;stats_auto_recalc=0;stats_sample_pages=0;
-update t6 set c2 = 1 where c1 = 1;
-update t6 set c2 = 2 where c1 = 2;
-begin;
-set query_via_flashback_area = 1;
-select * from t6 as of timestamp @past_timestamps;
-c1	c2
-1	100
-2	200
-select * from t6 as of timestamp @past_timestamps force index(sec);
-c1	c2
-1	100
-2	200
-select c2 from t6 as of timestamp @past_timestamps force index(primary);
-c2
-100
-200
-commit;
-SHOW STATUS WHERE Variable_name = 'flashback_area_query_cnt';
-Variable_name	Value
-Flashback_area_query_cnt	3
-=== t7 ===
-alter table t7 row_format = compressed;
-select * from information_schema.innodb_table_status where table_name='t7';
-SCHEMA_NAME	TABLE_NAME	options
-test	t7	avg_row_length=0;encrypt_type=N;flashback_area=1;key_block_size=0;keys_disabled=0;pack_record=0;row_type=3;stats_auto_recalc=0;stats_sample_pages=0;
-set query_via_flashback_area = 1;
-select * from t7 as of timestamp @past_timestamps;
-ERROR HY000: The definition of the table required by the flashback query has changed
-SHOW STATUS WHERE Variable_name = 'flashback_area_query_cnt';
-Variable_name	Value
-Flashback_area_query_cnt	4
-=== t8 ===
-alter table t8 change c2 c2_a bigint not null;
-select * from information_schema.innodb_table_status where table_name='t8';
-SCHEMA_NAME	TABLE_NAME	options
-test	t8	avg_row_length=0;encrypt_type=N;flashback_area=1;key_block_size=0;keys_disabled=0;pack_record=0;stats_auto_recalc=0;stats_sample_pages=0;
-set query_via_flashback_area = 1;
-select * from t8 as of timestamp @past_timestamps;
-ERROR HY000: The definition of the table required by the flashback query has changed
-SHOW STATUS WHERE Variable_name = 'flashback_area_query_cnt';
+SHOW GLOBAL STATUS WHERE Variable_name = 'flashback_area_query_cnt';
 Variable_name	Value
 Flashback_area_query_cnt	5
-=== t9 ===
-alter table t9 rename column c2 to c3;
-select * from information_schema.innodb_table_status where table_name='t9';
-SCHEMA_NAME	TABLE_NAME	options
-test	t9	avg_row_length=0;encrypt_type=N;flashback_area=1;key_block_size=0;keys_disabled=0;pack_record=0;stats_auto_recalc=0;stats_sample_pages=0;
-set query_via_flashback_area = 1;
-select * from t9 as of timestamp @past_timestamps;
-c1	c3
-1	100
-2	200
-SHOW STATUS WHERE Variable_name = 'flashback_area_query_cnt';
-Variable_name	Value
-Flashback_area_query_cnt	6
-=== t10 ===
-alter table t10 drop primary key, add primary key(c2);
-select * from information_schema.innodb_table_status where table_name='t10';
-SCHEMA_NAME	TABLE_NAME	options
-test	t10	avg_row_length=0;encrypt_type=N;flashback_area=1;key_block_size=0;keys_disabled=0;pack_record=0;stats_auto_recalc=0;stats_sample_pages=0;
-set query_via_flashback_area = 1;
-select * from t10 as of timestamp @past_timestamps;
-ERROR HY000: The definition of the table required by the flashback query has changed
-SHOW STATUS WHERE Variable_name = 'flashback_area_query_cnt';
-Variable_name	Value
-Flashback_area_query_cnt	7
+
+=== Index Operations ===
+include/assert.inc [The options for test.t2. should match the expected FBA=1 condition]
+set opt_flashback_area = 0;
+alter table t2 add index sec(c2);
+include/assert.inc [The options for test.t2. should match the expected FBA=1 condition]
+alter table t2 rename index sec to sec_new, ALGORITHM=INPLACE, LOCK=NONE;
+include/assert.inc [The options for test.t2. should match the expected FBA=1 condition]
+alter table t2 drop index sec_new, add index sec_new(c2, c1) USING BTREE, ALGORITHM=INPLACE;
+include/assert.inc [The options for test.t2. should match the expected FBA=1 condition]
+alter table t2 drop index sec_new;
+include/assert.inc [The options for test.t2. should match the expected FBA=1 condition]
+alter table t2 add c3 text;
+CREATE FULLTEXT INDEX ft ON t2(c3);
+Warnings:
+Warning	124	InnoDB rebuilding table to add column FTS_DOC_ID
+include/assert.inc [The options for test.t2. should match the expected FBA=0 condition]
+drop table t2;
+create table t2 like t3;
+include/assert.inc [The options for test.t2. should match the expected FBA=0 condition]
+set opt_flashback_area = 1;
+alter table t2 add c3 text;
+CREATE FULLTEXT INDEX ft_new ON t2(c3);
+Warnings:
+Warning	124	InnoDB rebuilding table to add column FTS_DOC_ID
+include/assert.inc [The options for test.t2. should match the expected FBA=1 condition]
+set opt_flashback_area = 0;
+CREATE TABLE geom (g GEOMETRY NOT NULL);
+include/assert.inc [The options for test.geom. should match the expected FBA=0 condition]
+set opt_flashback_area = 1;
+ALTER TABLE geom ADD SPATIAL INDEX(g), ALGORITHM=INPLACE, LOCK=SHARED;
+Warnings:
+Warning	3674	The spatial index on column 'g' will not be used by the query optimizer since the column does not have an SRID attribute. Consider adding an SRID attribute to the column.
+include/assert.inc [The options for test.geom. should match the expected FBA=0 condition]
+
+=== Primary Key Operations ===
+include/assert.inc [The options for test.t3. should match the expected FBA=1 condition]
+set opt_flashback_area = 0;
+alter table t3 DROP PRIMARY KEY, ADD PRIMARY KEY(c2), ALGORITHM=INPLACE, LOCK=NONE;
+include/assert.inc [The options for test.t3. should match the expected FBA=0 condition]
+
+=== Table Operations  ===
+include/assert.inc [The options for test.t4. should match the expected FBA=1 condition]
+set opt_flashback_area = 0;
+truncate table t4;
+include/assert.inc [The options for test.t4. should match the expected FBA=0 condition]
+set opt_flashback_area = 1;
+drop table t4;
+create table t4 (c1 int, c2 int, primary key(c1));
+include/assert.inc [The options for test.t4. should match the expected FBA=1 condition]
+set opt_flashback_area = 0;
+alter table t4 add c3 varchar(10);
+include/assert.inc [The options for test.t4. should match the expected FBA=1 condition]
+alter table t4 CHARACTER SET = big5;
+include/assert.inc [The options for test.t4. should match the expected FBA=1 condition]
+set opt_flashback_area = 0;
+alter table t4 CONVERT TO CHARACTER SET latin1;
+include/assert.inc [The options for test.t4. should match the expected FBA=0 condition]
+set opt_flashback_area = 1;
+optimize table t4;
+Table	Op	Msg_type	Msg_text
+test.t4	optimize	note	Table does not support optimize, doing recreate + analyze instead
+test.t4	optimize	status	OK
+include/assert.inc [The options for test.t4. should match the expected FBA=1 condition]
+set opt_flashback_area = 0;
+alter table t4 KEY_BLOCK_SIZE = 8;
+include/assert.inc [The options for test.t4. should match the expected FBA=0 condition]
+set opt_flashback_area = 1;
+alter table t4 row_format = compressed;
+include/assert.inc [The options for test.t4. should match the expected FBA=1 condition]
+set opt_flashback_area = 0;
+alter table t4 force;
+include/assert.inc [The options for test.t4. should match the expected FBA=0 condition]
+set opt_flashback_area = 1;
+alter table t4 RENAME TO t44;
+include/assert.inc [The options for test.t44. should match the expected FBA=0 condition]
+alter table t44 RENAME TO t4;
+ALTER TABLE t4 STATS_PERSISTENT=0, STATS_SAMPLE_PAGES=20, STATS_AUTO_RECALC=1, ALGORITHM=INPLACE, LOCK=NONE;
+include/assert.inc [The options for test.t4. should match the expected FBA=0 condition]
+set opt_flashback_area = 1;
+alter table t4 ENGINE=InnoDB, ALGORITHM=INPLACE, LOCK=NONE;
+include/assert.inc [The options for test.t4. should match the expected FBA=1 condition]
+
+=== Column Operations do not need to rebuild the table. ===
+include/assert.inc [The options for test.t5. should match the expected FBA=1 condition]
+set opt_flashback_area = 0;
+alter table t5 add c3 varchar(10) after c1;
+include/assert.inc [The options for test.t5. should match the expected FBA=1 condition]
+alter table t5 change column c3 c3 varchar(20), ALGORITHM=INPLACE, LOCK=NONE;
+include/assert.inc [The options for test.t5. should match the expected FBA=1 condition]
+alter table t5 change c3 c4 varchar(20);
+include/assert.inc [The options for test.t5. should match the expected FBA=1 condition]
+alter table t5 alter column c4 set default "a";
+include/assert.inc [The options for test.t5. should match the expected FBA=1 condition]
+alter table t5 alter column c4 drop default;
+include/assert.inc [The options for test.t5. should match the expected FBA=1 condition]
+alter table t5 add c5 ENUM('a', 'b', 'c');
+alter table t5 MODIFY COLUMN c5 ENUM('a', 'b', 'c', 'd');
+include/assert.inc [The options for test.t5. should match the expected FBA=1 condition]
+alter table t5 add c10 int;
+alter table t5 drop column c10, ALGORITHM=INSTANT;
+include/assert.inc [The options for test.t5. should match the expected FBA=1 condition]
+create table tt (c1 int AUTO_INCREMENT PRIMARY KEY, c2 int);
+INSERT INTO tt (c2) VALUES (1);
+INSERT INTO tt (c2) VALUES (2);
+include/assert.inc [The options for test.tt. should match the expected FBA=0 condition]
+set opt_flashback_area = 1;
+ALTER TABLE tt AUTO_INCREMENT=1000, ALGORITHM=INPLACE, LOCK=NONE;
+include/assert.inc [The options for test.tt. should match the expected FBA=0 condition]
+=== Column Operations need to rebuild the table. ===
+set opt_flashback_area = 0;
+alter table t5 change c4 c4 int;
+include/assert.inc [The options for test.t5. should match the expected FBA=0 condition]
+set opt_flashback_area = 1;
+alter table t5 modify column c4 int after c2;
+include/assert.inc [The options for test.t5. should match the expected FBA=1 condition]
+select * from t5;
+c1	c2	c4	c5
+1	100	NULL	NULL
+2	200	NULL	NULL
+update t5 set c4 = 0;
+set opt_flashback_area = 0;
+alter table t5 modify column c4 int not null;
+include/assert.inc [The options for test.t5. should match the expected FBA=0 condition]
+set opt_flashback_area = 1;
+alter table t5 modify column c4 int null;
+include/assert.inc [The options for test.t5. should match the expected FBA=1 condition]
+set global innodb_undo_retention = 0;
+set opt_flashback_area = 1;
+
+=== Generated Column Operations ===
+include/assert.inc [The options for test.t6. should match the expected FBA=0 condition]
+set opt_flashback_area = 1;
+alter table t6 ADD COLUMN (c3 INT GENERATED ALWAYS AS (c1 + 1) STORED);
+include/assert.inc [The options for test.t6. should match the expected FBA=1 condition]
+set opt_flashback_area = 0;
+alter table t6 MODIFY COLUMN c3 INT GENERATED ALWAYS AS (c1 + 1) STORED FIRST;
+include/assert.inc [The options for test.t6. should match the expected FBA=0 condition]
+set opt_flashback_area = 1;
+ALTER TABLE t6 ADD COLUMN (c4 INT GENERATED ALWAYS AS (c1 + 1) VIRTUAL);
+include/assert.inc [The options for test.t6. should match the expected FBA=0 condition]
+set opt_flashback_area = 1;
+ALTER TABLE t6 MODIFY COLUMN c4 INT GENERATED ALWAYS AS (c1 + 1) VIRTUAL FIRST;
+include/assert.inc [The options for test.t6. should match the expected FBA=1 condition]
+set opt_flashback_area = 0;
+alter table t6 drop column c3, ALGORITHM=INPLACE;
+include/assert.inc [The options for test.t6. should match the expected FBA=0 condition]
+set opt_flashback_area = 1;
+alter table t6 drop column c4;
+include/assert.inc [The options for test.t6. should match the expected FBA=0 condition]
+
+=== Foreign Key Operations ===
+include/assert.inc [The options for test.t7. should match the expected FBA=0 condition]
+set session foreign_key_checks=0;
+set opt_flashback_area = 1;
+alter table t6 add index sec(c2);
+ALTER TABLE t7 ADD CONSTRAINT fk FOREIGN KEY (c2) REFERENCES t6(c2);
+include/assert.inc [The options for test.t7. should match the expected FBA=0 condition]
+ALTER TABLE t7 DROP FOREIGN KEY fk;
+include/assert.inc [The options for test.t7. should match the expected FBA=0 condition]
+set session foreign_key_checks=1;
+set opt_flashback_area = 1;
+ALTER TABLE t7 ADD CONSTRAINT fk FOREIGN KEY (c2) REFERENCES t6(c2);
+include/assert.inc [The options for test.t7. should match the expected FBA=1 condition]
+set opt_flashback_area = 0;
+ALTER TABLE t7 DROP FOREIGN KEY fk, ALGORITHM=INPLACE;
+include/assert.inc [The options for test.t7. should match the expected FBA=1 condition]
+
+=== Partitioning Operations ===
+include/assert.inc [The options for test.t8. should match the expected FBA=0 condition]
+set opt_flashback_area = 1;
+ALTER TABLE t8 PARTITION BY RANGE(c1) (PARTITION p0 VALUES LESS THAN (100), PARTITION p1 VALUES LESS THAN (200));
+include/assert.inc [The options for test.t8. should match the expected FBA=0 condition]
+include/assert.inc [The options for test.t8.p0 should match the expected FBA=1 condition]
+include/assert.inc [The options for test.t8.p1 should match the expected FBA=1 condition]
+set opt_flashback_area = 0;
+ALTER TABLE t8 ADD PARTITION (PARTITION p2 VALUES LESS THAN (300));
+include/assert.inc [The options for test.t8. should match the expected FBA=0 condition]
+include/assert.inc [The options for test.t8.p0 should match the expected FBA=1 condition]
+include/assert.inc [The options for test.t8.p1 should match the expected FBA=1 condition]
+include/assert.inc [The options for test.t8.p2 should match the expected FBA=0 condition]
+set opt_flashback_area = 0;
+ALTER TABLE t8 DROP PARTITION p2;
+include/assert.inc [The options for test.t8. should match the expected FBA=0 condition]
+include/assert.inc [The options for test.t8.p0 should match the expected FBA=1 condition]
+include/assert.inc [The options for test.t8.p1 should match the expected FBA=1 condition]
+set opt_flashback_area = 0;
+ALTER TABLE t8 TRUNCATE PARTITION p0;
+include/assert.inc [The options for test.t8. should match the expected FBA=0 condition]
+include/assert.inc [The options for test.t8.p0 should match the expected FBA=0 condition]
+include/assert.inc [The options for test.t8.p1 should match the expected FBA=1 condition]
+set opt_flashback_area = 0;
+ALTER TABLE t8 REORGANIZE PARTITION p1 INTO (PARTITION p1 VALUES LESS THAN (150), PARTITION p2 VALUES LESS THAN (200)) ;
+include/assert.inc [The options for test.t8. should match the expected FBA=0 condition]
+include/assert.inc [The options for test.t8.p0 should match the expected FBA=0 condition]
+include/assert.inc [The options for test.t8.p1 should match the expected FBA=0 condition]
+include/assert.inc [The options for test.t8.p2 should match the expected FBA=0 condition]
+set opt_flashback_area = 1;
+ALTER TABLE t8 ANALYZE PARTITION p1;
+Table	Op	Msg_type	Msg_text
+test.t8	analyze	status	OK
+include/assert.inc [The options for test.t8. should match the expected FBA=0 condition]
+include/assert.inc [The options for test.t8.p0 should match the expected FBA=0 condition]
+include/assert.inc [The options for test.t8.p1 should match the expected FBA=0 condition]
+include/assert.inc [The options for test.t8.p2 should match the expected FBA=0 condition]
+set opt_flashback_area = 1;
+ALTER TABLE t8 CHECK PARTITION p1;
+Table	Op	Msg_type	Msg_text
+test.t8	check	status	OK
+include/assert.inc [The options for test.t8. should match the expected FBA=0 condition]
+include/assert.inc [The options for test.t8.p0 should match the expected FBA=0 condition]
+include/assert.inc [The options for test.t8.p1 should match the expected FBA=0 condition]
+include/assert.inc [The options for test.t8.p2 should match the expected FBA=0 condition]
+set opt_flashback_area = 1;
+ALTER TABLE t8 OPTIMIZE PARTITION p1;
+Table	Op	Msg_type	Msg_text
+test.t8	optimize	note	Table does not support optimize on partitions. All partitions will be rebuilt and analyzed.
+test.t8	optimize	status	OK
+include/assert.inc [The options for test.t8. should match the expected FBA=0 condition]
+include/assert.inc [The options for test.t8.p0 should match the expected FBA=1 condition]
+include/assert.inc [The options for test.t8.p1 should match the expected FBA=1 condition]
+include/assert.inc [The options for test.t8.p2 should match the expected FBA=1 condition]
+set opt_flashback_area = 0;
+ALTER TABLE t8 REBUILD PARTITION p1;
+include/assert.inc [The options for test.t8. should match the expected FBA=0 condition]
+include/assert.inc [The options for test.t8.p0 should match the expected FBA=1 condition]
+include/assert.inc [The options for test.t8.p1 should match the expected FBA=0 condition]
+include/assert.inc [The options for test.t8.p2 should match the expected FBA=1 condition]
+set opt_flashback_area = 1;
+ALTER TABLE t8 REPAIR PARTITION p1;
+Table	Op	Msg_type	Msg_text
+test.t8	repair	status	OK
+include/assert.inc [The options for test.t8. should match the expected FBA=0 condition]
+include/assert.inc [The options for test.t8.p0 should match the expected FBA=1 condition]
+include/assert.inc [The options for test.t8.p1 should match the expected FBA=0 condition]
+include/assert.inc [The options for test.t8.p2 should match the expected FBA=1 condition]
+set opt_flashback_area = 1;
+truncate table t9;
+include/assert.inc [The options for test.t9. should match the expected FBA=1 condition]
+insert into t9 values (110, 110);
+insert into t9 values (120, 120);
+insert into t9 values (130, 130);
+insert into t9 values (140, 140);
+ALTER TABLE t8 EXCHANGE PARTITION p1 WITH TABLE t9;
+include/assert.inc [The options for test.t9. should match the expected FBA=0 condition]
+include/assert.inc [The options for test.t8. should match the expected FBA=0 condition]
+include/assert.inc [The options for test.t8.p0 should match the expected FBA=1 condition]
+include/assert.inc [The options for test.t8.p1 should match the expected FBA=1 condition]
+include/assert.inc [The options for test.t8.p2 should match the expected FBA=1 condition]
+set opt_flashback_area = 0;
+create table t11 like t8;
+include/assert.inc [The options for test.t11. should match the expected FBA=0 condition]
+include/assert.inc [The options for test.t11.p0 should match the expected FBA=0 condition]
+include/assert.inc [The options for test.t11.p1 should match the expected FBA=0 condition]
+include/assert.inc [The options for test.t11.p2 should match the expected FBA=0 condition]
+ALTER TABLE t8 DISCARD PARTITION p1 TABLESPACE;
+FLUSH TABLES t11 FOR EXPORT;
+UNLOCK TABLES;
+ALTER TABLE t8 IMPORT PARTITION p1 TABLESPACE;
+include/assert.inc [The options for test.t8. should match the expected FBA=0 condition]
+include/assert.inc [The options for test.t8.p0 should match the expected FBA=1 condition]
+include/assert.inc [The options for test.t8.p1 should match the expected FBA=1 condition]
+include/assert.inc [The options for test.t8.p2 should match the expected FBA=1 condition]
+set opt_flashback_area = 0;
+ALTER TABLE t8 REMOVE PARTITIONING;
+include/assert.inc [The options for test.t8. should match the expected FBA=0 condition]
+set opt_flashback_area = 1;
+ALTER TABLE t8 PARTITION BY HASH(c1) PARTITIONS 4;
+include/assert.inc [The options for test.t8. should match the expected FBA=0 condition]
+include/assert.inc [The options for test.t8.p0 should match the expected FBA=1 condition]
+include/assert.inc [The options for test.t8.p1 should match the expected FBA=1 condition]
+include/assert.inc [The options for test.t8.p2 should match the expected FBA=1 condition]
+include/assert.inc [The options for test.t8.p3 should match the expected FBA=1 condition]
+set opt_flashback_area = 0;
+ALTER TABLE t8 COALESCE PARTITION 2;
+include/assert.inc [The options for test.t8. should match the expected FBA=0 condition]
+include/assert.inc [The options for test.t8.p0 should match the expected FBA=0 condition]
+include/assert.inc [The options for test.t8.p1 should match the expected FBA=0 condition]
+set opt_flashback_area = 1;
+ALTER TABLE t8 REMOVE PARTITIONING;
+include/assert.inc [The options for test.t8. should match the expected FBA=1 condition]
+
+=== Tablespace Operations ===
+set opt_flashback_area = 1;
+CREATE TABLESPACE test_space ADD DATAFILE 'test_space.ibd' ENGINE = InnoDB;
+create table t10 (c1 int, c2 int, primary key(c1)) TABLESPACE test_space;
+include/assert.inc [The options for test.t10. should match the expected FBA=1 condition]
+set opt_flashback_area = 0;
+ALTER TABLESPACE test_space RENAME TO new_space;
+include/assert.inc [The options for test.t10. should match the expected FBA=1 condition]
+INSTALL PLUGIN keyring_file SONAME 'keyring_file.so';
+ALTER TABLESPACE new_space ENCRYPTION='Y';
+include/assert.inc [The options for test.t10. should match the expected FBA=1 condition]
+include/assert.inc [The options for test.t9. should match the expected FBA=0 condition]
+set opt_flashback_area = 1;
+ALTER TABLE t9 ENCRYPTION='Y';
+include/assert.inc [The options for test.t9. should match the expected FBA=1 condition]
 set opt_flashback_area = default;
 set global innodb_undo_retention = default;
 set global innodb_txn_retention = default;
@@ -243,3 +433,8 @@ drop table t7;
 drop table t8;
 drop table t9;
 drop table t10;
+drop table t11;
+drop table tt;
+drop table geom;
+drop tablespace new_space;
+UNINSTALL PLUGIN keyring_file;

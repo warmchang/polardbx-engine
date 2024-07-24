@@ -995,9 +995,11 @@ class create_table_info_t {
   @param[in]    dd_table        dd::Table or nullptr for intrinsic table
   @param[in]    old_part_table  dd::Table from an old partition for partitioned
                                 table, NULL otherwise.
+  @param[in]    ddl_policy      ddl policy from handler
   @return HA_* level error */
   int create_table_def(const dd::Table *dd_table,
-                       const dd::Table *old_part_table);
+                       const dd::Table *old_part_table,
+                       lizard::Ha_ddl_policy *ddl_policy);
 
   /** Initialize the autoinc of this table if necessary, which should
   be called before we flush logs, so autoinc counter can be persisted. */

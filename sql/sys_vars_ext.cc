@@ -58,7 +58,6 @@
 #include "sql/replica_read_manager.h"
 #include "sql/xa/lizard_xa_trx.h"
 #include "sql/sql_implicit_element.h"
-#include "sql/dd/lizard_dd_table.h"
 
 #ifdef RDS_HAVE_JEMALLOC
 #include "sql/sql_jemalloc.h"

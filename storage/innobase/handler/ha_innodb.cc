@@ -233,7 +233,6 @@ this program; if not, write to the Free Software Foundation, Inc.,
 #include "srv0file.h"
 #include "lizard0dict0mem.h"
 #include "sql/xa_specification.h"
-#include "sql/dd/lizard_dd_table.h"
 #include "sql/dd/lizard_policy_types.h"
 
 #include "sys_vars_ext.h"
@@ -11594,9 +11593,11 @@ void innodb_base_col_setup_for_stored(const dict_table_t *table,
 @param[in]      dd_table        dd::Table or nullptr for intrinsic table
 @param[in]      old_part_table  dd::Table from an old partition for partitioned
                                 table, NULL otherwise.
+@param[in]      ddl_policy      ddl policy from handler.
 @return HA_* level error */
 [[nodiscard]] inline int create_table_info_t::create_table_def(
-    const dd::Table *dd_table, const dd::Table *old_part_table) {
+    const dd::Table *dd_table, const dd::Table *old_part_table,
+    lizard::Ha_ddl_policy *ddl_policy) {
   dict_table_t *table;
   ulint n_cols;
   dberr_t err;
@@ -12077,7 +12078,7 @@ void innodb_base_col_setup_for_stored(const dict_table_t *table,
 
     if (err == DB_SUCCESS) {
       err = row_create_table_for_mysql(table, algorithm, m_create_info, m_trx,
-                                       heap);
+                                       heap, ddl_policy);
 
       if (err == DB_IO_NO_PUNCH_HOLE_FS) {
         ut_ad(!dict_table_in_shared_tablespace(table));
@@ -12152,11 +12153,6 @@ void innodb_base_col_setup_for_stored(const dict_table_t *table,
     dict_sys_mutex_enter();
     fts_optimize_add_table(table);
     dict_sys_mutex_exit();
-  }
-
-  if (err == DB_SUCCESS) {
-    table->is_2pp =
-        dd_table ? lizard::dd_table_get_flashback_area(*dd_table) : false;
   }
 
   if (err == DB_SUCCESS) {
@@ -14071,7 +14067,7 @@ int create_table_info_t::create_table(const dd::Table *dd_table,
   the primary key is always number 0, if it exists */
   ut_a(primary_key_no == MAX_KEY || primary_key_no == 0);
 
-  error = create_table_def(dd_table, old_part_table);
+  error = create_table_def(dd_table, old_part_table, ddl_policy);
   if (error) {
     return error;
   }
@@ -14139,8 +14135,9 @@ int create_table_info_t::create_table(const dd::Table *dd_table,
         break;
     }
 
-    dberr_t err = fts_create_common_tables(m_trx, m_table, m_table_name,
-                                           (ret == FTS_EXIST_DOC_ID_INDEX));
+    dberr_t err =
+        fts_create_common_tables(m_trx, m_table, m_table_name,
+                                 (ret == FTS_EXIST_DOC_ID_INDEX), ddl_policy);
 
     error = convert_error_code_to_mysql(err, 0, nullptr);
 

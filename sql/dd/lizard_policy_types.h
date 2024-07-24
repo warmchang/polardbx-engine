@@ -101,7 +101,9 @@ class Table_policy {
  public:
   Table_policy() : m_inited(false), m_flashback_area(0) {}
 
-  void create(Ha_ddl_policy *ddl_policy, const dict_table_t *table);
+  bool has_fba() const { return m_flashback_area; }
+
+  void create(const Ha_ddl_policy *ddl_policy, const dict_table_t *table);
 
   void restore(const dd::Properties &options);
 

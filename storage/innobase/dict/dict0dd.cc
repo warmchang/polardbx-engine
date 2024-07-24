@@ -80,7 +80,6 @@ Data dictionary interface */
 #include "lizard0dict.h"
 #include "lizard0page.h"
 #include "lizard0row.h"
-#include "sql/dd/lizard_dd_table.h"
 #include "sql/dd/lizard_policy_types.h"
 
 const char *DD_instant_col_val_coder::encode(const byte *stream, size_t in_len,
@@ -264,6 +263,15 @@ bool dd_table_match(const dict_table_t *table, const Table *dd_table) {
     ib::warn(ER_IB_MSG_166)
         << "Table id in InnoDB is " << table->id
         << " while the id in global DD is " << dd_table->se_private_id();
+    match = false;
+  }
+
+  if (!lizard::dd_check_table_fba(table, dd_table)) {
+    ib::warn(ER_IB_MSG_166)
+        << "Flashback area mismatch. Table in InnoDB has flashback area "
+           "option: "
+        << (table->is_2pp ? "enabled" : "disabled")
+        << " while the flashback area option in the global DD does not match.";
     match = false;
   }
 
@@ -1635,6 +1643,8 @@ void dd_copy_private(Table &new_table, const Table &old_table) {
   }
 
   new_table.table().set_row_format(old_table.table().row_format());
+
+  lizard::dd_copy_table_fba(old_table, new_table);
 }
 
 template void dd_copy_private<dd::Table>(dd::Table &, const dd::Table &);
@@ -2537,6 +2547,8 @@ void dd_write_table(dd::Object_id dd_space_id, Table *dd_table,
     dd_table->se_private_data().set(
         dd_table_key_strings[DD_TABLE_DATA_DIRECTORY], true);
   }
+
+  lizard::dd_write_table_fba(&dd_table->options(), table);
 
   for (auto dd_index : *dd_table->indexes()) {
     /* Don't assume the index orders are the same, even on
@@ -3668,14 +3680,13 @@ without any indexes.
 @param[in]      strict          whether to use innodb_strict_mode=ON
 @param[in]      m_thd           thread THD
 @param[in]      is_implicit     if it is an implicit tablespace
+@param[in]      table_policy    table policy
 @return created dict_table_t on success or nullptr */
 template <typename Table>
-static inline dict_table_t *dd_fill_dict_table(const Table *dd_tab,
-                                               const TABLE *m_form,
-                                               const char *norm_name,
-                                               HA_CREATE_INFO *create_info,
-                                               bool zip_allowed, bool strict,
-                                               THD *m_thd, bool is_implicit) {
+static inline dict_table_t *dd_fill_dict_table(
+    const Table *dd_tab, const TABLE *m_form, const char *norm_name,
+    HA_CREATE_INFO *create_info, bool zip_allowed, bool strict, THD *m_thd,
+    bool is_implicit, const lizard::Table_policy &table_policy) {
   ut_ad(dd_tab != nullptr);
   ut_ad(m_thd != nullptr);
   ut_ad(norm_name != nullptr);
@@ -3908,10 +3919,7 @@ static inline dict_table_t *dd_fill_dict_table(const Table *dd_tab,
     DICT_TF2_FLAG_SET(m_table, DICT_TF2_ENCRYPTION_FILE_PER_TABLE);
   }
 
-  if (lizard::dd_table_get_flashback_area(dd_tab->table())) {
-    ut_ad(!m_table->is_temporary());
-    m_table->is_2pp = true;
-  }
+  lizard::dd_fill_dict_table_fba(table_policy, m_table);
 
   mem_heap_t *heap = mem_heap_create(1000, UT_LOCATION_HERE);
 
@@ -4972,8 +4980,11 @@ dict_table_t *dd_open_table_one(dd::cache::Dictionary_client *client,
   bool first_index = true;
 
   /* Create dict_table_t for the table */
-  dict_table_t *m_table = dd_fill_dict_table(
-      dd_table, table, norm_name, nullptr, zip_allowed, strict, thd, implicit);
+  lizard::Table_policy table_policy;
+  lizard::dd_fill_table_policy(table_policy, *dd_table);
+  dict_table_t *m_table =
+      dd_fill_dict_table(dd_table, table, norm_name, nullptr, zip_allowed,
+                         strict, thd, implicit, table_policy);
 
   if (m_table == nullptr) {
     return nullptr;

@@ -29,6 +29,7 @@ this program; if not, write to the Free Software Foundation, Inc.,
 
 #include "lex_string.h"
 #include "my_dbug.h"
+#include "my_inttypes.h"
 
 #include "sql/lizard/lizard_service.h"
 

@@ -89,7 +89,7 @@ void Index_policy::restore(const dd::Properties &options) {
   m_inited = true;
 }
 
-void Table_policy::create(Ha_ddl_policy *ddl_policy,
+void Table_policy::create(const Ha_ddl_policy *ddl_policy,
                           const dict_table_t *table) {
   ut_a(m_inited == false);
   m_inited = true;
@@ -104,7 +104,15 @@ void Table_policy::create(Ha_ddl_policy *ddl_policy,
 }
 
 void Table_policy::restore(const dd::Properties &options) {
-  /** TODO: fix it <12-07-24, zanye.zjy> */
+  bool fba = false;
+
+  if (options.exists(TABLE_OPTION_FBA)) {
+    options.get(TABLE_OPTION_FBA, &fba);
+  }
+
+  m_flashback_area = fba;
+
+  m_inited = true;
 }
 
 const Index_policy ha_ddl_create_index_policy(Ha_ddl_policy *ddl_policy,
@@ -117,7 +125,7 @@ const Index_policy ha_ddl_create_index_policy(Ha_ddl_policy *ddl_policy,
   return index_policy;
 }
 
-const Table_policy ha_ddl_create_table_policy(Ha_ddl_policy *ddl_policy,
+const Table_policy ha_ddl_create_table_policy(const Ha_ddl_policy *ddl_policy,
                                               const dict_table_t *table) {
   Table_policy table_policy;
 
@@ -165,26 +173,15 @@ template Indexes_policy dd_fill_indexes_policy<dd::Table>(
 template Indexes_policy dd_fill_indexes_policy<dd::Partition>(
     const dd::Partition *dd_table);
 
-#ifdef UNIV_DEBUG
-static bool dd_table_options_has_fba(const dd::Properties *options) {
-  ulonglong format = 0;
-
-  if (options->exists(OPTION_IFT)) {
-    options->get(OPTION_IFT, &format);
-    return (format & IFT_GPP);
-  } else {
-    return false;
-  }
+template <typename Table>
+void dd_fill_table_policy(Table_policy &table_policy, const Table &dd_table) {
+  table_policy.restore(dd_table.options());
 }
-#endif
-void dd_write_table_fba(dd::Properties *options, const dict_table_t *table,
-                        const Ha_ddl_policy *ddl_policy) {
-  ut_ad(!dd_table_options_has_fba(options));
 
-  if (!table->is_2pp) {
-    return;
-  }
+template void dd_fill_table_policy<dd::Table>(Table_policy &table_policy,
+                                              const dd::Table &dd_table);
 
-  options->set(TABLE_OPTION_FBA, table->is_2pp);
-}
+template void dd_fill_table_policy<dd::Partition>(
+    Table_policy &table_policy, const dd::Partition &dd_table);
+
 }  // namespace lizard

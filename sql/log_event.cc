@@ -3781,41 +3781,32 @@ static bool is_sql_require_primary_key_needed(const LEX *lex) {
   return false;
 }
 
-static bool is_opt_flashback_area_needed(const LEX *lex) {
+/**
+  Returns whether or not the statement held by the `LEX` object parameter
+  requires `Q_OPT_FLASHBACK_AREA_ENABLED` or `Q_OPT_INDEX_FORMAT_GPP_ENABLED` to
+  be logged together with the statement.
+ */
+static bool is_fba_or_ift_needed(const LEX *lex) {
   enum enum_sql_command cmd = lex->sql_command;
   switch (cmd) {
     case SQLCOM_CREATE_TABLE:
     case SQLCOM_ALTER_TABLE:
+    case SQLCOM_TRUNCATE:
+    case SQLCOM_DROP_TABLE:
+    case SQLCOM_OPTIMIZE:
+    case SQLCOM_CHECK:
+    case SQLCOM_ANALYZE:
+    case SQLCOM_RENAME_TABLE:
+    case SQLCOM_CREATE_INDEX:
+    case SQLCOM_DROP_INDEX:
+    case SQLCOM_CREATE_DB:
+    case SQLCOM_ALTER_DB:
+    case SQLCOM_DROP_DB:
+    case SQLCOM_ALTER_TABLESPACE:
+    case SQLCOM_REPAIR:
       return true;
     default:
       break;
-  }
-  return false;
-}
-
-/**
-  Returns whether or not the statement held by the `LEX` object parameter
-  requires `Q_OPT_INDEX_FORMAT_GPP_ENABLED` to be logged together with the
-  statement.
- */
-static bool is_opt_index_format_gpp_enabled_needed(const LEX *lex) {
-  enum enum_sql_command cmd = lex->sql_command;
-  switch (cmd) {
-  case SQLCOM_CREATE_TABLE:
-  case SQLCOM_ALTER_TABLE:
-  case SQLCOM_DROP_TABLE:
-  case SQLCOM_CREATE_INDEX:
-  case SQLCOM_DROP_INDEX:
-  case SQLCOM_CREATE_DB:
-  case SQLCOM_ALTER_DB:
-  case SQLCOM_DROP_DB:
-  case SQLCOM_ALTER_TABLESPACE:
-  case SQLCOM_OPTIMIZE:
-  case SQLCOM_REPAIR:
-  case SQLCOM_ANALYZE:
-    return true;
-  default:
-    break;
   }
   return false;
 }
@@ -4210,10 +4201,9 @@ Query_log_event::Query_log_event(THD *thd_arg, const char *query_arg,
 
   needs_default_table_encryption = is_default_table_encryption_needed(lex);
 
-  need_opt_flashback_area = is_opt_flashback_area_needed(lex);
+  need_opt_flashback_area = is_fba_or_ift_needed(lex);
 
-  need_opt_index_format_gpp_enabled =
-      is_opt_index_format_gpp_enabled_needed(lex);
+  need_opt_index_format_gpp_enabled = is_fba_or_ift_needed(lex);
 
   assert(event_cache_type != Log_event::EVENT_INVALID_CACHE);
   assert(event_logging_type != Log_event::EVENT_INVALID_LOGGING);

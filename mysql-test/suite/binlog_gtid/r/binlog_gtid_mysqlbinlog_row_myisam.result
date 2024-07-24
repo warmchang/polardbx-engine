@@ -5037,6 +5037,7 @@ SET @@SESSION.GTID_NEXT= '#'/*!*/;
 # at #
 # # server id #  end_log_pos # CRC32 # 	Query	thread_id=#	exec_time=#	error_code=0
 SET TIMESTAMP=#/*!*/;
+/*!80032 SET @@session.opt_flashback_area=0*//*!*/;
 /*!80032 SET @@session.opt_index_format_gpp_enabled=1*//*!*/;
 ANALYZE TABLE t1
 /*!*/;
@@ -5057,6 +5058,7 @@ SET @@SESSION.GTID_NEXT= '#'/*!*/;
 # at #
 # # server id #  end_log_pos # CRC32 # 	Query	thread_id=#	exec_time=#	error_code=0
 SET TIMESTAMP=#/*!*/;
+/*!80032 SET @@session.opt_flashback_area=0*//*!*/;
 /*!80032 SET @@session.opt_index_format_gpp_enabled=1*//*!*/;
 ANALYZE TABLE t2
 /*!*/;
@@ -5077,6 +5079,7 @@ SET @@SESSION.GTID_NEXT= '#'/*!*/;
 # at #
 # # server id #  end_log_pos # CRC32 # 	Query	thread_id=#	exec_time=#	error_code=0
 SET TIMESTAMP=#/*!*/;
+/*!80032 SET @@session.opt_flashback_area=0*//*!*/;
 /*!80032 SET @@session.opt_index_format_gpp_enabled=1*//*!*/;
 ANALYZE TABLE t3
 /*!*/;
