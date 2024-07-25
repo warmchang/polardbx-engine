@@ -658,6 +658,7 @@ SET(SQL_SHARED_SOURCES
   trans_proc/common.cc
   trans_proc/returning.cc
   trans_proc/returning_parse.cc
+  package/proc_gpp.cc
   trans_proc/implicit_savepoint.cc
   ccl/ccl_cache.cc
   ccl/ccl.cc
@@ -726,7 +727,7 @@ SET(SQL_SHARED_SOURCES
   inventory/inventory_hint_parse.cc
   inventory/inventory_hint.cc
   lizard/undo_proc.cc
-  )
+)
 
 IF(BUILD_IS_SINGLE_CONFIG)
   GET_PROPERTY(CWD_DEFINITIONS DIRECTORY PROPERTY COMPILE_DEFINITIONS)

@@ -1020,6 +1020,10 @@ The following options may be given as the first argument:
  --opt-force-index-pct-cached 
  force cached table index in memory when estimate query
  cost
+ --opt-index-format-gpp-enabled 
+ When this option is enabled,it will add gpp column on
+ secondary index if suitable.
+ (Defaults to on; use --skip-opt-index-format-gpp-enabled to disable.)
  --opt-indexstat     When this option is enabled,it will accumulate the index
  statistics
  (Defaults to on; use --skip-opt-indexstat to disable.)
@@ -2388,6 +2392,7 @@ only-report-warning-when-skip-sequence TRUE
 opt-enable-rds-priv-strategy FALSE
 opt-flashback-area FALSE
 opt-force-index-pct-cached FALSE
+opt-index-format-gpp-enabled TRUE
 opt-indexstat TRUE
 opt-outline-enabled TRUE
 opt-tablestat TRUE

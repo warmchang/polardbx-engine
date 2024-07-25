@@ -194,6 +194,9 @@
 #include "sql/recycle_bin/recycle_table.h"
 #include "sql/sql_implicit_common.h"
 
+#include "sql/dd/lizard_policy_types.h"
+#include "sql/raii/sentry.h"
+
 namespace dd {
 class View;
 }  // namespace dd
@@ -13292,6 +13295,12 @@ static bool mysql_inplace_alter_table(
   MDL_request_list mdl_requests;
 
   DBUG_TRACE;
+
+  lizard::Ha_ddl_policy ddl_policy(thd);
+  raii::Sentry alter_ddl_policy_guard(
+      [&ha_alter_info] { ha_alter_info->ddl_policy = nullptr; });
+  assert(ha_alter_info->ddl_policy == nullptr);
+  ha_alter_info->ddl_policy = &ddl_policy;
 
   /*
     Upgrade to EXCLUSIVE lock if:

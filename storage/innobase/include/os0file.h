@@ -579,6 +579,10 @@ class IORequest {
     }
 
     if (m_type & DO_NOT_WAKE) {
+      os << " | DO_NOT_WAKE";
+    }
+
+    if (m_type & IGNORE_MISSING) {
       os << " | IGNORE_MISSING";
     }
 

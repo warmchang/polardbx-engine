@@ -10168,6 +10168,8 @@ ER_CONSENSUS_IP_PORT_FORMAT
 ER_CONSENSUS_LOG_TYPE_NODE
   eng "The consensus node is logger, which is not allowed to to do current operation."
 
+ER_TABLE_CFG_MISSING
+  eng "Config file is missing for importing table %s"
 
 ################################################################################
 # Start of PolarDB-X special error messages intended to be returned to CN.

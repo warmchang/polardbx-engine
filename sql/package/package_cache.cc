@@ -55,6 +55,7 @@
 #ifdef RDS_HAVE_JEMALLOC
 #include "sql/sql_jemalloc.h"
 #endif
+#include "sql/package/proc_gpp.h"
 
 namespace im {
 
@@ -257,6 +258,9 @@ void package_context_init() {
   register_package<Proc, Proc_generate_key>(KEYRING_PROC_SCHEMA);
   /* dbms_keyring.current_key_id(...) */
   register_package<Proc, Proc_current_key_id>(KEYRING_PROC_SCHEMA);
+
+  /* dbms_stat.flush_gpp() */
+  register_package<Proc, Proc_index_stat_flush_gpp>(PROC_STAT_SCHEMA);
 }
 
 } /* namespace im */

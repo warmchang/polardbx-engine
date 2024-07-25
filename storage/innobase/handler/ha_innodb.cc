@@ -222,6 +222,7 @@ this program; if not, write to the Free Software Foundation, Inc.,
 #include "lizard0scn.h"
 #include "lizard0txn.h"
 #include "lizard0undo.h"
+#include "lizard0data0data.h"
 
 #include "handler/i_s_ext.h"
 #include "lizard0ha_innodb.h"
@@ -229,9 +230,10 @@ this program; if not, write to the Free Software Foundation, Inc.,
 #include "lizard0xa.h"
 #include "lizard0xa.h"  // srv_stop_purge_no_heartbeat_timeout, ...
 #include "srv0file.h"
-
+#include "lizard0dict0mem.h"
 #include "sql/xa_specification.h"
 #include "sql/dd/lizard_dd_table.h"
+#include "sql/dd/lizard_policy_types.h"
 
 #include "sys_vars_ext.h"
 
@@ -12168,7 +12170,8 @@ inline int create_index(
     uint32_t flags,            /*!< in: InnoDB table flags */
     const char *table_name,    /*!< in: table name */
     uint key_num,              /*!< in: index number */
-    const dd::Table *dd_table) /*!< in: dd::Table for the table*/
+    const dd::Table *dd_table, /*!< in: dd::Table for the table*/
+    lizard::Ha_ddl_policy *ddl_policy)
 {
   dict_index_t *index;
   int error;
@@ -12197,12 +12200,13 @@ inline int create_index(
     ind_type = DICT_FTS;
   }
 
-  if (ind_type == DICT_SPATIAL) {
+  const dd::Index *dd_index = nullptr;
+  if (dd_table) {
     ulint dd_index_num = key_num + ((form->s->primary_key == MAX_KEY) ? 1 : 0);
-
     const auto *dd_index_auto = dd_table->indexes()[dd_index_num];
-
-    const dd::Index *dd_index = get_my_dd_index(dd_index_auto);
+    dd_index = get_my_dd_index(dd_index_auto);
+  }
+  if (ind_type == DICT_SPATIAL) {
     ut_ad(dd_index->name() == key->name);
 
     size_t geom_col_idx;
@@ -12240,8 +12244,8 @@ inline int create_index(
     }
 
     return convert_error_code_to_mysql(
-        row_create_index_for_mysql(index, trx, nullptr, nullptr), flags,
-        nullptr);
+        row_create_index_for_mysql(index, trx, nullptr, nullptr, ddl_policy),
+        flags, nullptr);
   }
 
   ind_type = 0;
@@ -12364,8 +12368,8 @@ inline int create_index(
   sure we don't create too long indexes. */
 
   error = convert_error_code_to_mysql(
-      row_create_index_for_mysql(index, trx, field_lengths, handler), flags,
-      nullptr);
+      row_create_index_for_mysql(index, trx, field_lengths, handler, ddl_policy),
+      flags, nullptr);
 
   /* For multi-value virtual index, we need to adjust indexed col length */
   if (error == 0 && multi_val_idx) {
@@ -12421,7 +12425,7 @@ inline int create_clustered_index_when_no_primary(
     index->disable_ahi = true;
   }
 
-  error = row_create_index_for_mysql(index, trx, nullptr, handler);
+  error = row_create_index_for_mysql(index, trx, nullptr, handler, nullptr);
 
   if (error != DB_SUCCESS && handler != nullptr) {
     priv->unregister_table_handler(table_name);
@@ -14009,7 +14013,8 @@ static dberr_t innobase_check_fk_base_col(const dd::Table *dd_table,
                                 table, NULL otherwise.
 @return 0 or error number */
 int create_table_info_t::create_table(const dd::Table *dd_table,
-                                      const dd::Table *old_part_table) {
+                                      const dd::Table *old_part_table,
+                                      lizard::Ha_ddl_policy *ddl_policy) {
   int error;
   uint primary_key_no;
   uint i;
@@ -14074,7 +14079,7 @@ int create_table_info_t::create_table(const dd::Table *dd_table,
     /* In InnoDB the clustered index must always be created
     first */
     error = create_index(m_trx, m_form, m_flags, m_table_name, primary_key_no,
-                         dd_table);
+                         dd_table, ddl_policy);
     if (error) {
       return error;
     }
@@ -14129,7 +14134,8 @@ int create_table_info_t::create_table(const dd::Table *dd_table,
 
   for (i = 0; i < m_form->s->keys; i++) {
     if (i != primary_key_no) {
-      error = create_index(m_trx, m_form, m_flags, m_table_name, i, dd_table);
+      error = create_index(m_trx, m_form, m_flags, m_table_name, i, dd_table,
+                           ddl_policy);
       if (error) {
         return error;
       }
@@ -14269,7 +14275,8 @@ int create_table_info_t::create_table_update_dict() {
 @retval 0               On success
 @retval error number    On failure */
 template <typename Table>
-int create_table_info_t::create_table_update_global_dd(Table *dd_table) {
+int create_table_info_t::create_table_update_global_dd(
+    Table *dd_table, const lizard::Ha_ddl_policy *ddl_policy) {
   DBUG_TRACE;
 
   if (dd_table == nullptr || (m_flags2 & DICT_TF2_TEMPORARY)) {
@@ -14338,7 +14345,7 @@ int create_table_info_t::create_table_update_global_dd(Table *dd_table) {
 
   dd_set_table_options(dd_table, m_table);
 
-  dd_write_table(dd_space_id, dd_table, m_table);
+  dd_write_table(dd_space_id, dd_table, m_table, ddl_policy);
 
   if (m_flags2 & (DICT_TF2_FTS | DICT_TF2_FTS_ADD_DOC_ID)) {
     ut_d(bool ret =) fts_create_common_dd_tables(m_table);
@@ -14352,10 +14359,10 @@ int create_table_info_t::create_table_update_global_dd(Table *dd_table) {
 }
 
 template int create_table_info_t::create_table_update_global_dd<dd::Table>(
-    dd::Table *);
+    dd::Table *, const lizard::Ha_ddl_policy *ddl_policy);
 
 template int create_table_info_t::create_table_update_global_dd<dd::Partition>(
-    dd::Partition *);
+    dd::Partition *, const lizard::Ha_ddl_policy *ddl_policy);
 
 template <typename Table>
 int innobase_basic_ddl::create_impl(THD *thd, const char *name, TABLE *form,
@@ -14382,6 +14389,8 @@ int innobase_basic_ddl::create_impl(THD *thd, const char *name, TABLE *form,
     trx_start_if_not_started(trx, true, UT_LOCATION_HERE);
   }
 
+  lizard::Ha_ddl_policy ddl_policy(thd);
+
   create_table_info_t info(thd, form, create_info, norm_name, remote_path,
                            tablespace, file_per_table, skip_strict, old_flags,
                            old_flags2, false);
@@ -14401,12 +14410,12 @@ int innobase_basic_ddl::create_impl(THD *thd, const char *name, TABLE *form,
   }
 
   error = info.create_table(dd_tab != nullptr ? &dd_tab->table() : nullptr,
-                            old_part_table);
+                            old_part_table, &ddl_policy);
   if (error) {
     goto cleanup;
   }
 
-  error = info.create_table_update_global_dd(dd_tab);
+  error = info.create_table_update_global_dd(dd_tab, &ddl_policy);
   if (error) {
     goto cleanup;
   }
@@ -23732,6 +23741,30 @@ static MYSQL_SYSVAR_ULONG(
     "batch in performance_schema.data_locks.",
     NULL, NULL, 1024 * 1024, 1, 1024 * 1024 * 1024, 0);
 
+static MYSQL_SYSVAR_BOOL(
+    index_scan_guess_clust_enabled, lizard::index_scan_guess_clust_enabled,
+    PLUGIN_VAR_OPCMDARG,
+    "Whether to enable guess primary pageno during the scan. ", NULL, NULL,
+    true);
+
+static MYSQL_SYSVAR_BOOL(
+    index_purge_guess_clust_enabled, lizard::index_purge_guess_clust_enabled,
+    PLUGIN_VAR_OPCMDARG,
+    "Whether to enable guess primary pageno during the purge. ", NULL, NULL,
+    true);
+
+static MYSQL_SYSVAR_BOOL(
+    index_lock_guess_clust_enabled, lizard::index_lock_guess_clust_enabled,
+    PLUGIN_VAR_OPCMDARG,
+    "Whether to enable guess primary pageno during the lock. ", NULL, NULL,
+    true);
+
+#ifdef UNIV_DEBUG
+static MYSQL_SYSVAR_UINT(dbug_gpp_no, lizard::dbug_gpp_no, PLUGIN_VAR_OPCMDARG,
+                         "Set gpp_no for debug use.", NULL, NULL, PAGE_NO_MAX,
+                         0, PAGE_NO_MAX, 0);
+#endif /* UNIV_DEBUG */
+
 static SYS_VAR *innobase_system_variables[] = {
     MYSQL_SYSVAR(api_trx_level),
     MYSQL_SYSVAR(api_bk_commit_interval),
@@ -23987,6 +24020,12 @@ static SYS_VAR *innobase_system_variables[] = {
     MYSQL_SYSVAR(vision_use_commit_snapshot_debug),
     MYSQL_SYSVAR(btree_sampling),
     MYSQL_SYSVAR(pfs_data_locks_max_locks_per_batch),
+    MYSQL_SYSVAR(index_scan_guess_clust_enabled),
+    MYSQL_SYSVAR(index_purge_guess_clust_enabled),
+    MYSQL_SYSVAR(index_lock_guess_clust_enabled),
+#ifdef UNIV_DEBUG
+    MYSQL_SYSVAR(dbug_gpp_no),
+#endif /* UNIV_DEBUG */
     nullptr};
 
 mysql_declare_plugin(innobase){
@@ -24016,9 +24055,8 @@ mysql_declare_plugin(innobase){
     i_s_innodb_tablestats, i_s_innodb_indexes, i_s_innodb_tablespaces,
     i_s_innodb_columns, i_s_innodb_virtual, i_s_innodb_cached_indexes,
     i_s_innodb_session_temp_tablespaces, i_s_innodb_data_file_purge,
-    i_s_innodb_tablespace_master_key, i_s_innodb_table_status
-
-    mysql_declare_plugin_end;
+    i_s_innodb_tablespace_master_key, i_s_innodb_table_status,
+    i_s_innodb_gpp_stats, i_s_innodb_index_status mysql_declare_plugin_end;
 
 /** @brief Initialize the default value of innodb_commit_concurrency.
 
