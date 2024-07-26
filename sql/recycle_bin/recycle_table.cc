@@ -360,7 +360,7 @@ static bool check_state(THD *thd, Table_ref *table) {
   DBUG_RETURN(false);
 }
 
-#ifndef DBUG_OFF
+#ifndef NDEBUG
 
 static ulonglong string_to_number(const char *str) {
   ulonglong num = 0;
@@ -432,7 +432,7 @@ static bool prepare_recycle_table(THD *thd, Table_ref *table_list,
     DBUG_RETURN(true);
   }
 /* Generate unique table name [ Engine_name + SE_private_id ] */
-#ifndef DBUG_OFF
+#ifndef NDEBUG
   dd::Object_id unique_id = string_to_number(table_list->table_name);
 #else
   dd::Object_id unique_id;

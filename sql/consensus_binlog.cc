@@ -1887,7 +1887,7 @@ bool MYSQL_BIN_LOG::open_exist_binlog(
   max_size = max_size_arg;
 
 /* This must be before goto err. */
-#ifndef DBUG_OFF
+#ifndef NDEBUG
   binary_log_debug::debug_pretend_version_50034_in_binlog =
       DBUG_EVALUATE_IF("pretend_version_50034_in_binlog", true, false);
 #endif

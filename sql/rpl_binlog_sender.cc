@@ -1592,7 +1592,7 @@ uint32 Binlog_sender::find_first_user_event_timestamp(File_reader *reader,
     if (!Log_event::is_local_event_type(
             static_cast<Log_event_type>(event_ptr[EVENT_TYPE_OFFSET]))) {
       create_time = uint4korr(event_ptr);
-#ifndef DBUG_OFF
+#ifndef NDEBUG
       xp::info(ER_XP_APPLIER)
           << "Binlog first user event timestamp is " << create_time;
 #endif
@@ -1611,7 +1611,7 @@ uint32 Binlog_sender::find_first_user_event_timestamp(File_reader *reader,
   PolarDB-X Engine: checkCommitIndex to make sure only send committed log
 */
 int Binlog_sender::wait_commit_index_update(my_off_t log_pos, uint64_t index) {
-#ifndef DBUG_OFF
+#ifndef NDEBUG
   ulong hb_info_counter = 0;
 #endif
   longlong sec_cnt = 0;
@@ -1631,7 +1631,7 @@ int Binlog_sender::wait_commit_index_update(my_off_t log_pos, uint64_t index) {
       sec_cnt++;
       if (m_heartbeat_period.count() == (sec_cnt / ratio)) {
         sec_cnt = 0;
-#ifndef DBUG_OFF
+#ifndef NDEBUG
         if (hb_info_counter < 3) {
           xp::info(ER_XP_APPLIER) << "master sends heartbeat message";
           hb_info_counter++;
@@ -1657,7 +1657,7 @@ int Binlog_sender::wait_commit_index_update(my_off_t log_pos, uint64_t index) {
     m_packet.length(tmp.length());
   }
   assert(current_index <= consensus_ptr->getCommitIndex());
-#ifndef DBUG_OFF
+#ifndef NDEBUG
   xp::info(ER_XP_APPLIER) << "master sends consensus index " << current_index;
 #endif
 
