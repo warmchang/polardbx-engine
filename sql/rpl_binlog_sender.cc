@@ -1617,7 +1617,6 @@ int Binlog_sender::wait_commit_index_update(my_off_t log_pos, uint64_t index) {
   longlong sec_cnt = 0;
   bool hb_send = false;
   String tmp;
-  uint64_t current_index;
   /* heartbeat period is measured by second */
   uint ratio =
       std::max(1000000ULL / opt_consensus_check_commit_index_interval, 1ULL);
@@ -1650,15 +1649,14 @@ int Binlog_sender::wait_commit_index_update(my_off_t log_pos, uint64_t index) {
       }
     }
   }
-  current_index = index;
   if (hb_send) {
     /* Restore the copy back. */
     m_packet.copy(tmp);
     m_packet.length(tmp.length());
   }
-  assert(current_index <= consensus_ptr->getCommitIndex());
+  assert(index <= consensus_ptr->getCommitIndex());
 #ifndef NDEBUG
-  xp::info(ER_XP_APPLIER) << "master sends consensus index " << current_index;
+  xp::info(ER_XP_APPLIER) << "master sends consensus index " << index;
 #endif
 
   return 0;

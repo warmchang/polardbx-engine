@@ -438,8 +438,8 @@ static bool prepare_recycle_table(THD *thd, Table_ref *table_list,
   dd::Object_id unique_id;
   if (table_def->partitions().size() > 0) {
     const dd::Partition *partition_def = table_def->partitions().front();
-    if (partition_def->sub_partitions().size() > 0)
-      unique_id = partition_def->sub_partitions().front()->se_private_id();
+    if (partition_def->subpartitions().size() > 0)
+      unique_id = partition_def->subpartitions().front()->se_private_id();
     else
       unique_id = partition_def->se_private_id();
   } else {

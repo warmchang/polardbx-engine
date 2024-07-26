@@ -133,13 +133,11 @@ void package_context_init() {
 #ifdef HAVE_PSI_INTERFACE
   init_package_psi_key();
 #endif
-
-  /* The schema of dummy and dummy_2 proc */
-  LEX_CSTRING PROC_DUMMY_SCHEMA = {C_STRING_WITH_LEN("mysql")};
-
   package_inited = true;
 
 #ifndef NDEBUG
+  /* The schema of dummy and dummy_2 proc */
+  LEX_CSTRING PROC_DUMMY_SCHEMA = {C_STRING_WITH_LEN("mysql")};
   register_package<Proc, Proc_dummy>(PROC_DUMMY_SCHEMA);
   register_package<Proc, Proc_dummy_2>(PROC_DUMMY_SCHEMA);
 #endif
