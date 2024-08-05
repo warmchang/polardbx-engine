@@ -1290,8 +1290,11 @@ bool Srv_session::is_srv_session_thread() {
 
 void Srv_session::set_safe(bool safe) {
   safe_session = safe;
-  if (safe)
+  if (safe) {
     m_thd->remove_srv_session_mark();
-  else
+    m_thd->m_audited = true;
+  } else {
     m_thd->mark_as_srv_session();
+    m_thd->m_audited = false;
+  }
 }

@@ -21,6 +21,9 @@
 #include "sql/sql_db.h"
 #include "sql/sql_lex.h"
 #include "sql/srv_session.h"
+#ifdef MYSQL8
+#include "sql/sql_audit.h"
+#endif
 
 #include "../coders/callback_command_delegate.h"
 #include "../polarx_rpc.h"
@@ -525,6 +528,7 @@ void CsessionBase::begin_query(THD *thd, const char *query, uint len) {
   /// mark start query
   THD_STAGE_INFO(thd, stage_starting);
   thd->set_time();
+  thd->set_command(COM_QUERY);
   thd->lex->sql_command = SQLCOM_SELECT;
 
   /// clear rewrite query and set current query
@@ -599,7 +603,12 @@ void CsessionBase::end_query(THD *thd) {
   /// end select
   thd->set_row_count_func(-1);
 
-#ifndef MYSQL8
+#ifdef MYSQL8
+  /// write audit log before exit
+  thd->update_slow_query_status();
+  mysql_audit_notify(thd, AUDIT_EVENT(MYSQL_AUDIT_RDS_QUERY_RESULT));
+  log_slow_statement(thd);
+#else
   /// write audit log before exit
   thd->update_server_status();
   mysql_rds_audit_log.write_log(thd, thd->query().str, thd->query().length,
