@@ -291,7 +291,6 @@ int Executor::execute(const ExecPlan::AnyPlan &plan, const ParamsList &params,
                       const char *query, uint query_len) {
   int ret = HA_EXEC_SUCCESS;
   tls_params = &params;
-  thd->reset_for_next_command();
   polarx_rpc::CsessionBase::begin_query(thd, query, query_len);
   switch (plan.plan_type()) {
     case PolarXRPC::ExecPlan::AnyPlan::GET:

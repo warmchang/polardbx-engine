@@ -525,6 +525,10 @@ void CsessionBase::deinit_thread_for_session() {
 }
 
 void CsessionBase::begin_query(THD *thd, const char *query, uint len) {
+  /// start lex and reset thd
+  lex_start(thd);
+  thd->reset_for_next_command();
+
   /// mark start query
   THD_STAGE_INFO(thd, stage_starting);
   thd->set_time();
@@ -572,6 +576,9 @@ void CsessionBase::cleanup_and_mark_sleep(THD *thd) {
   /** Freeing the memroot will leave the THD::work_part_info invalid. */
   thd->work_part_info = nullptr;
 
+  /// end stmt
+  thd->end_statement();
+                                                                                     
   /// free mem_root
 #ifdef MYSQL8
   /**

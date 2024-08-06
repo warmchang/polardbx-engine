@@ -381,7 +381,6 @@ polarx_rpc::err_t Physical_backfill::clone_file(
         info = "clone file ";
         info += src_file_path.c_str();
 
-        thd->reset_for_next_command();
         polarx_rpc::CsessionBase::begin_query(thd, info.c_str(), info.length());
 
         if (my_copy_interrutable(src_file_path.c_str(), clone_file_path.c_str(),
