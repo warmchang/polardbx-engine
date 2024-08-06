@@ -115,6 +115,22 @@ struct TxnUndoRsegsIterator {
   static const TxnUndoRsegs NullElement;
 };
 
+struct min_safe_scn {
+ public:
+  min_safe_scn() : m_scn(0) {}
+  min_safe_scn(scn_t scn) : m_scn(scn) {}
+
+  scn_t get_min() const { return m_scn; }
+
+  void push(scn_t scn) {
+    ut_ad(scn >= m_scn);
+    m_scn = scn;
+  }
+
+ private:
+  scn_t m_scn;
+};
+
 /**
   Initialize / reload purged_scn from purge_sys->purge_heap
 

@@ -122,13 +122,13 @@ struct trx_erase_t {
   /** Mutex protecting erase_heap */
   PQMutex pq_mutex;
 
-#ifdef UNIV_DEBUG
-  /** The limit iterator in the purge truncation. All undo records to be erased
+  /** The oldest vision in the erase sys. All undo records to be erased
    * must not exceed this limit. */
-  purge_iter_t oldest_vision;
-#endif /* UNIV_DEBUG */
+  std::atomic<scn_t> oldest_vision;
 
   void push_erased(const commit_order_t &ommt);
+
+  void clone_oldest_vision(scn_t scn);
 };
 
 extern trx_erase_t *erase_sys;

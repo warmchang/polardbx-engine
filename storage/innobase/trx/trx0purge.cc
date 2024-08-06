@@ -140,6 +140,7 @@ void trx_purge_sys_mem_create() {
   new (&purge_sys->undo_trunc) undo::Truncate;
   new (&purge_sys->thds) ut::unordered_set<THD *>;
   new (&purge_sys->rsegs_queue) std::vector<trx_rseg_t *>;
+  new (&purge_sys->truncating_list_scn) lizard::min_safe_scn;
 #ifdef UNIV_DEBUG
   new (&purge_sys->done) purge_iter_t;
 #endif /* UNIV_DEBUG */
@@ -190,6 +191,8 @@ void trx_purge_sys_initialize(uint32_t n_purge_threads,
 
   new (&purge_sys->purged_gcn) lizard::Purged_gcn;
   purge_sys->purged_gcn.init();
+
+  purge_sys->truncating_list_scn.push(purge_sys->purged_scn.load());
 }
 
 void trx_purge_sys_close() {
@@ -1670,6 +1673,9 @@ static void trx_purge_truncate_history(purge_iter_t *limit,
     trx_purge_truncate_rseg_history(rseg, limit);
   }
   trx_sys->tmp_rsegs.s_unlock();
+
+  ut_ad(limit->ommt.scn != 0);
+  purge_sys->truncating_list_scn.push(limit->ommt.scn);
 
   MONITOR_INC_TIME(MONITOR_PURGE_TRUNCATE_HISTORY_MICROSECOND,
                    counter_time_truncate_history);

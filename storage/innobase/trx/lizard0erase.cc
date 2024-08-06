@@ -118,17 +118,13 @@ static scn_t trx_erase_reload_erased_scn() {
     return ERASED_SCN_INVALID;
   }
 
-  scn_t min_erase_scn;
+  scn_t min_erase_scn = SCN_NULL;
 
   ut_ad(purge_sys);
   ut_ad(erase_sys);
 
-  if (erase_sys->erase_heap->empty()) {
-    /** If not found any sp log, take purged scn as erased scn. */
-    min_erase_scn = purge_sys->purged_scn;
-  } else {
+  if (!erase_sys->erase_heap->empty()) {
     min_erase_scn = erase_sys->erase_heap->top().get_scn();
-    ut_ad(min_erase_scn < purge_sys->purged_scn);
 #ifdef UNIV_DEBUG
     fil_addr_t addr;
     commit_mark_t cmmt;
@@ -136,6 +132,13 @@ static scn_t trx_erase_reload_erased_scn() {
     ut_ad(cmmt.scn == min_erase_scn);
 #endif /* UNIV_DEBUG */
   }
+
+  /**
+   * There may still be undo logs with smaller SCNs in the purge sys that need
+   * to be erased. Identify the minimum SCN from both the purge heap and the
+   * erase heap to determine the erased_scn. */
+  min_erase_scn =
+      std::min(purge_sys->truncating_list_scn.get_min(), min_erase_scn);
 
   ut_ad(min_erase_scn != SCN_NULL);
 
@@ -159,11 +162,7 @@ void trx_erase_sys_initialize(uint32_t n_erase_threads,
 
   erase_sys->erased_gcn.init();
 
-#ifdef UNIV_DEBUG
-  rw_lock_x_lock(&purge_sys->latch, UT_LOCATION_HERE);
-  erase_sys->oldest_vision = purge_sys->limit;
-  rw_lock_x_unlock(&purge_sys->latch);
-#endif /* UNIV_DEBUG */
+  erase_sys->clone_oldest_vision(purge_sys->truncating_list_scn.get_min());
 
   ut_a(erase_sys->rseg == nullptr);
   ut_a(erase_sys->next_stored == false);
@@ -409,19 +408,26 @@ static void trx_erase_sys_set_next() {
   mutex_enter(&erase_sys->pq_mutex);
   lizard_erased_scn_validation();
 
-#ifdef UNIV_DEBUG
   scn_t top_scn = 0;
-#endif /* UNIV_DEBUG */
   trx_rseg_t *top_rseg = nullptr;
 
   if (!erase_sys->erase_heap->empty()) {
     const UpdateUndoRseg top = erase_sys->erase_heap->top();
     top_rseg = top.get_rseg();
-
-#ifdef UNIV_DEBUG
     top_scn = top.get_scn();
-    ut_ad(top_scn < erase_sys->oldest_vision.ommt.scn);
-#endif /* UNIV_DEBUG */
+
+    /**
+     * To ensure that erase operations are executed in the correct SCN order,
+     * an undo log can only be erased if there are no remaining undo logs
+     * with smaller SCNs in the purge system that need to be migrated to
+     * the semi-purge list.
+     */
+    if (top_scn >= erase_sys->oldest_vision.load()) {
+      mutex_exit(&erase_sys->pq_mutex);
+
+      erase_sys->rseg = nullptr;
+      return;
+    }
 
     erase_sys->erase_heap->pop();
 
@@ -979,11 +985,9 @@ ulint trx_erase(ulint n_purge_threads, /*!< in: number of purge tasks
   /* The number of tasks submitted should be completed. */
   ut_a(erase_sys->n_submitted == erase_sys->n_completed);
 
-#ifdef UNIV_DEBUG
-  rw_lock_x_lock(&purge_sys->latch, UT_LOCATION_HERE);
-  erase_sys->oldest_vision = purge_sys->limit;
-  rw_lock_x_unlock(&purge_sys->latch);
-#endif /* UNIV_DEBUG */
+  ut_ad(erase_sys->erased_scn.load() <=
+        purge_sys->truncating_list_scn.get_min());
+  erase_sys->clone_oldest_vision(purge_sys->truncating_list_scn.get_min());
 
   trx_erase_start_sp();
 
@@ -1081,6 +1085,10 @@ void trx_erase_t::push_erased(const commit_order_t &ommt) {
   erased_gcn.flush(ommt.gcn);
 }
 
+void trx_erase_t::clone_oldest_vision(scn_t scn) {
+  oldest_vision.store(scn);
+}
+
 void trx_rseg_init_erase_heap(trx_rseg_t *rseg, trx_rsegf_t *rseg_hdr,
                               lizard::erase_heap_t *erase_heap, ulint sp_len,
                               bool parallel, mtr_t *mtr) {
@@ -1151,6 +1159,14 @@ void trx_add_rsegs_for_erase(trx_rseg_t *rseg, const fil_addr_t &hdr_addr,
     /** Push erase heap. */
     UpdateUndoRseg elem(cmmt.scn, rseg);
     mutex_enter(&erase_sys->pq_mutex);
+
+    DBUG_EXECUTE_IF(
+        "crash_during_purge_truncate",
+        if (!lizard::erase_sys->erase_heap->empty() &&
+            lizard::erase_sys->erase_heap->top().get_scn() > elem.get_scn()) {
+          DBUG_SUICIDE();
+        });
+
     erase_sys->erase_heap->push(std::move(elem));
     lizard_erased_scn_validation();
     mutex_exit(&erase_sys->pq_mutex);

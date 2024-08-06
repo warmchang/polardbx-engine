@@ -1091,6 +1091,7 @@ struct trx_purge_t {
   /** The 'purge pointer' which advances during a purge, and which is used in
   history list truncation */
   purge_iter_t limit;
+
 #ifdef UNIV_DEBUG
   /** Indicate 'purge pointer' which have purged already accurately. */
   purge_iter_t done;
@@ -1145,6 +1146,10 @@ struct trx_purge_t {
 
   /** Similar with purged_scn */
   lizard::Purged_gcn purged_gcn;
+
+  /** The transactions whose scn < truncating_list_scn.get_min() have been
+   * truncated. */
+  lizard::min_safe_scn truncating_list_scn;
 
   void push_purged(const commit_order_t &ommt);
 };
