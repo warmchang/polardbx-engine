@@ -280,6 +280,8 @@ else
 fi
 
 export CODE_COVERAGE_DELTA=$total_rate
+export NEW_LINE_CNT=$total_count
+export COV_NEW_LINE_CNT=$covline_total_count
 
 cat >delta.cov.html <<EOF
 <!DOCTYPE html><html lang="en">

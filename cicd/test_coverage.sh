@@ -1,14 +1,17 @@
 #!/usr/bin/bash
 source cicd/common.sh
 
-if [ "${TEST_TYPE_ENUM}" -ne "${MERGE_TEST_COVERAGE}" ] || 
-   [ "${TEST_TYPE_ENUM}" -ne "${DAILY_REGRESSION}" ]; then
+if [ "${TEST_TYPE_ENUM}" -ne "${MERGE_TEST_COVERAGE}" ]; then
   exit 0
 fi
 
-if [ "${TEST_TYPE_ENUM}" -eq "${MERGE_TEST_COVERAGE}"]; then
+if [ "${TEST_TYPE_ENUM}" -eq "${MERGE_TEST_COVERAGE}" ]; then
   echo "MERGE_ID: ${MERGE_ID}"
-  MERGE_COMMITS=$(curl -k -s "https://code.aone.alibaba-inc.com/api/v4/projects/2694395/merge_request/${MERGE_ID}/push_records" | jq -r jq -r '.[] | {disappear_from_push_id: .commits[0].disappear_from_push_id, new_revision: .new_revision}')
+  git fetch origin ${TARGET_BRANCH}
+  git fetch origin ${SOURCE_BRANCH}
+  MERGE_COMMITS=$(git log origin/${TARGET_BRANCH}..origin/${SOURCE_BRANCH} --pretty=format:"%H")
+  FIRST_COMMIT_ID=$(echo "${MERGE_COMMITS}" | tail -n 1)
+  echo "FIRST_COMMIT_ID: ${FIRST_COMMIT_ID}"
   LAST_COMMID_ID=$(git log -n 1 --format=%H)
   LAST_COMMIT_TIME=$(git log -1 --format=%cd --date=format:'%Y-%m-%d %H:%M:%S')
   LAST_COMMIT_EMAIL=$(git log -1 --pretty=format:'%ce')
@@ -20,8 +23,11 @@ if [ "${TEST_TYPE_ENUM}" -eq "${MERGE_TEST_COVERAGE}"]; then
   ./cc_gen.sh -c "${FIRST_COMMIT_ID}"
 
 else 
+# todo: filter unused files
   ./cc_gen.sh
 fi
+
+source ./cc_gen.sh
 
 # PUSH RESULT
 result=$(
@@ -32,7 +38,10 @@ result=$(
   "target_branch": "${TARGET_BRANCH}",
   "cr_last_commit_id": "${LAST_COMMID_ID}",
   "commit_time": "${LAST_COMMIT_TIME}",
-  "incremental_coverage_rate": "${CODE_COVERAGE_DELTA}"
+  "incremental_coverage_rate": "${CODE_COVERAGE_DELTA}",
+  "git_code_repo": "git@gitlab.alibaba-inc.com:polardbx/polardbx-engine.git",
+  "new_line_count": "${NEW_LINE_CNT}",
+  "ut_coverage_new_line_count": "${COV_NEW_LINE_CNT}",
 }'
 EOF
 )
