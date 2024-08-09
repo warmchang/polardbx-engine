@@ -400,7 +400,7 @@ std::list<Field *> Changeset::make_pk_fields(TABLE *table, uchar *pk,
     // make field
     Field *field = key_info->key_part[i].field->clone(mem_root);
     field->table = table;
-    uint16 length = key_info->key_part[i].length;
+    uint16 length = key_info->key_part[i].store_length;
 
     uchar *buffer = (uchar *)my_malloc(key_memory_CS_RESULT_BUFFER, length,
                                        MYF(MY_WME | ME_FATALERROR));
