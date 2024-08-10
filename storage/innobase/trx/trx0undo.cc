@@ -58,6 +58,7 @@ this program; if not, write to the Free Software Foundation, Inc.,
 #include "trx0trx.h"
 
 #include "lizard0cleanout.h"
+#include "lizard0cleanout0safe.h"
 #include "lizard0fsp.h"
 #include "lizard0gcs.h"
 #include "lizard0mon.h"

@@ -297,7 +297,7 @@ bool Snapshot_scn_vision::modification_visible(void *txn_rec) const {
 */
 bool Snapshot_gcn_vision::modification_visible(void *txn_rec) const {
   csr_t rec_csr, vision_csr;
-  bool share_cn;
+  bool is_slave;
   txn_rec_t *rec = static_cast<txn_rec_t *>(txn_rec);
 
   /** Promise committed trx and not myself. */
@@ -306,7 +306,7 @@ bool Snapshot_gcn_vision::modification_visible(void *txn_rec) const {
 
   vision_csr = m_csr;
   rec_csr = undo_ptr_get_csr(rec->undo_ptr);
-  share_cn = undo_ptr_get_share_cn(rec->undo_ptr);
+  is_slave = undo_ptr_is_slave(rec->undo_ptr);
 
   if (rec->gcn == m_gcn) {
     if (vision_csr == CSR_ASSIGNED) {
@@ -329,7 +329,7 @@ bool Snapshot_gcn_vision::modification_visible(void *txn_rec) const {
         happen before the local reading opened. */
         return true;
       } else {
-        if (!share_cn) {
+        if (!is_slave) {
           /** Case 4: If the record is generate by local trx, the the visibility
           judgment of the local read depends entirely on the local commit
           number (SCN).*/
@@ -355,7 +355,7 @@ bool Snapshot_gcn_vision::modification_visible_by_share_cn(void *rec) const {
   transation. So never: creator_trx_id == txn_rec->trx_id. */
   ut_a(m_csr == CSR_AUTOMATIC);
 
-  active = txn_rec_share_cn_by_lookup(txn_rec, &ref_txn_rec);
+  active = txn_rec_get_master_by_lookup(txn_rec, &ref_txn_rec);
 
   /**
     For normal GCN based XA transaction, the external commit number is still
@@ -373,10 +373,7 @@ bool Snapshot_gcn_vision::modification_visible_by_share_cn(void *rec) const {
     return false;
   } else {
     /** Skip infinite recursion */
-    ut_a(!undo_ptr_get_share_cn(ref_txn_rec.undo_ptr));
-
-    /** Master and Slave should share the same external commit number (GCN) */
-    ut_ad(ref_txn_rec.gcn == txn_rec->gcn);
+    ut_a(!undo_ptr_is_slave(ref_txn_rec.undo_ptr));
 
     return modification_visible(&ref_txn_rec);
   }

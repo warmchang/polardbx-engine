@@ -33,6 +33,7 @@ this program; if not, write to the Free Software Foundation, Inc.,
 #ifndef lizard0row_h
 #define lizard0row_h
 
+#include "lizard0cleanout.h"
 #include "lizard0data0types.h"
 #include "lizard0undo0types.h"
 
@@ -320,18 +321,6 @@ undo_ptr_t row_get_rec_undo_ptr(const rec_t *rec, const dict_index_t *index,
 gcn_t row_get_rec_gcn(const rec_t *rec, const dict_index_t *index,
                       const ulint *offsets);
 /**
-  Read the undo ptr state from record
-
-  @param[in]      rec         record
-  @param[in]      index       dict_index_t, must be cluster index
-  @param[in]      offsets     rec_get_offsets(rec, index)
-
-  @retval         scn id
-*/
-bool row_get_rec_undo_ptr_is_active(const rec_t *rec, const dict_index_t *index,
-                                    const ulint *offsets);
-
-/**
   Get the relative offset in record by offsets
   @param[in]      index
   @param[in]      type
@@ -363,6 +352,14 @@ void trx_undo_update_rec_by_lizard_fields(const dict_index_t *index,
                                           upd_t *update, ulint field_nth,
                                           txn_info_t txn_info,
                                           mem_heap_t *heap);
+/**
+ * Retrieves the offset of the GPP number in a record
+ *
+ * @param[in] index   Dictionary index object, non-clustered
+ * @param[in] offsets Array of field offsets
+ * @return            Returns the offset of the GPP number within the record
+ */
+ulint row_get_gpp_no_offset(const dict_index_t *index, const ulint *offsets);
 
 /**
  * Retrieves the GPP Number from a record
@@ -373,7 +370,19 @@ void trx_undo_update_rec_by_lizard_fields(const dict_index_t *index,
  * @return            Returns the GPP Number from the record
  */
 gpp_no_t row_get_gpp_no(const rec_t *rec, const dict_index_t *index,
-                        const ulint *offsets);
+                        const ulint *offsets, ulint &gpp_no_offset);
+
+/**
+ * Write the GPP Number
+ *
+ * @param[in] rec           Pointer to the record
+ * @param[in] index         Pointer to the dictionary index object,
+ * non-clustered
+ * @param[in] gpp_no_offset Offset of the GPP Number
+ * @param[in] gpp_no        GPP Number
+ */
+void row_write_gpp_no(rec_t *rec, const dict_index_t *index,
+                      const ulint gpp_no_offset, const gpp_no_t gpp_no);
 
 /**
  * Assert GPP_NO is valid for multi-valued sec index.
@@ -454,6 +463,18 @@ void row_upd_rec_lizard_fields_in_cleanout(rec_t *rec, page_zip_des_t *page_zip,
                                            const dict_index_t *index,
                                            const ulint *offsets,
                                            const txn_rec_t *txn_rec);
+/**
+  Updates the gpp_no of secondary index record when cleanout.
+  @param[in/out]  rec             record
+  @param[in/out]  page_zip        compressed page, or NULL
+  @param[in]      index           cluster index
+  @param[in]      gpp_no_offset   gpp no offset
+  @param[in]      gpp_no          gpp no
+*/
+void row_upd_rec_gpp_no_in_cleanout(rec_t *rec, page_zip_des_t *page_zip,
+                                    const dict_index_t *index,
+                                    const ulint gpp_no_offset,
+                                    const gpp_no_t gpp_no);
 
 /**
   Updates the scn and undo_ptr field in a clustered index record in
@@ -472,50 +493,14 @@ void row_upd_rec_lizard_fields_in_recovery(rec_t *rec, page_zip_des_t *page_zip,
                                            const scn_t scn,
                                            const undo_ptr_t undo_ptr,
                                            const gcn_t gcn);
-
 /**
-  After search row complete, do the cleanout.
-
-  @param[in]      prebuilt
-
-  @retval         count       cleaned records count
-*/
-ulint row_cleanout_after_read(row_prebuilt_t *prebuilt);
-
-/**
-  Collect the page which need to cleanout
-
-  @param[in]        trx_id
-  @param[in]        txn rec         trx description and state
-  @param[in]        rec             current rec
-  @param[in]        index           cluster index
-  @parma[in]        offsets         rec_get_offsets(rec, index)
-  @param[in/out]    pcur            cursor
-
-  @retval           true            collected
-  @retval           false           didn't collect
-*/
-bool row_cleanout_collect(trx_id_t trx_id, txn_rec_t &txn_rec, const rec_t *rec,
-                          const dict_index_t *index, const ulint *offsets,
-                          btr_pcur_t *pcur);
-/**
-  Collect the tcn which need to cache.
-
-  @param[in]        trx_id
-  @param[in]        txn_rec         txn description and state
-  @param[in]        rec             current rec
-  @param[in]        index           cluster index
-  @parma[in]        offsets         rec_get_offsets(rec, index)
-  @param[in/out]    pcur            cursor
-
-  @retval           true            collected
-  @retval           false           didn't collect
-*/
-
-bool tcn_collect(trx_id_t trx_id, txn_rec_t &txn_rec, const rec_t *rec,
-                 const dict_index_t *index, const ulint *offsets,
-                 btr_pcur_t *pcur);
-
+ * Update gpp no field in secondary index record in database recovery.
+ * @param[in]      rec			record
+ * @param[in]      page_zip
+ * @param[in]      gpp no
+ * @param[in]      gpp offset		gpp no position in rec */
+void row_upd_rec_gpp_fields_in_recovery(rec_t *rec, page_zip_des_t *page_zip,
+                                        page_no_t gpp_no, ulint gpp_offset);
 /**
   Whether the transaction on the record has committed
   @param[in]        trx_id
@@ -528,25 +513,6 @@ bool tcn_collect(trx_id_t trx_id, txn_rec_t &txn_rec, const rec_t *rec,
 */
 bool row_is_committed(trx_id_t trx_id, const rec_t *rec,
                       const dict_index_t *index, const ulint *offsets);
-
-/**
-  Collect rows updated in current transaction.
-
-  @param[in]        thr             current session
-  @param[in]        cursor          btr cursor
-  @param[in]        rec             current rec
-  @param[in]        flags           mode flags for btr_cur operations
-*/
-extern void commit_cleanout_collect(que_thr_t *thr, btr_cur_t *cursor,
-                                    rec_t *rec, ulint flags);
-
-/**
-  Cleanout rows at transaction commit.
-
-  @param[in]        trx             current transation
-  @param[in]        txn_rec         trx info
-*/
-extern void commit_cleanout_do(trx_t *trx, const txn_rec_t &txn_rec);
 
 /*=============================================================================*/
 /* lizard row guess on gpp */
@@ -564,6 +530,8 @@ extern void commit_cleanout_do(trx_t *trx, const txn_rec_t &txn_rec);
  * @param[in,out] clust_pcur      Persistent cursor for the clustered index
  * @param[out]    sec_offsets     Offsets array for the secondary record
  * @param[in]     mode            latching mode
+ * @param[in]     pcur            Persistent cursor for the secondary index
+ * @param[in]     cursor          Point to Cursor for the secondary index
  * @param[in]     mtr             Mini-transaction handle
  * @return        True if successful positioning, False otherwise
  */
@@ -571,7 +539,8 @@ bool row_sel_optimistic_guess_clust(dict_index_t *clust_idx,
                                     dict_index_t *sec_idx, dtuple_t *clust_ref,
                                     const rec_t *sec_rec,
                                     btr_pcur_t *clust_pcur, ulint *sec_offsets,
-                                    ulint mode, mtr_t *mtr);
+                                    ulint mode, btr_pcur_t *pcur,
+                                    SCursor **scursor, mtr_t *mtr);
 
 /**
  * When attempting to purge a secondary index record, this operation tries to

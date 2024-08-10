@@ -84,7 +84,63 @@ bool btr_cur_guess_clust_by_gpp(dict_index_t *clust_idx,
                                 const dtuple_t *clust_ref, const rec_t *sec_rec,
                                 btr_pcur_t *clust_pcur,
                                 const ulint *sec_offsets, ulint latch_mode,
+                                ulint &gpp_no_offset,
                                 mtr_t *mtr);
+
+/**
+  Write redo log when updating scn/uba/gcn fileds in physical records.
+
+  @param[in]      rec        physical record
+  @param[in]      index      dict that interprets the row record
+  @param[in]      txn_rec    txn info from the record
+  @param[in]      mtr        mtr
+*/
+extern void btr_cur_upd_lizard_fields_clust_rec_log(const rec_t *rec,
+                                                    const dict_index_t *index,
+                                                    const txn_rec_t *txn_rec,
+                                                    mtr_t *mtr);
+
+/**
+  Parse the txn info from redo log record, and apply it if necessary.
+  @param[in]      ptr        buffer
+  @param[in]      end        buffer end
+  @param[in]      page       page (NULL if it's just get the length)
+  @param[in]      page_zip   compressed page, or NULL
+  @param[in]      index      index corresponding to page
+
+  @return         return the end of log record or NULL
+*/
+extern byte *btr_cur_parse_lizard_fields_upd_clust_rec(
+    byte *ptr, byte *end_ptr, page_t *page, page_zip_des_t *page_zip,
+    const dict_index_t *index);
+
+/** Updates the redo log record for a gpp_no of a secondary index record. 
+  @param[in]      rec             secondary record
+  @param[in]      index           secondary index
+  @param[in]      gpp_no_offset   the offsets of gpp_no field       
+  @param[in]      gpp_no          page no of the cluster index
+  @param[in]      mtr             mtr
+*/
+extern void btr_cur_upd_gpp_no_sec_rec_log(const rec_t *rec,
+                                           const dict_index_t *index,
+                                           ulint gpp_no_offset,
+                                           page_no_t gpp_no, mtr_t *mtr);
+
+/**
+  Parses the redo log record for a gpp_no of a secondary index record.
+  @param[in]      ptr        buffer
+  @param[in]      end        buffer end
+  @param[in]      page       page (NULL if it's just get the length)
+  @param[in]      page_zip   compressed page, or NULL
+  @param[in]      index      index corresponding to page
+
+  @return         return the end of log record or NULL
+*/
+extern byte *btr_cur_parse_gpp_no_upd_sec_rec(
+    byte *ptr,                 /*!< in: buffer */
+    byte *end_ptr,             /*!< in: buffer end */
+    page_t *page,              /*!< in/out: page or NULL */
+    page_zip_des_t *page_zip); /*!< in/out: compressed page, or NULL */
 }  // namespace lizard
 
 #endif

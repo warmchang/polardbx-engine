@@ -210,6 +210,7 @@ this program; if not, write to the Free Software Foundation, Inc.,
 #endif /* HAVE_UNISTD_H */
 
 #include "lizard0cleanout.h"
+#include "lizard0cleanout0safe.h"
 #include "lizard0dict.h"
 #include "lizard0fsp.h"
 #include "lizard0gcs.h"
@@ -23607,11 +23608,16 @@ static MYSQL_SYSVAR_BOOL(
     "Whether to disable cleanout when read (off by default)", NULL, NULL,
     false);
 
+static MYSQL_SYSVAR_BOOL(
+    gpp_cleanout_disable, lizard::opt_gpp_cleanout_disable, PLUGIN_VAR_OPCMDARG,
+    "Whether to disable gpp cleanout when read (off by default)", NULL, NULL,
+    false);
+
 static MYSQL_SYSVAR_ULONG(commit_cleanout_max_rows,
-                          lizard::commit_cleanout_max_rows, PLUGIN_VAR_OPCMDARG,
-                          "max cleanout rows at commit", NULL, NULL,
-                          COMMIT_CLEANOUT_DEFAULT_ROWS, 0,
-                          COMMIT_CLEANOUT_MAX_NUM, 0);
+                          lizard::srv_commit_cleanout_max_rows,
+                          PLUGIN_VAR_OPCMDARG, "max cleanout rows at commit",
+                          NULL, NULL, lizard::Commit_cleanout::STATIC_CURSORS, 0,
+                          lizard::Commit_cleanout::MAX_CURSORS, 0);
 
 static MYSQL_SYSVAR_ENUM(cleanout_mode, lizard::cleanout_mode,
                          PLUGIN_VAR_RQCMDARG, " Cleanout mode, default(cursor)",
@@ -23699,18 +23705,18 @@ static TYPELIB innodb_tcn_cache_level_typelib = {
     array_elements(innodb_tcn_cache_level_names) - 1,
     "innodb_tcn_cache_level_typelib", innodb_tcn_cache_level_names, NULL};
 
-static MYSQL_SYSVAR_ENUM(tcn_cache_level, lizard::innodb_tcn_cache_level,
+static MYSQL_SYSVAR_ENUM(tcn_cache_level, lizard::srv_tcn_cache_level,
                          PLUGIN_VAR_OPCMDARG,
                          "transaction commit number cache level.", NULL, NULL,
                          GLOBAL_LEVEL, &innodb_tcn_cache_level_typelib);
 
-static MYSQL_SYSVAR_LONGLONG(tcn_cache_size, lizard::innodb_tcn_cache_size,
+static MYSQL_SYSVAR_LONGLONG(tcn_cache_size, lizard::srv_tcn_cache_size,
                              PLUGIN_VAR_READONLY,
                              "The size of the global tcn cache in bytes. "
                              "0 indicates using the default mapping policy "
                              "according to the buffer pool size",
-                             NULL, NULL, lizard::innodb_tcn_cache_def_size, 0,
-                             lizard::innodb_tcn_cache_max_size, 0);
+                             NULL, NULL, lizard::srv_tcn_cache_def_size, 0,
+                             lizard::srv_tcn_cache_max_size, 0);
 
 static const char *innodb_tcn_block_cache_type_names[] = {"lru",    /* lru */
                                                           "random", /* random */
@@ -23721,12 +23727,12 @@ static TYPELIB innodb_tcn_block_cache_type_typelib = {
     NULL};
 
 static MYSQL_SYSVAR_ENUM(tcn_block_cache_type,
-                         lizard::innodb_tcn_block_cache_type,
+                         lizard::srv_tcn_block_cache_type,
                          PLUGIN_VAR_OPCMDARG, "block cache type.", NULL, NULL,
                          BLOCK_LRU, &innodb_tcn_block_cache_type_typelib);
 
 static MYSQL_SYSVAR_BOOL(tcn_cache_replace_after_commit,
-                         lizard::innodb_tcn_cache_replace_after_commit,
+                         lizard::srv_tcn_cache_replace_after_commit,
                          PLUGIN_VAR_OPCMDARG,
                          "whether to replace global tcn cache after commit",
                          NULL, NULL, true);
@@ -23737,7 +23743,7 @@ static MYSQL_SYSVAR_BOOL(lizard_stat_enabled, lizard::stat_enabled,
                          false);
 
 static MYSQL_SYSVAR_BOOL(cleanout_write_redo, lizard::opt_cleanout_write_redo,
-                         PLUGIN_VAR_OPCMDARG | PLUGIN_VAR_READONLY,
+                         PLUGIN_VAR_OPCMDARG,
                          "whether to write redo log when cleanout", NULL, NULL,
                          false);
 
@@ -24027,6 +24033,7 @@ static SYS_VAR *innobase_system_variables[] = {
     MYSQL_SYSVAR(rds_flashback_enabled),
     MYSQL_SYSVAR(cleanout_safe_mode),
     MYSQL_SYSVAR(cleanout_disable),
+    MYSQL_SYSVAR(gpp_cleanout_disable),
     MYSQL_SYSVAR(cleanout_max_scans_on_page),
     MYSQL_SYSVAR(cleanout_max_cleans_on_page),
     MYSQL_SYSVAR(commit_cleanout_max_rows),

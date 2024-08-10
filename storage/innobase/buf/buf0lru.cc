@@ -2048,8 +2048,6 @@ void buf_LRU_block_free_non_file_page(buf_block_t *block) {
                                            block->page.size.logical(), false));
   }
 
-  lizard::deallocate_block_tcn(block);
-
 #ifndef UNIV_HOTBACKUP
   buf_page_prepare_for_free(&block->page);
   ut_ad(block->page.get_space() == nullptr);

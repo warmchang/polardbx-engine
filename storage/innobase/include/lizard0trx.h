@@ -40,22 +40,10 @@ this program; if not, write to the Free Software Foundation, Inc.,
 namespace lizard {
 
 /** Alloc & release cleanout cursors. */
-extern void alloc_cleanout_cursors(trx_t *trx);
-extern void release_cleanout_cursors(trx_t *trx);
+extern void alloc_commit_cleanout(trx_t *trx);
+extern void release_commit_cleanout(trx_t *trx);
 
-extern void cleanout_rows_at_commit(trx_t *trx);
-
-/** In order to optimize performance of multi-branch execution on one DN,
- *  XA branchs will be divided into XA MASTER AND XA SLAVE, they can be
- *  executed perallel and share same SCN when MVCC.
- *
- *  Check if trx is xa slave branch.
- *
- *  @param[in]	trx
- *
- *  @retval	true	yes
- *  @retval	false	no */
-extern bool trx_is_xa_slave(const trx_t *trx);
+extern void cleanout_after_commit(trx_t *trx);
 
 }  // namespace lizard
 

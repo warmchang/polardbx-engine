@@ -19,14 +19,17 @@ BEGIN
   DECLARE space_size INT DEFAULT 0;
   SELECT FILE_SIZE/PAGE_SIZE INTO space_size FROM information_schema.INNODB_TABLESPACES WHERE NAME='test/t1';
   SELECT 'Space size of test/t1:', space_size;
-  WHILE v_iter < space_size DO
-    SET DEBUG='+d,set_gpp_enum_page_in_space';
+  CALL dbms_stat.flush_gpp();
+  SET DEBUG='+d,set_gpp_enum_page_in_space';
+  WHILE v_iter < space_size + 3 DO
     SET GLOBAL innodb_dbug_gpp_no = v_iter;
     SELECT @@innodb_dbug_gpp_no;
     SELECT id, c FROM t1 WHERE k = 4;
     show status like '%scan_guess%';
     SET v_iter = v_iter + 1;
   END WHILE;
+  CALL dbms_stat.flush_gpp();
+  SET DEBUG='-d,set_gpp_enum_page_in_space';
 END|
 
 # --------------------------------------------------------------------------
@@ -110,6 +113,15 @@ where space = (select space from information_schema.innodb_indexes
 where table_id = (select table_id from information_schema.innodb_tables where name like '%t1%') limit 1) 
 and page_type = 'index' and PAGE_NUMBER=6;
 
+INSERT INTO t1 (id, k, c, pad) VALUES (1, 1, 1, LEFT(REPEAT('A', 4000), CHAR_LENGTH(REPEAT('A', 4000))));
+INSERT INTO t1 (id, k, c, pad) VALUES (2, 2, 2, LEFT(REPEAT('A', 4000), CHAR_LENGTH(REPEAT('A', 4000))));
+INSERT INTO t1 (id, k, c, pad) VALUES (3, 3, 3, LEFT(REPEAT('A', 4000), CHAR_LENGTH(REPEAT('A', 4000))));
+INSERT INTO t1 (id, k, c, pad) VALUES (4, 4, 4, LEFT(REPEAT('A', 4000), CHAR_LENGTH(REPEAT('A', 4000))));
+INSERT INTO t1 (id, k, c, pad) VALUES (5, 5, 5, LEFT(REPEAT('A', 4000), CHAR_LENGTH(REPEAT('A', 4000))));
+INSERT INTO t1 (id, k, c, pad) VALUES (6, 6, 6, LEFT(REPEAT('A', 4000), CHAR_LENGTH(REPEAT('A', 4000))));
+INSERT INTO t1 (id, k, c, pad) VALUES (7, 7, 7, LEFT(REPEAT('A', 4000), CHAR_LENGTH(REPEAT('A', 4000))));
+CALL iterate_pages_in_space();
+
 --echo
 --echo Attempting to locate a clustered index record using an outdated gpp_no of a page that has already been freed.
 SET DEBUG='+d,set_gpp_enum_page_in_space';
@@ -130,6 +142,14 @@ SET GLOBAL innodb_dbug_gpp_no = 6;
 SELECT @@innodb_dbug_gpp_no;
 SELECT id, k FROM t1 WHERE k = 8;
 show status like '%scan_guess%';
+
+--echo 
+--echo After the server restart, the page with page_no == 6 is now marked as allocated.
+select PAGE_NUMBER, PAGE_TYPE, TABLE_NAME, INDEX_NAME, NUMBER_RECORDS, DATA_SIZE from INFORMATION_SCHEMA.INNODB_BUFFER_PAGE 
+where space = (select space from information_schema.innodb_indexes 
+where table_id = (select table_id from information_schema.innodb_tables where name like '%t1%') limit 1) 
+and (page_type = 'index' or page_number=6) order by PAGE_NUMBER;
+CALL iterate_pages_in_space();
 
 if ($ROW_FORMAT != COMPRESSED)
 {
@@ -172,13 +192,6 @@ if ($ROW_FORMAT != COMPRESSED)
   reap;
 
 }
-
---echo 
---echo After the server restart, the page with page_no == 6 is now marked as allocated.
-select PAGE_NUMBER, PAGE_TYPE, TABLE_NAME, INDEX_NAME, NUMBER_RECORDS, DATA_SIZE from INFORMATION_SCHEMA.INNODB_BUFFER_PAGE 
-where space = (select space from information_schema.innodb_indexes 
-where table_id = (select table_id from information_schema.innodb_tables where name like '%t1%') limit 1) 
-and (page_type = 'index' or page_number=6) order by PAGE_NUMBER;
 
 connection default;
 drop table t1;

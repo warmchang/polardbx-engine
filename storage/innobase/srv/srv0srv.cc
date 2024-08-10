@@ -113,7 +113,7 @@ bool srv_downgrade_logs = false;
 bool srv_upgrade_old_undo_found = false;
 #endif /* INNODB_DD_TABLE */
 
-#include "lizard0cleanout.h"
+#include "lizard0cleanout0safe.h"
 #include "lizard0gcs.h"
 #include "lizard0erase.h"
 #include "row0purge.h"

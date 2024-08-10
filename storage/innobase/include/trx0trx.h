@@ -64,6 +64,7 @@ this program; if not, write to the Free Software Foundation, Inc.,
 #include "lizard0undo0types.h"
 #include "lizard0xa.h"
 
+
 namespace binlog {
 class Binlog_xa_specification;
 }  // namespace binlog
@@ -703,7 +704,8 @@ enum trx_rseg_type_t {
 };
 
 namespace lizard {
-class Cleanout_cursors;
+class Scan_cleanout;
+class Commit_cleanout;
 }
 
 struct trx_t {
@@ -1199,7 +1201,7 @@ struct trx_t {
   XA_specification *xa_spec;
 
   /** Commit cleanout cursors */
-  lizard::Cleanout_cursors *cleanout_cursors;
+  lizard::Commit_cleanout *cleanout;
 
   /** Lizard-3.0: true if the finished state is rollback */
   bool is_rollback;

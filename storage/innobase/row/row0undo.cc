@@ -143,7 +143,7 @@ undo_node_t *row_undo_node_create(trx_t *trx, que_thr_t *parent,
 
   undo->partial = partial_rollback;
   undo->pcur.init();
-  ut_ad(undo->pcur.m_cleanout_pages == nullptr);
+  ut_ad(undo->pcur.m_cleanout == nullptr);
 
   undo->heap = mem_heap_create(256, UT_LOCATION_HERE);
 

@@ -8,14 +8,17 @@ DECLARE v_iter INT DEFAULT 0;
 DECLARE space_size INT DEFAULT 0;
 SELECT FILE_SIZE/PAGE_SIZE INTO space_size FROM information_schema.INNODB_TABLESPACES WHERE NAME='test/t1';
 SELECT 'Space size of test/t1:', space_size;
-WHILE v_iter < space_size DO
+CALL dbms_stat.flush_gpp();
 SET DEBUG='+d,set_gpp_enum_page_in_space';
+WHILE v_iter < space_size + 3 DO
 SET GLOBAL innodb_dbug_gpp_no = v_iter;
 SELECT @@innodb_dbug_gpp_no;
 SELECT id, c FROM t1 WHERE k = 4;
 show status like '%scan_guess%';
 SET v_iter = v_iter + 1;
 END WHILE;
+CALL dbms_stat.flush_gpp();
+SET DEBUG='-d,set_gpp_enum_page_in_space';
 END|
 CREATE TABLE t1 ( id int NOT NULL, k int NOT NULL, c int NOT NULL, pad varchar(8192), PRIMARY KEY (id), KEY (k)) row_format=DYNAMIC engine=innodb;
 set global innodb_lizard_stat_enabled=on;
@@ -67,78 +70,99 @@ Space size of test/t1:	11
 id	c
 4	4
 Variable_name	Value
-Lizard_index_scan_guess_clust_hit	1
-Lizard_index_scan_guess_clust_miss	2
+Lizard_index_scan_guess_clust_hit	0
+Lizard_index_scan_guess_clust_miss	1
 @@innodb_dbug_gpp_no
 1
 id	c
 4	4
 Variable_name	Value
-Lizard_index_scan_guess_clust_hit	1
-Lizard_index_scan_guess_clust_miss	3
+Lizard_index_scan_guess_clust_hit	0
+Lizard_index_scan_guess_clust_miss	2
 @@innodb_dbug_gpp_no
 2
 id	c
 4	4
 Variable_name	Value
-Lizard_index_scan_guess_clust_hit	1
-Lizard_index_scan_guess_clust_miss	4
+Lizard_index_scan_guess_clust_hit	0
+Lizard_index_scan_guess_clust_miss	3
 @@innodb_dbug_gpp_no
 3
 id	c
 4	4
 Variable_name	Value
-Lizard_index_scan_guess_clust_hit	1
-Lizard_index_scan_guess_clust_miss	5
+Lizard_index_scan_guess_clust_hit	0
+Lizard_index_scan_guess_clust_miss	4
 @@innodb_dbug_gpp_no
 4
 id	c
 4	4
 Variable_name	Value
-Lizard_index_scan_guess_clust_hit	1
-Lizard_index_scan_guess_clust_miss	6
+Lizard_index_scan_guess_clust_hit	0
+Lizard_index_scan_guess_clust_miss	5
 @@innodb_dbug_gpp_no
 5
+id	c
+4	4
+Variable_name	Value
+Lizard_index_scan_guess_clust_hit	0
+Lizard_index_scan_guess_clust_miss	6
+@@innodb_dbug_gpp_no
+6
+id	c
+4	4
+Variable_name	Value
+Lizard_index_scan_guess_clust_hit	0
+Lizard_index_scan_guess_clust_miss	7
+@@innodb_dbug_gpp_no
+7
 id	c
 4	4
 Variable_name	Value
 Lizard_index_scan_guess_clust_hit	1
 Lizard_index_scan_guess_clust_miss	7
 @@innodb_dbug_gpp_no
-6
+8
 id	c
 4	4
 Variable_name	Value
 Lizard_index_scan_guess_clust_hit	1
 Lizard_index_scan_guess_clust_miss	8
 @@innodb_dbug_gpp_no
-7
-id	c
-4	4
-Variable_name	Value
-Lizard_index_scan_guess_clust_hit	2
-Lizard_index_scan_guess_clust_miss	8
-@@innodb_dbug_gpp_no
-8
-id	c
-4	4
-Variable_name	Value
-Lizard_index_scan_guess_clust_hit	2
-Lizard_index_scan_guess_clust_miss	9
-@@innodb_dbug_gpp_no
 9
 id	c
 4	4
 Variable_name	Value
-Lizard_index_scan_guess_clust_hit	2
-Lizard_index_scan_guess_clust_miss	10
+Lizard_index_scan_guess_clust_hit	1
+Lizard_index_scan_guess_clust_miss	9
 @@innodb_dbug_gpp_no
 10
 id	c
 4	4
 Variable_name	Value
-Lizard_index_scan_guess_clust_hit	2
+Lizard_index_scan_guess_clust_hit	1
+Lizard_index_scan_guess_clust_miss	10
+@@innodb_dbug_gpp_no
+11
+id	c
+4	4
+Variable_name	Value
+Lizard_index_scan_guess_clust_hit	1
 Lizard_index_scan_guess_clust_miss	11
+@@innodb_dbug_gpp_no
+12
+id	c
+4	4
+Variable_name	Value
+Lizard_index_scan_guess_clust_hit	1
+Lizard_index_scan_guess_clust_miss	12
+@@innodb_dbug_gpp_no
+13
+id	c
+4	4
+Variable_name	Value
+Lizard_index_scan_guess_clust_hit	1
+Lizard_index_scan_guess_clust_miss	13
 
 === Freed page ===
 set global innodb_purge_run_now = on;
@@ -149,8 +173,8 @@ DELETE FROM t1 WHERE k = 3;
 commit;
 show status like '%scan_guess%';
 Variable_name	Value
-Lizard_index_scan_guess_clust_hit	2
-Lizard_index_scan_guess_clust_miss	14
+Lizard_index_scan_guess_clust_hit	0
+Lizard_index_scan_guess_clust_miss	3
 
 The page (where page_no == 7), which originally contained the record with id = 4, has now been freed. 
 select PAGE_NUMBER, PAGE_TYPE, TABLE_NAME, INDEX_NAME, NUMBER_RECORDS, DATA_SIZE from INFORMATION_SCHEMA.INNODB_BUFFER_PAGE WHERE TABLE_NAME like "%t1%" order by PAGE_NUMBER;
@@ -166,8 +190,8 @@ id	c
 4	4
 show status like '%scan_guess%';
 Variable_name	Value
-Lizard_index_scan_guess_clust_hit	2
-Lizard_index_scan_guess_clust_miss	15
+Lizard_index_scan_guess_clust_hit	0
+Lizard_index_scan_guess_clust_miss	4
 # Kill and restart
 set global innodb_lizard_stat_enabled=on;
 set global innodb_index_purge_guess_clust_enabled=on;
@@ -189,6 +213,114 @@ where table_id = (select table_id from information_schema.innodb_tables where na
 and page_type = 'index' and PAGE_NUMBER=6;
 PAGE_NUMBER	PAGE_TYPE	TABLE_NAME	INDEX_NAME	NUMBER_RECORDS
 6	INDEX	NULL	NULL	1
+INSERT INTO t1 (id, k, c, pad) VALUES (1, 1, 1, LEFT(REPEAT('A', 4000), CHAR_LENGTH(REPEAT('A', 4000))));
+INSERT INTO t1 (id, k, c, pad) VALUES (2, 2, 2, LEFT(REPEAT('A', 4000), CHAR_LENGTH(REPEAT('A', 4000))));
+INSERT INTO t1 (id, k, c, pad) VALUES (3, 3, 3, LEFT(REPEAT('A', 4000), CHAR_LENGTH(REPEAT('A', 4000))));
+INSERT INTO t1 (id, k, c, pad) VALUES (4, 4, 4, LEFT(REPEAT('A', 4000), CHAR_LENGTH(REPEAT('A', 4000))));
+INSERT INTO t1 (id, k, c, pad) VALUES (5, 5, 5, LEFT(REPEAT('A', 4000), CHAR_LENGTH(REPEAT('A', 4000))));
+INSERT INTO t1 (id, k, c, pad) VALUES (6, 6, 6, LEFT(REPEAT('A', 4000), CHAR_LENGTH(REPEAT('A', 4000))));
+INSERT INTO t1 (id, k, c, pad) VALUES (7, 7, 7, LEFT(REPEAT('A', 4000), CHAR_LENGTH(REPEAT('A', 4000))));
+CALL iterate_pages_in_space();
+Space size of test/t1:	space_size
+Space size of test/t1:	11
+@@innodb_dbug_gpp_no
+0
+id	c
+4	4
+Variable_name	Value
+Lizard_index_scan_guess_clust_hit	0
+Lizard_index_scan_guess_clust_miss	1
+@@innodb_dbug_gpp_no
+1
+id	c
+4	4
+Variable_name	Value
+Lizard_index_scan_guess_clust_hit	0
+Lizard_index_scan_guess_clust_miss	2
+@@innodb_dbug_gpp_no
+2
+id	c
+4	4
+Variable_name	Value
+Lizard_index_scan_guess_clust_hit	0
+Lizard_index_scan_guess_clust_miss	3
+@@innodb_dbug_gpp_no
+3
+id	c
+4	4
+Variable_name	Value
+Lizard_index_scan_guess_clust_hit	0
+Lizard_index_scan_guess_clust_miss	4
+@@innodb_dbug_gpp_no
+4
+id	c
+4	4
+Variable_name	Value
+Lizard_index_scan_guess_clust_hit	0
+Lizard_index_scan_guess_clust_miss	5
+@@innodb_dbug_gpp_no
+5
+id	c
+4	4
+Variable_name	Value
+Lizard_index_scan_guess_clust_hit	0
+Lizard_index_scan_guess_clust_miss	6
+@@innodb_dbug_gpp_no
+6
+id	c
+4	4
+Variable_name	Value
+Lizard_index_scan_guess_clust_hit	0
+Lizard_index_scan_guess_clust_miss	7
+@@innodb_dbug_gpp_no
+7
+id	c
+4	4
+Variable_name	Value
+Lizard_index_scan_guess_clust_hit	0
+Lizard_index_scan_guess_clust_miss	8
+@@innodb_dbug_gpp_no
+8
+id	c
+4	4
+Variable_name	Value
+Lizard_index_scan_guess_clust_hit	1
+Lizard_index_scan_guess_clust_miss	8
+@@innodb_dbug_gpp_no
+9
+id	c
+4	4
+Variable_name	Value
+Lizard_index_scan_guess_clust_hit	1
+Lizard_index_scan_guess_clust_miss	9
+@@innodb_dbug_gpp_no
+10
+id	c
+4	4
+Variable_name	Value
+Lizard_index_scan_guess_clust_hit	1
+Lizard_index_scan_guess_clust_miss	10
+@@innodb_dbug_gpp_no
+11
+id	c
+4	4
+Variable_name	Value
+Lizard_index_scan_guess_clust_hit	1
+Lizard_index_scan_guess_clust_miss	11
+@@innodb_dbug_gpp_no
+12
+id	c
+4	4
+Variable_name	Value
+Lizard_index_scan_guess_clust_hit	1
+Lizard_index_scan_guess_clust_miss	12
+@@innodb_dbug_gpp_no
+13
+id	c
+4	4
+Variable_name	Value
+Lizard_index_scan_guess_clust_hit	1
+Lizard_index_scan_guess_clust_miss	13
 
 Attempting to locate a clustered index record using an outdated gpp_no of a page that has already been freed.
 SET DEBUG='+d,set_gpp_enum_page_in_space';
@@ -202,7 +334,7 @@ id	k
 show status like '%scan_guess%';
 Variable_name	Value
 Lizard_index_scan_guess_clust_hit	0
-Lizard_index_scan_guess_clust_miss	2
+Lizard_index_scan_guess_clust_miss	1
 # Kill and restart
 set global innodb_lizard_stat_enabled=on;
 set global innodb_index_purge_guess_clust_enabled=on;
@@ -222,6 +354,118 @@ Variable_name	Value
 Lizard_index_scan_guess_clust_hit	0
 Lizard_index_scan_guess_clust_miss	1
 
+After the server restart, the page with page_no == 6 is now marked as allocated.
+select PAGE_NUMBER, PAGE_TYPE, TABLE_NAME, INDEX_NAME, NUMBER_RECORDS, DATA_SIZE from INFORMATION_SCHEMA.INNODB_BUFFER_PAGE 
+where space = (select space from information_schema.innodb_indexes 
+where table_id = (select table_id from information_schema.innodb_tables where name like '%t1%') limit 1) 
+and (page_type = 'index' or page_number=6) order by PAGE_NUMBER;
+PAGE_NUMBER	PAGE_TYPE	TABLE_NAME	INDEX_NAME	NUMBER_RECORDS	DATA_SIZE
+4	INDEX	`test`.`t1`	PRIMARY	4	56
+5	INDEX	`test`.`t1`	k	8	136
+6	INDEX	`test`.`t1`	PRIMARY	1	4057
+9	INDEX	`test`.`t1`	PRIMARY	3	12171
+CALL iterate_pages_in_space();
+Space size of test/t1:	space_size
+Space size of test/t1:	11
+@@innodb_dbug_gpp_no
+0
+id	c
+4	4
+Variable_name	Value
+Lizard_index_scan_guess_clust_hit	0
+Lizard_index_scan_guess_clust_miss	1
+@@innodb_dbug_gpp_no
+1
+id	c
+4	4
+Variable_name	Value
+Lizard_index_scan_guess_clust_hit	0
+Lizard_index_scan_guess_clust_miss	2
+@@innodb_dbug_gpp_no
+2
+id	c
+4	4
+Variable_name	Value
+Lizard_index_scan_guess_clust_hit	0
+Lizard_index_scan_guess_clust_miss	3
+@@innodb_dbug_gpp_no
+3
+id	c
+4	4
+Variable_name	Value
+Lizard_index_scan_guess_clust_hit	0
+Lizard_index_scan_guess_clust_miss	4
+@@innodb_dbug_gpp_no
+4
+id	c
+4	4
+Variable_name	Value
+Lizard_index_scan_guess_clust_hit	0
+Lizard_index_scan_guess_clust_miss	5
+@@innodb_dbug_gpp_no
+5
+id	c
+4	4
+Variable_name	Value
+Lizard_index_scan_guess_clust_hit	0
+Lizard_index_scan_guess_clust_miss	6
+@@innodb_dbug_gpp_no
+6
+id	c
+4	4
+Variable_name	Value
+Lizard_index_scan_guess_clust_hit	0
+Lizard_index_scan_guess_clust_miss	7
+@@innodb_dbug_gpp_no
+7
+id	c
+4	4
+Variable_name	Value
+Lizard_index_scan_guess_clust_hit	0
+Lizard_index_scan_guess_clust_miss	8
+@@innodb_dbug_gpp_no
+8
+id	c
+4	4
+Variable_name	Value
+Lizard_index_scan_guess_clust_hit	1
+Lizard_index_scan_guess_clust_miss	8
+@@innodb_dbug_gpp_no
+9
+id	c
+4	4
+Variable_name	Value
+Lizard_index_scan_guess_clust_hit	1
+Lizard_index_scan_guess_clust_miss	9
+@@innodb_dbug_gpp_no
+10
+id	c
+4	4
+Variable_name	Value
+Lizard_index_scan_guess_clust_hit	1
+Lizard_index_scan_guess_clust_miss	10
+@@innodb_dbug_gpp_no
+11
+id	c
+4	4
+Variable_name	Value
+Lizard_index_scan_guess_clust_hit	1
+Lizard_index_scan_guess_clust_miss	11
+@@innodb_dbug_gpp_no
+12
+id	c
+4	4
+Variable_name	Value
+Lizard_index_scan_guess_clust_hit	1
+Lizard_index_scan_guess_clust_miss	12
+@@innodb_dbug_gpp_no
+13
+id	c
+4	4
+Variable_name	Value
+Lizard_index_scan_guess_clust_hit	1
+Lizard_index_scan_guess_clust_miss	13
+
 # Set gpp_no to a large number which is out of tablespace.
 SET DEBUG='+d,set_gpp_enum_page_in_space';
 SET GLOBAL innodb_dbug_gpp_no = 999999;
@@ -239,7 +483,7 @@ id	k
 show status like '%scan_guess%';
 Variable_name	Value
 Lizard_index_scan_guess_clust_hit	0
-Lizard_index_scan_guess_clust_miss	3
+Lizard_index_scan_guess_clust_miss	2
 id	k
 8	8
 SET DEBUG='+d,set_gpp_enum_page_in_space';
@@ -257,24 +501,14 @@ id	k
 show status like '%scan_guess%';
 Variable_name	Value
 Lizard_index_scan_guess_clust_hit	0
-Lizard_index_scan_guess_clust_miss	4
+Lizard_index_scan_guess_clust_miss	3
 SET DEBUG_SYNC = 'now signal s2';
 show status like '%scan_guess%';
 Variable_name	Value
 Lizard_index_scan_guess_clust_hit	0
-Lizard_index_scan_guess_clust_miss	5
+Lizard_index_scan_guess_clust_miss	4
 id	k
 8	8
-
-After the server restart, the page with page_no == 6 is now marked as allocated.
-select PAGE_NUMBER, PAGE_TYPE, TABLE_NAME, INDEX_NAME, NUMBER_RECORDS, DATA_SIZE from INFORMATION_SCHEMA.INNODB_BUFFER_PAGE 
-where space = (select space from information_schema.innodb_indexes 
-where table_id = (select table_id from information_schema.innodb_tables where name like '%t1%') limit 1) 
-and (page_type = 'index' or page_number=6) order by PAGE_NUMBER;
-PAGE_NUMBER	PAGE_TYPE	TABLE_NAME	INDEX_NAME	NUMBER_RECORDS	DATA_SIZE
-4	INDEX	`test`.`t1`	PRIMARY	1	4057
-5	INDEX	`test`.`t1`	k	1	17
-6	ALLOCATED	NULL	NULL	0	0
 drop table t1;
 set global innodb_lizard_stat_enabled = default;
 set global innodb_purge_stop_now = default;
@@ -289,14 +523,17 @@ DECLARE v_iter INT DEFAULT 0;
 DECLARE space_size INT DEFAULT 0;
 SELECT FILE_SIZE/PAGE_SIZE INTO space_size FROM information_schema.INNODB_TABLESPACES WHERE NAME='test/t1';
 SELECT 'Space size of test/t1:', space_size;
-WHILE v_iter < space_size DO
+CALL dbms_stat.flush_gpp();
 SET DEBUG='+d,set_gpp_enum_page_in_space';
+WHILE v_iter < space_size + 3 DO
 SET GLOBAL innodb_dbug_gpp_no = v_iter;
 SELECT @@innodb_dbug_gpp_no;
 SELECT id, c FROM t1 WHERE k = 4;
 show status like '%scan_guess%';
 SET v_iter = v_iter + 1;
 END WHILE;
+CALL dbms_stat.flush_gpp();
+SET DEBUG='-d,set_gpp_enum_page_in_space';
 END|
 CREATE TABLE t1 ( id int NOT NULL, k int NOT NULL, c int NOT NULL, pad varchar(8192), PRIMARY KEY (id), KEY (k)) row_format=COMPRESSED engine=innodb;
 set global innodb_lizard_stat_enabled=on;
@@ -377,6 +614,27 @@ id	c
 Variable_name	Value
 Lizard_index_scan_guess_clust_hit	0
 Lizard_index_scan_guess_clust_miss	0
+@@innodb_dbug_gpp_no
+5
+id	c
+4	4
+Variable_name	Value
+Lizard_index_scan_guess_clust_hit	0
+Lizard_index_scan_guess_clust_miss	0
+@@innodb_dbug_gpp_no
+6
+id	c
+4	4
+Variable_name	Value
+Lizard_index_scan_guess_clust_hit	0
+Lizard_index_scan_guess_clust_miss	0
+@@innodb_dbug_gpp_no
+7
+id	c
+4	4
+Variable_name	Value
+Lizard_index_scan_guess_clust_hit	0
+Lizard_index_scan_guess_clust_miss	0
 
 === Freed page ===
 set global innodb_purge_run_now = on;
@@ -427,6 +685,72 @@ where table_id = (select table_id from information_schema.innodb_tables where na
 and page_type = 'index' and PAGE_NUMBER=6;
 PAGE_NUMBER	PAGE_TYPE	TABLE_NAME	INDEX_NAME	NUMBER_RECORDS
 6	INDEX	NULL	NULL	1
+INSERT INTO t1 (id, k, c, pad) VALUES (1, 1, 1, LEFT(REPEAT('A', 4000), CHAR_LENGTH(REPEAT('A', 4000))));
+INSERT INTO t1 (id, k, c, pad) VALUES (2, 2, 2, LEFT(REPEAT('A', 4000), CHAR_LENGTH(REPEAT('A', 4000))));
+INSERT INTO t1 (id, k, c, pad) VALUES (3, 3, 3, LEFT(REPEAT('A', 4000), CHAR_LENGTH(REPEAT('A', 4000))));
+INSERT INTO t1 (id, k, c, pad) VALUES (4, 4, 4, LEFT(REPEAT('A', 4000), CHAR_LENGTH(REPEAT('A', 4000))));
+INSERT INTO t1 (id, k, c, pad) VALUES (5, 5, 5, LEFT(REPEAT('A', 4000), CHAR_LENGTH(REPEAT('A', 4000))));
+INSERT INTO t1 (id, k, c, pad) VALUES (6, 6, 6, LEFT(REPEAT('A', 4000), CHAR_LENGTH(REPEAT('A', 4000))));
+INSERT INTO t1 (id, k, c, pad) VALUES (7, 7, 7, LEFT(REPEAT('A', 4000), CHAR_LENGTH(REPEAT('A', 4000))));
+CALL iterate_pages_in_space();
+Space size of test/t1:	space_size
+Space size of test/t1:	5
+@@innodb_dbug_gpp_no
+0
+id	c
+4	4
+Variable_name	Value
+Lizard_index_scan_guess_clust_hit	0
+Lizard_index_scan_guess_clust_miss	0
+@@innodb_dbug_gpp_no
+1
+id	c
+4	4
+Variable_name	Value
+Lizard_index_scan_guess_clust_hit	0
+Lizard_index_scan_guess_clust_miss	0
+@@innodb_dbug_gpp_no
+2
+id	c
+4	4
+Variable_name	Value
+Lizard_index_scan_guess_clust_hit	0
+Lizard_index_scan_guess_clust_miss	0
+@@innodb_dbug_gpp_no
+3
+id	c
+4	4
+Variable_name	Value
+Lizard_index_scan_guess_clust_hit	0
+Lizard_index_scan_guess_clust_miss	0
+@@innodb_dbug_gpp_no
+4
+id	c
+4	4
+Variable_name	Value
+Lizard_index_scan_guess_clust_hit	0
+Lizard_index_scan_guess_clust_miss	0
+@@innodb_dbug_gpp_no
+5
+id	c
+4	4
+Variable_name	Value
+Lizard_index_scan_guess_clust_hit	0
+Lizard_index_scan_guess_clust_miss	0
+@@innodb_dbug_gpp_no
+6
+id	c
+4	4
+Variable_name	Value
+Lizard_index_scan_guess_clust_hit	0
+Lizard_index_scan_guess_clust_miss	0
+@@innodb_dbug_gpp_no
+7
+id	c
+4	4
+Variable_name	Value
+Lizard_index_scan_guess_clust_hit	0
+Lizard_index_scan_guess_clust_miss	0
 
 Attempting to locate a clustered index record using an outdated gpp_no of a page that has already been freed.
 SET DEBUG='+d,set_gpp_enum_page_in_space';
@@ -466,8 +790,68 @@ where space = (select space from information_schema.innodb_indexes
 where table_id = (select table_id from information_schema.innodb_tables where name like '%t1%') limit 1) 
 and (page_type = 'index' or page_number=6) order by PAGE_NUMBER;
 PAGE_NUMBER	PAGE_TYPE	TABLE_NAME	INDEX_NAME	NUMBER_RECORDS	DATA_SIZE
-4	INDEX	`test`.`t1`	PRIMARY	1	4057
-5	INDEX	`test`.`t1`	k	1	13
+4	INDEX	`test`.`t1`	PRIMARY	3	42
+5	INDEX	`test`.`t1`	k	8	104
+7	INDEX	`test`.`t1`	PRIMARY	4	16228
+CALL iterate_pages_in_space();
+Space size of test/t1:	space_size
+Space size of test/t1:	5
+@@innodb_dbug_gpp_no
+0
+id	c
+4	4
+Variable_name	Value
+Lizard_index_scan_guess_clust_hit	0
+Lizard_index_scan_guess_clust_miss	0
+@@innodb_dbug_gpp_no
+1
+id	c
+4	4
+Variable_name	Value
+Lizard_index_scan_guess_clust_hit	0
+Lizard_index_scan_guess_clust_miss	0
+@@innodb_dbug_gpp_no
+2
+id	c
+4	4
+Variable_name	Value
+Lizard_index_scan_guess_clust_hit	0
+Lizard_index_scan_guess_clust_miss	0
+@@innodb_dbug_gpp_no
+3
+id	c
+4	4
+Variable_name	Value
+Lizard_index_scan_guess_clust_hit	0
+Lizard_index_scan_guess_clust_miss	0
+@@innodb_dbug_gpp_no
+4
+id	c
+4	4
+Variable_name	Value
+Lizard_index_scan_guess_clust_hit	0
+Lizard_index_scan_guess_clust_miss	0
+@@innodb_dbug_gpp_no
+5
+id	c
+4	4
+Variable_name	Value
+Lizard_index_scan_guess_clust_hit	0
+Lizard_index_scan_guess_clust_miss	0
+@@innodb_dbug_gpp_no
+6
+id	c
+4	4
+Variable_name	Value
+Lizard_index_scan_guess_clust_hit	0
+Lizard_index_scan_guess_clust_miss	0
+@@innodb_dbug_gpp_no
+7
+id	c
+4	4
+Variable_name	Value
+Lizard_index_scan_guess_clust_hit	0
+Lizard_index_scan_guess_clust_miss	0
 drop table t1;
 set global innodb_lizard_stat_enabled = default;
 set global innodb_purge_stop_now = default;
@@ -482,14 +866,17 @@ DECLARE v_iter INT DEFAULT 0;
 DECLARE space_size INT DEFAULT 0;
 SELECT FILE_SIZE/PAGE_SIZE INTO space_size FROM information_schema.INNODB_TABLESPACES WHERE NAME='test/t1';
 SELECT 'Space size of test/t1:', space_size;
-WHILE v_iter < space_size DO
+CALL dbms_stat.flush_gpp();
 SET DEBUG='+d,set_gpp_enum_page_in_space';
+WHILE v_iter < space_size + 3 DO
 SET GLOBAL innodb_dbug_gpp_no = v_iter;
 SELECT @@innodb_dbug_gpp_no;
 SELECT id, c FROM t1 WHERE k = 4;
 show status like '%scan_guess%';
 SET v_iter = v_iter + 1;
 END WHILE;
+CALL dbms_stat.flush_gpp();
+SET DEBUG='-d,set_gpp_enum_page_in_space';
 END|
 CREATE TABLE t1 ( id int NOT NULL, k int NOT NULL, c int NOT NULL, pad varchar(8192), PRIMARY KEY (id), KEY (k)) row_format=REDUNDANT engine=innodb;
 set global innodb_lizard_stat_enabled=on;
@@ -541,78 +928,99 @@ Space size of test/t1:	11
 id	c
 4	4
 Variable_name	Value
-Lizard_index_scan_guess_clust_hit	1
-Lizard_index_scan_guess_clust_miss	2
+Lizard_index_scan_guess_clust_hit	0
+Lizard_index_scan_guess_clust_miss	1
 @@innodb_dbug_gpp_no
 1
 id	c
 4	4
 Variable_name	Value
-Lizard_index_scan_guess_clust_hit	1
-Lizard_index_scan_guess_clust_miss	3
+Lizard_index_scan_guess_clust_hit	0
+Lizard_index_scan_guess_clust_miss	2
 @@innodb_dbug_gpp_no
 2
 id	c
 4	4
 Variable_name	Value
-Lizard_index_scan_guess_clust_hit	1
-Lizard_index_scan_guess_clust_miss	4
+Lizard_index_scan_guess_clust_hit	0
+Lizard_index_scan_guess_clust_miss	3
 @@innodb_dbug_gpp_no
 3
 id	c
 4	4
 Variable_name	Value
-Lizard_index_scan_guess_clust_hit	1
-Lizard_index_scan_guess_clust_miss	5
+Lizard_index_scan_guess_clust_hit	0
+Lizard_index_scan_guess_clust_miss	4
 @@innodb_dbug_gpp_no
 4
 id	c
 4	4
 Variable_name	Value
-Lizard_index_scan_guess_clust_hit	1
-Lizard_index_scan_guess_clust_miss	6
+Lizard_index_scan_guess_clust_hit	0
+Lizard_index_scan_guess_clust_miss	5
 @@innodb_dbug_gpp_no
 5
+id	c
+4	4
+Variable_name	Value
+Lizard_index_scan_guess_clust_hit	0
+Lizard_index_scan_guess_clust_miss	6
+@@innodb_dbug_gpp_no
+6
+id	c
+4	4
+Variable_name	Value
+Lizard_index_scan_guess_clust_hit	0
+Lizard_index_scan_guess_clust_miss	7
+@@innodb_dbug_gpp_no
+7
 id	c
 4	4
 Variable_name	Value
 Lizard_index_scan_guess_clust_hit	1
 Lizard_index_scan_guess_clust_miss	7
 @@innodb_dbug_gpp_no
-6
+8
 id	c
 4	4
 Variable_name	Value
 Lizard_index_scan_guess_clust_hit	1
 Lizard_index_scan_guess_clust_miss	8
 @@innodb_dbug_gpp_no
-7
-id	c
-4	4
-Variable_name	Value
-Lizard_index_scan_guess_clust_hit	2
-Lizard_index_scan_guess_clust_miss	8
-@@innodb_dbug_gpp_no
-8
-id	c
-4	4
-Variable_name	Value
-Lizard_index_scan_guess_clust_hit	2
-Lizard_index_scan_guess_clust_miss	9
-@@innodb_dbug_gpp_no
 9
 id	c
 4	4
 Variable_name	Value
-Lizard_index_scan_guess_clust_hit	2
-Lizard_index_scan_guess_clust_miss	10
+Lizard_index_scan_guess_clust_hit	1
+Lizard_index_scan_guess_clust_miss	9
 @@innodb_dbug_gpp_no
 10
 id	c
 4	4
 Variable_name	Value
-Lizard_index_scan_guess_clust_hit	2
+Lizard_index_scan_guess_clust_hit	1
+Lizard_index_scan_guess_clust_miss	10
+@@innodb_dbug_gpp_no
+11
+id	c
+4	4
+Variable_name	Value
+Lizard_index_scan_guess_clust_hit	1
 Lizard_index_scan_guess_clust_miss	11
+@@innodb_dbug_gpp_no
+12
+id	c
+4	4
+Variable_name	Value
+Lizard_index_scan_guess_clust_hit	1
+Lizard_index_scan_guess_clust_miss	12
+@@innodb_dbug_gpp_no
+13
+id	c
+4	4
+Variable_name	Value
+Lizard_index_scan_guess_clust_hit	1
+Lizard_index_scan_guess_clust_miss	13
 
 === Freed page ===
 set global innodb_purge_run_now = on;
@@ -623,8 +1031,8 @@ DELETE FROM t1 WHERE k = 3;
 commit;
 show status like '%scan_guess%';
 Variable_name	Value
-Lizard_index_scan_guess_clust_hit	2
-Lizard_index_scan_guess_clust_miss	14
+Lizard_index_scan_guess_clust_hit	0
+Lizard_index_scan_guess_clust_miss	3
 
 The page (where page_no == 7), which originally contained the record with id = 4, has now been freed. 
 select PAGE_NUMBER, PAGE_TYPE, TABLE_NAME, INDEX_NAME, NUMBER_RECORDS, DATA_SIZE from INFORMATION_SCHEMA.INNODB_BUFFER_PAGE WHERE TABLE_NAME like "%t1%" order by PAGE_NUMBER;
@@ -641,8 +1049,8 @@ id	c
 4	4
 show status like '%scan_guess%';
 Variable_name	Value
-Lizard_index_scan_guess_clust_hit	3
-Lizard_index_scan_guess_clust_miss	14
+Lizard_index_scan_guess_clust_hit	1
+Lizard_index_scan_guess_clust_miss	3
 # Kill and restart
 set global innodb_lizard_stat_enabled=on;
 set global innodb_index_purge_guess_clust_enabled=on;
@@ -664,6 +1072,114 @@ where table_id = (select table_id from information_schema.innodb_tables where na
 and page_type = 'index' and PAGE_NUMBER=6;
 PAGE_NUMBER	PAGE_TYPE	TABLE_NAME	INDEX_NAME	NUMBER_RECORDS
 6	INDEX	NULL	NULL	1
+INSERT INTO t1 (id, k, c, pad) VALUES (1, 1, 1, LEFT(REPEAT('A', 4000), CHAR_LENGTH(REPEAT('A', 4000))));
+INSERT INTO t1 (id, k, c, pad) VALUES (2, 2, 2, LEFT(REPEAT('A', 4000), CHAR_LENGTH(REPEAT('A', 4000))));
+INSERT INTO t1 (id, k, c, pad) VALUES (3, 3, 3, LEFT(REPEAT('A', 4000), CHAR_LENGTH(REPEAT('A', 4000))));
+INSERT INTO t1 (id, k, c, pad) VALUES (4, 4, 4, LEFT(REPEAT('A', 4000), CHAR_LENGTH(REPEAT('A', 4000))));
+INSERT INTO t1 (id, k, c, pad) VALUES (5, 5, 5, LEFT(REPEAT('A', 4000), CHAR_LENGTH(REPEAT('A', 4000))));
+INSERT INTO t1 (id, k, c, pad) VALUES (6, 6, 6, LEFT(REPEAT('A', 4000), CHAR_LENGTH(REPEAT('A', 4000))));
+INSERT INTO t1 (id, k, c, pad) VALUES (7, 7, 7, LEFT(REPEAT('A', 4000), CHAR_LENGTH(REPEAT('A', 4000))));
+CALL iterate_pages_in_space();
+Space size of test/t1:	space_size
+Space size of test/t1:	11
+@@innodb_dbug_gpp_no
+0
+id	c
+4	4
+Variable_name	Value
+Lizard_index_scan_guess_clust_hit	0
+Lizard_index_scan_guess_clust_miss	1
+@@innodb_dbug_gpp_no
+1
+id	c
+4	4
+Variable_name	Value
+Lizard_index_scan_guess_clust_hit	0
+Lizard_index_scan_guess_clust_miss	2
+@@innodb_dbug_gpp_no
+2
+id	c
+4	4
+Variable_name	Value
+Lizard_index_scan_guess_clust_hit	0
+Lizard_index_scan_guess_clust_miss	3
+@@innodb_dbug_gpp_no
+3
+id	c
+4	4
+Variable_name	Value
+Lizard_index_scan_guess_clust_hit	0
+Lizard_index_scan_guess_clust_miss	4
+@@innodb_dbug_gpp_no
+4
+id	c
+4	4
+Variable_name	Value
+Lizard_index_scan_guess_clust_hit	0
+Lizard_index_scan_guess_clust_miss	5
+@@innodb_dbug_gpp_no
+5
+id	c
+4	4
+Variable_name	Value
+Lizard_index_scan_guess_clust_hit	0
+Lizard_index_scan_guess_clust_miss	6
+@@innodb_dbug_gpp_no
+6
+id	c
+4	4
+Variable_name	Value
+Lizard_index_scan_guess_clust_hit	0
+Lizard_index_scan_guess_clust_miss	7
+@@innodb_dbug_gpp_no
+7
+id	c
+4	4
+Variable_name	Value
+Lizard_index_scan_guess_clust_hit	0
+Lizard_index_scan_guess_clust_miss	8
+@@innodb_dbug_gpp_no
+8
+id	c
+4	4
+Variable_name	Value
+Lizard_index_scan_guess_clust_hit	1
+Lizard_index_scan_guess_clust_miss	8
+@@innodb_dbug_gpp_no
+9
+id	c
+4	4
+Variable_name	Value
+Lizard_index_scan_guess_clust_hit	1
+Lizard_index_scan_guess_clust_miss	9
+@@innodb_dbug_gpp_no
+10
+id	c
+4	4
+Variable_name	Value
+Lizard_index_scan_guess_clust_hit	1
+Lizard_index_scan_guess_clust_miss	10
+@@innodb_dbug_gpp_no
+11
+id	c
+4	4
+Variable_name	Value
+Lizard_index_scan_guess_clust_hit	1
+Lizard_index_scan_guess_clust_miss	11
+@@innodb_dbug_gpp_no
+12
+id	c
+4	4
+Variable_name	Value
+Lizard_index_scan_guess_clust_hit	1
+Lizard_index_scan_guess_clust_miss	12
+@@innodb_dbug_gpp_no
+13
+id	c
+4	4
+Variable_name	Value
+Lizard_index_scan_guess_clust_hit	1
+Lizard_index_scan_guess_clust_miss	13
 
 Attempting to locate a clustered index record using an outdated gpp_no of a page that has already been freed.
 SET DEBUG='+d,set_gpp_enum_page_in_space';
@@ -676,7 +1192,7 @@ id	k
 8	8
 show status like '%scan_guess%';
 Variable_name	Value
-Lizard_index_scan_guess_clust_hit	1
+Lizard_index_scan_guess_clust_hit	0
 Lizard_index_scan_guess_clust_miss	1
 # Kill and restart
 set global innodb_lizard_stat_enabled=on;
@@ -697,6 +1213,118 @@ Variable_name	Value
 Lizard_index_scan_guess_clust_hit	0
 Lizard_index_scan_guess_clust_miss	1
 
+After the server restart, the page with page_no == 6 is now marked as allocated.
+select PAGE_NUMBER, PAGE_TYPE, TABLE_NAME, INDEX_NAME, NUMBER_RECORDS, DATA_SIZE from INFORMATION_SCHEMA.INNODB_BUFFER_PAGE 
+where space = (select space from information_schema.innodb_indexes 
+where table_id = (select table_id from information_schema.innodb_tables where name like '%t1%') limit 1) 
+and (page_type = 'index' or page_number=6) order by PAGE_NUMBER;
+PAGE_NUMBER	PAGE_TYPE	TABLE_NAME	INDEX_NAME	NUMBER_RECORDS	DATA_SIZE
+4	INDEX	`test`.`t1`	PRIMARY	4	64
+5	INDEX	`test`.`t1`	k	8	168
+6	INDEX	`test`.`t1`	PRIMARY	1	4073
+9	INDEX	`test`.`t1`	PRIMARY	3	12219
+CALL iterate_pages_in_space();
+Space size of test/t1:	space_size
+Space size of test/t1:	11
+@@innodb_dbug_gpp_no
+0
+id	c
+4	4
+Variable_name	Value
+Lizard_index_scan_guess_clust_hit	0
+Lizard_index_scan_guess_clust_miss	1
+@@innodb_dbug_gpp_no
+1
+id	c
+4	4
+Variable_name	Value
+Lizard_index_scan_guess_clust_hit	0
+Lizard_index_scan_guess_clust_miss	2
+@@innodb_dbug_gpp_no
+2
+id	c
+4	4
+Variable_name	Value
+Lizard_index_scan_guess_clust_hit	0
+Lizard_index_scan_guess_clust_miss	3
+@@innodb_dbug_gpp_no
+3
+id	c
+4	4
+Variable_name	Value
+Lizard_index_scan_guess_clust_hit	0
+Lizard_index_scan_guess_clust_miss	4
+@@innodb_dbug_gpp_no
+4
+id	c
+4	4
+Variable_name	Value
+Lizard_index_scan_guess_clust_hit	0
+Lizard_index_scan_guess_clust_miss	5
+@@innodb_dbug_gpp_no
+5
+id	c
+4	4
+Variable_name	Value
+Lizard_index_scan_guess_clust_hit	0
+Lizard_index_scan_guess_clust_miss	6
+@@innodb_dbug_gpp_no
+6
+id	c
+4	4
+Variable_name	Value
+Lizard_index_scan_guess_clust_hit	0
+Lizard_index_scan_guess_clust_miss	7
+@@innodb_dbug_gpp_no
+7
+id	c
+4	4
+Variable_name	Value
+Lizard_index_scan_guess_clust_hit	0
+Lizard_index_scan_guess_clust_miss	8
+@@innodb_dbug_gpp_no
+8
+id	c
+4	4
+Variable_name	Value
+Lizard_index_scan_guess_clust_hit	1
+Lizard_index_scan_guess_clust_miss	8
+@@innodb_dbug_gpp_no
+9
+id	c
+4	4
+Variable_name	Value
+Lizard_index_scan_guess_clust_hit	1
+Lizard_index_scan_guess_clust_miss	9
+@@innodb_dbug_gpp_no
+10
+id	c
+4	4
+Variable_name	Value
+Lizard_index_scan_guess_clust_hit	1
+Lizard_index_scan_guess_clust_miss	10
+@@innodb_dbug_gpp_no
+11
+id	c
+4	4
+Variable_name	Value
+Lizard_index_scan_guess_clust_hit	1
+Lizard_index_scan_guess_clust_miss	11
+@@innodb_dbug_gpp_no
+12
+id	c
+4	4
+Variable_name	Value
+Lizard_index_scan_guess_clust_hit	1
+Lizard_index_scan_guess_clust_miss	12
+@@innodb_dbug_gpp_no
+13
+id	c
+4	4
+Variable_name	Value
+Lizard_index_scan_guess_clust_hit	1
+Lizard_index_scan_guess_clust_miss	13
+
 # Set gpp_no to a large number which is out of tablespace.
 SET DEBUG='+d,set_gpp_enum_page_in_space';
 SET GLOBAL innodb_dbug_gpp_no = 999999;
@@ -714,7 +1342,7 @@ id	k
 show status like '%scan_guess%';
 Variable_name	Value
 Lizard_index_scan_guess_clust_hit	0
-Lizard_index_scan_guess_clust_miss	3
+Lizard_index_scan_guess_clust_miss	2
 id	k
 8	8
 SET DEBUG='+d,set_gpp_enum_page_in_space';
@@ -732,24 +1360,14 @@ id	k
 show status like '%scan_guess%';
 Variable_name	Value
 Lizard_index_scan_guess_clust_hit	0
-Lizard_index_scan_guess_clust_miss	4
+Lizard_index_scan_guess_clust_miss	3
 SET DEBUG_SYNC = 'now signal s2';
 show status like '%scan_guess%';
 Variable_name	Value
 Lizard_index_scan_guess_clust_hit	0
-Lizard_index_scan_guess_clust_miss	5
+Lizard_index_scan_guess_clust_miss	4
 id	k
 8	8
-
-After the server restart, the page with page_no == 6 is now marked as allocated.
-select PAGE_NUMBER, PAGE_TYPE, TABLE_NAME, INDEX_NAME, NUMBER_RECORDS, DATA_SIZE from INFORMATION_SCHEMA.INNODB_BUFFER_PAGE 
-where space = (select space from information_schema.innodb_indexes 
-where table_id = (select table_id from information_schema.innodb_tables where name like '%t1%') limit 1) 
-and (page_type = 'index' or page_number=6) order by PAGE_NUMBER;
-PAGE_NUMBER	PAGE_TYPE	TABLE_NAME	INDEX_NAME	NUMBER_RECORDS	DATA_SIZE
-4	INDEX	`test`.`t1`	PRIMARY	1	4073
-5	INDEX	`test`.`t1`	k	1	21
-6	ALLOCATED	NULL	NULL	0	0
 drop table t1;
 set global innodb_lizard_stat_enabled = default;
 set global innodb_purge_stop_now = default;
@@ -764,14 +1382,17 @@ DECLARE v_iter INT DEFAULT 0;
 DECLARE space_size INT DEFAULT 0;
 SELECT FILE_SIZE/PAGE_SIZE INTO space_size FROM information_schema.INNODB_TABLESPACES WHERE NAME='test/t1';
 SELECT 'Space size of test/t1:', space_size;
-WHILE v_iter < space_size DO
+CALL dbms_stat.flush_gpp();
 SET DEBUG='+d,set_gpp_enum_page_in_space';
+WHILE v_iter < space_size + 3 DO
 SET GLOBAL innodb_dbug_gpp_no = v_iter;
 SELECT @@innodb_dbug_gpp_no;
 SELECT id, c FROM t1 WHERE k = 4;
 show status like '%scan_guess%';
 SET v_iter = v_iter + 1;
 END WHILE;
+CALL dbms_stat.flush_gpp();
+SET DEBUG='-d,set_gpp_enum_page_in_space';
 END|
 CREATE TABLE t1 ( id int NOT NULL, k int NOT NULL, c int NOT NULL, pad varchar(8192), PRIMARY KEY (id), KEY (k)) row_format=COMPACT engine=innodb;
 set global innodb_lizard_stat_enabled=on;
@@ -823,78 +1444,99 @@ Space size of test/t1:	11
 id	c
 4	4
 Variable_name	Value
-Lizard_index_scan_guess_clust_hit	1
-Lizard_index_scan_guess_clust_miss	2
+Lizard_index_scan_guess_clust_hit	0
+Lizard_index_scan_guess_clust_miss	1
 @@innodb_dbug_gpp_no
 1
 id	c
 4	4
 Variable_name	Value
-Lizard_index_scan_guess_clust_hit	1
-Lizard_index_scan_guess_clust_miss	3
+Lizard_index_scan_guess_clust_hit	0
+Lizard_index_scan_guess_clust_miss	2
 @@innodb_dbug_gpp_no
 2
 id	c
 4	4
 Variable_name	Value
-Lizard_index_scan_guess_clust_hit	1
-Lizard_index_scan_guess_clust_miss	4
+Lizard_index_scan_guess_clust_hit	0
+Lizard_index_scan_guess_clust_miss	3
 @@innodb_dbug_gpp_no
 3
 id	c
 4	4
 Variable_name	Value
-Lizard_index_scan_guess_clust_hit	1
-Lizard_index_scan_guess_clust_miss	5
+Lizard_index_scan_guess_clust_hit	0
+Lizard_index_scan_guess_clust_miss	4
 @@innodb_dbug_gpp_no
 4
 id	c
 4	4
 Variable_name	Value
-Lizard_index_scan_guess_clust_hit	1
-Lizard_index_scan_guess_clust_miss	6
+Lizard_index_scan_guess_clust_hit	0
+Lizard_index_scan_guess_clust_miss	5
 @@innodb_dbug_gpp_no
 5
+id	c
+4	4
+Variable_name	Value
+Lizard_index_scan_guess_clust_hit	0
+Lizard_index_scan_guess_clust_miss	6
+@@innodb_dbug_gpp_no
+6
+id	c
+4	4
+Variable_name	Value
+Lizard_index_scan_guess_clust_hit	0
+Lizard_index_scan_guess_clust_miss	7
+@@innodb_dbug_gpp_no
+7
 id	c
 4	4
 Variable_name	Value
 Lizard_index_scan_guess_clust_hit	1
 Lizard_index_scan_guess_clust_miss	7
 @@innodb_dbug_gpp_no
-6
+8
 id	c
 4	4
 Variable_name	Value
 Lizard_index_scan_guess_clust_hit	1
 Lizard_index_scan_guess_clust_miss	8
 @@innodb_dbug_gpp_no
-7
-id	c
-4	4
-Variable_name	Value
-Lizard_index_scan_guess_clust_hit	2
-Lizard_index_scan_guess_clust_miss	8
-@@innodb_dbug_gpp_no
-8
-id	c
-4	4
-Variable_name	Value
-Lizard_index_scan_guess_clust_hit	2
-Lizard_index_scan_guess_clust_miss	9
-@@innodb_dbug_gpp_no
 9
 id	c
 4	4
 Variable_name	Value
-Lizard_index_scan_guess_clust_hit	2
-Lizard_index_scan_guess_clust_miss	10
+Lizard_index_scan_guess_clust_hit	1
+Lizard_index_scan_guess_clust_miss	9
 @@innodb_dbug_gpp_no
 10
 id	c
 4	4
 Variable_name	Value
-Lizard_index_scan_guess_clust_hit	2
+Lizard_index_scan_guess_clust_hit	1
+Lizard_index_scan_guess_clust_miss	10
+@@innodb_dbug_gpp_no
+11
+id	c
+4	4
+Variable_name	Value
+Lizard_index_scan_guess_clust_hit	1
 Lizard_index_scan_guess_clust_miss	11
+@@innodb_dbug_gpp_no
+12
+id	c
+4	4
+Variable_name	Value
+Lizard_index_scan_guess_clust_hit	1
+Lizard_index_scan_guess_clust_miss	12
+@@innodb_dbug_gpp_no
+13
+id	c
+4	4
+Variable_name	Value
+Lizard_index_scan_guess_clust_hit	1
+Lizard_index_scan_guess_clust_miss	13
 
 === Freed page ===
 set global innodb_purge_run_now = on;
@@ -905,8 +1547,8 @@ DELETE FROM t1 WHERE k = 3;
 commit;
 show status like '%scan_guess%';
 Variable_name	Value
-Lizard_index_scan_guess_clust_hit	2
-Lizard_index_scan_guess_clust_miss	14
+Lizard_index_scan_guess_clust_hit	0
+Lizard_index_scan_guess_clust_miss	3
 
 The page (where page_no == 7), which originally contained the record with id = 4, has now been freed. 
 select PAGE_NUMBER, PAGE_TYPE, TABLE_NAME, INDEX_NAME, NUMBER_RECORDS, DATA_SIZE from INFORMATION_SCHEMA.INNODB_BUFFER_PAGE WHERE TABLE_NAME like "%t1%" order by PAGE_NUMBER;
@@ -922,8 +1564,8 @@ id	c
 4	4
 show status like '%scan_guess%';
 Variable_name	Value
-Lizard_index_scan_guess_clust_hit	2
-Lizard_index_scan_guess_clust_miss	15
+Lizard_index_scan_guess_clust_hit	0
+Lizard_index_scan_guess_clust_miss	4
 # Kill and restart
 set global innodb_lizard_stat_enabled=on;
 set global innodb_index_purge_guess_clust_enabled=on;
@@ -945,6 +1587,114 @@ where table_id = (select table_id from information_schema.innodb_tables where na
 and page_type = 'index' and PAGE_NUMBER=6;
 PAGE_NUMBER	PAGE_TYPE	TABLE_NAME	INDEX_NAME	NUMBER_RECORDS
 6	INDEX	NULL	NULL	1
+INSERT INTO t1 (id, k, c, pad) VALUES (1, 1, 1, LEFT(REPEAT('A', 4000), CHAR_LENGTH(REPEAT('A', 4000))));
+INSERT INTO t1 (id, k, c, pad) VALUES (2, 2, 2, LEFT(REPEAT('A', 4000), CHAR_LENGTH(REPEAT('A', 4000))));
+INSERT INTO t1 (id, k, c, pad) VALUES (3, 3, 3, LEFT(REPEAT('A', 4000), CHAR_LENGTH(REPEAT('A', 4000))));
+INSERT INTO t1 (id, k, c, pad) VALUES (4, 4, 4, LEFT(REPEAT('A', 4000), CHAR_LENGTH(REPEAT('A', 4000))));
+INSERT INTO t1 (id, k, c, pad) VALUES (5, 5, 5, LEFT(REPEAT('A', 4000), CHAR_LENGTH(REPEAT('A', 4000))));
+INSERT INTO t1 (id, k, c, pad) VALUES (6, 6, 6, LEFT(REPEAT('A', 4000), CHAR_LENGTH(REPEAT('A', 4000))));
+INSERT INTO t1 (id, k, c, pad) VALUES (7, 7, 7, LEFT(REPEAT('A', 4000), CHAR_LENGTH(REPEAT('A', 4000))));
+CALL iterate_pages_in_space();
+Space size of test/t1:	space_size
+Space size of test/t1:	11
+@@innodb_dbug_gpp_no
+0
+id	c
+4	4
+Variable_name	Value
+Lizard_index_scan_guess_clust_hit	0
+Lizard_index_scan_guess_clust_miss	1
+@@innodb_dbug_gpp_no
+1
+id	c
+4	4
+Variable_name	Value
+Lizard_index_scan_guess_clust_hit	0
+Lizard_index_scan_guess_clust_miss	2
+@@innodb_dbug_gpp_no
+2
+id	c
+4	4
+Variable_name	Value
+Lizard_index_scan_guess_clust_hit	0
+Lizard_index_scan_guess_clust_miss	3
+@@innodb_dbug_gpp_no
+3
+id	c
+4	4
+Variable_name	Value
+Lizard_index_scan_guess_clust_hit	0
+Lizard_index_scan_guess_clust_miss	4
+@@innodb_dbug_gpp_no
+4
+id	c
+4	4
+Variable_name	Value
+Lizard_index_scan_guess_clust_hit	0
+Lizard_index_scan_guess_clust_miss	5
+@@innodb_dbug_gpp_no
+5
+id	c
+4	4
+Variable_name	Value
+Lizard_index_scan_guess_clust_hit	0
+Lizard_index_scan_guess_clust_miss	6
+@@innodb_dbug_gpp_no
+6
+id	c
+4	4
+Variable_name	Value
+Lizard_index_scan_guess_clust_hit	0
+Lizard_index_scan_guess_clust_miss	7
+@@innodb_dbug_gpp_no
+7
+id	c
+4	4
+Variable_name	Value
+Lizard_index_scan_guess_clust_hit	0
+Lizard_index_scan_guess_clust_miss	8
+@@innodb_dbug_gpp_no
+8
+id	c
+4	4
+Variable_name	Value
+Lizard_index_scan_guess_clust_hit	1
+Lizard_index_scan_guess_clust_miss	8
+@@innodb_dbug_gpp_no
+9
+id	c
+4	4
+Variable_name	Value
+Lizard_index_scan_guess_clust_hit	1
+Lizard_index_scan_guess_clust_miss	9
+@@innodb_dbug_gpp_no
+10
+id	c
+4	4
+Variable_name	Value
+Lizard_index_scan_guess_clust_hit	1
+Lizard_index_scan_guess_clust_miss	10
+@@innodb_dbug_gpp_no
+11
+id	c
+4	4
+Variable_name	Value
+Lizard_index_scan_guess_clust_hit	1
+Lizard_index_scan_guess_clust_miss	11
+@@innodb_dbug_gpp_no
+12
+id	c
+4	4
+Variable_name	Value
+Lizard_index_scan_guess_clust_hit	1
+Lizard_index_scan_guess_clust_miss	12
+@@innodb_dbug_gpp_no
+13
+id	c
+4	4
+Variable_name	Value
+Lizard_index_scan_guess_clust_hit	1
+Lizard_index_scan_guess_clust_miss	13
 
 Attempting to locate a clustered index record using an outdated gpp_no of a page that has already been freed.
 SET DEBUG='+d,set_gpp_enum_page_in_space';
@@ -958,7 +1708,7 @@ id	k
 show status like '%scan_guess%';
 Variable_name	Value
 Lizard_index_scan_guess_clust_hit	0
-Lizard_index_scan_guess_clust_miss	2
+Lizard_index_scan_guess_clust_miss	1
 # Kill and restart
 set global innodb_lizard_stat_enabled=on;
 set global innodb_index_purge_guess_clust_enabled=on;
@@ -978,6 +1728,118 @@ Variable_name	Value
 Lizard_index_scan_guess_clust_hit	0
 Lizard_index_scan_guess_clust_miss	1
 
+After the server restart, the page with page_no == 6 is now marked as allocated.
+select PAGE_NUMBER, PAGE_TYPE, TABLE_NAME, INDEX_NAME, NUMBER_RECORDS, DATA_SIZE from INFORMATION_SCHEMA.INNODB_BUFFER_PAGE 
+where space = (select space from information_schema.innodb_indexes 
+where table_id = (select table_id from information_schema.innodb_tables where name like '%t1%') limit 1) 
+and (page_type = 'index' or page_number=6) order by PAGE_NUMBER;
+PAGE_NUMBER	PAGE_TYPE	TABLE_NAME	INDEX_NAME	NUMBER_RECORDS	DATA_SIZE
+4	INDEX	`test`.`t1`	PRIMARY	4	56
+5	INDEX	`test`.`t1`	k	8	136
+6	INDEX	`test`.`t1`	PRIMARY	1	4057
+9	INDEX	`test`.`t1`	PRIMARY	3	12171
+CALL iterate_pages_in_space();
+Space size of test/t1:	space_size
+Space size of test/t1:	11
+@@innodb_dbug_gpp_no
+0
+id	c
+4	4
+Variable_name	Value
+Lizard_index_scan_guess_clust_hit	0
+Lizard_index_scan_guess_clust_miss	1
+@@innodb_dbug_gpp_no
+1
+id	c
+4	4
+Variable_name	Value
+Lizard_index_scan_guess_clust_hit	0
+Lizard_index_scan_guess_clust_miss	2
+@@innodb_dbug_gpp_no
+2
+id	c
+4	4
+Variable_name	Value
+Lizard_index_scan_guess_clust_hit	0
+Lizard_index_scan_guess_clust_miss	3
+@@innodb_dbug_gpp_no
+3
+id	c
+4	4
+Variable_name	Value
+Lizard_index_scan_guess_clust_hit	0
+Lizard_index_scan_guess_clust_miss	4
+@@innodb_dbug_gpp_no
+4
+id	c
+4	4
+Variable_name	Value
+Lizard_index_scan_guess_clust_hit	0
+Lizard_index_scan_guess_clust_miss	5
+@@innodb_dbug_gpp_no
+5
+id	c
+4	4
+Variable_name	Value
+Lizard_index_scan_guess_clust_hit	0
+Lizard_index_scan_guess_clust_miss	6
+@@innodb_dbug_gpp_no
+6
+id	c
+4	4
+Variable_name	Value
+Lizard_index_scan_guess_clust_hit	0
+Lizard_index_scan_guess_clust_miss	7
+@@innodb_dbug_gpp_no
+7
+id	c
+4	4
+Variable_name	Value
+Lizard_index_scan_guess_clust_hit	0
+Lizard_index_scan_guess_clust_miss	8
+@@innodb_dbug_gpp_no
+8
+id	c
+4	4
+Variable_name	Value
+Lizard_index_scan_guess_clust_hit	1
+Lizard_index_scan_guess_clust_miss	8
+@@innodb_dbug_gpp_no
+9
+id	c
+4	4
+Variable_name	Value
+Lizard_index_scan_guess_clust_hit	1
+Lizard_index_scan_guess_clust_miss	9
+@@innodb_dbug_gpp_no
+10
+id	c
+4	4
+Variable_name	Value
+Lizard_index_scan_guess_clust_hit	1
+Lizard_index_scan_guess_clust_miss	10
+@@innodb_dbug_gpp_no
+11
+id	c
+4	4
+Variable_name	Value
+Lizard_index_scan_guess_clust_hit	1
+Lizard_index_scan_guess_clust_miss	11
+@@innodb_dbug_gpp_no
+12
+id	c
+4	4
+Variable_name	Value
+Lizard_index_scan_guess_clust_hit	1
+Lizard_index_scan_guess_clust_miss	12
+@@innodb_dbug_gpp_no
+13
+id	c
+4	4
+Variable_name	Value
+Lizard_index_scan_guess_clust_hit	1
+Lizard_index_scan_guess_clust_miss	13
+
 # Set gpp_no to a large number which is out of tablespace.
 SET DEBUG='+d,set_gpp_enum_page_in_space';
 SET GLOBAL innodb_dbug_gpp_no = 999999;
@@ -995,7 +1857,7 @@ id	k
 show status like '%scan_guess%';
 Variable_name	Value
 Lizard_index_scan_guess_clust_hit	0
-Lizard_index_scan_guess_clust_miss	3
+Lizard_index_scan_guess_clust_miss	2
 id	k
 8	8
 SET DEBUG='+d,set_gpp_enum_page_in_space';
@@ -1013,24 +1875,14 @@ id	k
 show status like '%scan_guess%';
 Variable_name	Value
 Lizard_index_scan_guess_clust_hit	0
-Lizard_index_scan_guess_clust_miss	4
+Lizard_index_scan_guess_clust_miss	3
 SET DEBUG_SYNC = 'now signal s2';
 show status like '%scan_guess%';
 Variable_name	Value
 Lizard_index_scan_guess_clust_hit	0
-Lizard_index_scan_guess_clust_miss	5
+Lizard_index_scan_guess_clust_miss	4
 id	k
 8	8
-
-After the server restart, the page with page_no == 6 is now marked as allocated.
-select PAGE_NUMBER, PAGE_TYPE, TABLE_NAME, INDEX_NAME, NUMBER_RECORDS, DATA_SIZE from INFORMATION_SCHEMA.INNODB_BUFFER_PAGE 
-where space = (select space from information_schema.innodb_indexes 
-where table_id = (select table_id from information_schema.innodb_tables where name like '%t1%') limit 1) 
-and (page_type = 'index' or page_number=6) order by PAGE_NUMBER;
-PAGE_NUMBER	PAGE_TYPE	TABLE_NAME	INDEX_NAME	NUMBER_RECORDS	DATA_SIZE
-4	INDEX	`test`.`t1`	PRIMARY	1	4057
-5	INDEX	`test`.`t1`	k	1	17
-6	ALLOCATED	NULL	NULL	0	0
 drop table t1;
 set global innodb_lizard_stat_enabled = default;
 set global innodb_purge_stop_now = default;

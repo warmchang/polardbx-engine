@@ -912,7 +912,7 @@ void btr_cur_search_to_nth_level(
 #ifdef PAGE_CUR_LE_OR_EXTENDS
       ut_ad(mode == PAGE_CUR_L || mode == PAGE_CUR_LE ||
             RTREE_SEARCH_MODE(mode) || mode == PAGE_CUR_LE_OR_EXTENDS);
-#else  /* PAGE_CUR_LE_OR_EXTENDS */
+#else /* PAGE_CUR_LE_OR_EXTENDS */
       ut_ad(mode == PAGE_CUR_L || mode == PAGE_CUR_LE ||
             RTREE_SEARCH_MODE(mode));
 #endif /* PAGE_CUR_LE_OR_EXTENDS */
@@ -3482,19 +3482,14 @@ dberr_t btr_cur_update_in_place(ulint flags, btr_cur_t *cursor, ulint *offsets,
 
   if (thr) {
     trx = thr_get_trx(thr);
-    txn_rec.trx_id = trx->id;
-    txn_rec.scn = trx->txn_desc.cmmt.scn;
-    txn_rec.undo_ptr = trx->txn_desc.undo_ptr;
-    txn_rec.gcn = trx->txn_desc.cmmt.gcn;
+    txn_rec = {trx->id, trx->txn_desc.cmmt.scn, trx->txn_desc.undo_ptr,
+               trx->txn_desc.cmmt.gcn};
   } else {
     /** We found a case: update innodb_dynamic_metadata, flags will be
     set as BTR_KEEP_SYS_FLAG | ... , and trx is NULL. flags will also
     be written to redo log, and in recovery, the sys columns will be
     kept intact. */
-    txn_rec.trx_id = trx_id;
-    txn_rec.scn = 0;
-    txn_rec.undo_ptr = 0;
-    txn_rec.gcn = 0;
+    txn_rec = {trx_id, 0, 0, 0};
   }
 
   btr_cur_update_in_place_log(flags, rec, index, update, trx_id, roll_ptr,

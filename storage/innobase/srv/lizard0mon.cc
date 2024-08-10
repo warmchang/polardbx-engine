@@ -87,9 +87,12 @@ static void export_lizard_status(void) {
 
   lizard_vars.cleanout_page_collect = lizard_stats.cleanout_page_collect;
 
-  lizard_vars.cleanout_record_clean = lizard_stats.cleanout_record_clean;
+  lizard_vars.scan_cleanout_clust_clean = lizard_stats.scan_cleanout_clust_clean;
+  lizard_vars.scan_cleanout_sec_clean = lizard_stats.scan_cleanout_sec_clean;
 
-  lizard_vars.cleanout_cursor_collect = lizard_stats.cleanout_cursor_collect;
+
+  lizard_vars.cleanout_clust_collect = lizard_stats.cleanout_clust_collect;
+  lizard_vars.cleanout_sec_collect = lizard_stats.cleanout_sec_collect;
 
   lizard_vars.cleanout_cursor_restore_failed =
       lizard_stats.cleanout_cursor_restore_failed;
@@ -292,10 +295,15 @@ static SHOW_VAR lizard_status_variables[] = {
     {"cleanout_page_collect", (char *)&lizard_vars.cleanout_page_collect,
      SHOW_LONG, SHOW_SCOPE_GLOBAL},
 
-    {"cleanout_record_clean", (char *)&lizard_vars.cleanout_record_clean,
+    {"scan_cleanout_clust_cleaned", (char *)&lizard_vars.scan_cleanout_clust_clean,
      SHOW_LONG, SHOW_SCOPE_GLOBAL},
 
-    {"cleanout_cursor_collect", (char *)&lizard_vars.cleanout_cursor_collect,
+     {"scan_cleanout_sec_cleaned", (char *)&lizard_vars.scan_cleanout_sec_clean,
+     SHOW_LONG, SHOW_SCOPE_GLOBAL},
+
+    {"scan_cleanout_clust_collects", (char *)&lizard_vars.cleanout_clust_collect,
+     SHOW_LONG, SHOW_SCOPE_GLOBAL},
+     {"scan_cleanout_sec_collects", (char *)&lizard_vars.cleanout_sec_collect,
      SHOW_LONG, SHOW_SCOPE_GLOBAL},
 
     {"cleanout_cursor_restore_failed",
@@ -583,7 +591,7 @@ void txn_undo_page_hit_stat(bool hit, const buf_block_t *block,
           else
             lizard_stats.txn_undo_page_write_miss.inc();
           break;
-        case RW_S_LATCH:  // called in txn_undo_hdr_lookup_loose
+        case RW_S_LATCH:  // called in txn_slot_lookup_loose
           if (hit)
             lizard_stats.txn_undo_page_read_hit.inc();
           else

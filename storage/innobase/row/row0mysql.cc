@@ -909,12 +909,9 @@ row_prebuilt_t *row_create_prebuilt(
   prebuilt->clust_pcur = static_cast<btr_pcur_t *>(
       mem_heap_zalloc(prebuilt->heap, sizeof(btr_pcur_t)));
 
-  prebuilt->pcur->m_cleanout_pages = ut::new_<lizard::Cleanout_pages>();
-  prebuilt->clust_pcur->m_cleanout_pages = ut::new_<lizard::Cleanout_pages>();
-
-  prebuilt->pcur->m_cleanout_cursors = ut::new_<lizard::Cleanout_cursors>();
-  prebuilt->clust_pcur->m_cleanout_cursors =
-      ut::new_<lizard::Cleanout_cursors>();
+  prebuilt->pcur->m_cleanout = ut::new_<lizard::Scan_cleanout>();
+  prebuilt->clust_pcur->m_cleanout =
+      ut::new_<lizard::Scan_cleanout>();
 
   prebuilt->pcur->reset();
   prebuilt->clust_pcur->reset();
@@ -983,15 +980,10 @@ void row_prebuilt_free(row_prebuilt_t *prebuilt, bool dict_locked) {
   prebuilt->pcur->reset();
   prebuilt->clust_pcur->reset();
 
-  ut::delete_(prebuilt->pcur->m_cleanout_pages);
-  ut::delete_(prebuilt->clust_pcur->m_cleanout_pages);
-  prebuilt->pcur->m_cleanout_pages = nullptr;
-  prebuilt->clust_pcur->m_cleanout_pages = nullptr;
-
-  ut::delete_(prebuilt->pcur->m_cleanout_cursors);
-  ut::delete_(prebuilt->clust_pcur->m_cleanout_cursors);
-  prebuilt->pcur->m_cleanout_cursors = nullptr;
-  prebuilt->clust_pcur->m_cleanout_cursors = nullptr;
+  ut::delete_(prebuilt->pcur->m_cleanout);
+  ut::delete_(prebuilt->clust_pcur->m_cleanout);
+  prebuilt->pcur->m_cleanout = nullptr;
+  prebuilt->clust_pcur->m_cleanout = nullptr;
 
   ut::free(prebuilt->mysql_template);
 

@@ -125,7 +125,7 @@ this program; if not, write to the Free Software Foundation, Inc.,
 #include "ut0crc32.h"
 #include "ut0new.h"
 
-#include "lizard0cleanout.h"
+#include "lizard0cleanout0safe.h"
 #include "lizard0fsp.h"
 #include "lizard0gcs.h"
 #include "lizard0gcs0hist.h"

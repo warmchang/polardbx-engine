@@ -16,8 +16,10 @@ Lizard_txn_undo_lost_ext_flag_wrong	#
 Lizard_txn_undo_lost_trx_id_mismatch	#
 Lizard_txn_undo_lookup_by_uba	#
 Lizard_cleanout_page_collect	#
-Lizard_cleanout_record_clean	#
-Lizard_cleanout_cursor_collect	#
+Lizard_scan_cleanout_clust_cleaned	#
+Lizard_scan_cleanout_sec_cleaned	#
+Lizard_scan_cleanout_clust_collects	#
+Lizard_scan_cleanout_sec_collects	#
 Lizard_cleanout_cursor_restore_failed	#
 Lizard_commit_cleanout_skip	#
 Lizard_commit_cleanout_collects	#

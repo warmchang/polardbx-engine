@@ -211,7 +211,7 @@ commit_mark_t gcs_t::new_commit(trx_t *trx, mtr_t *mtr) {
 #endif
 
   undo_ptr_set_commit(&trx->txn_desc.undo_ptr, trx->txn_desc.cmmt.csr,
-                      trx_is_xa_slave(trx));
+                      !trx->txn_desc.maddr.is_null());
 
   return cmmt;
 }

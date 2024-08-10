@@ -311,7 +311,7 @@ struct TrxFactory {
 
     lock_trx_alloc_locks(trx);
 
-    lizard::alloc_cleanout_cursors(trx);
+    lizard::alloc_commit_cleanout(trx);
   }
 
   /** Release resources held by the transaction object.
@@ -373,7 +373,7 @@ struct TrxFactory {
 
     trx->vision.~Vision();
 
-    lizard::release_cleanout_cursors(trx);
+    lizard::release_commit_cleanout(trx);
   }
 
   /** Enforce any invariants here, this is called before the transaction
@@ -2132,7 +2132,7 @@ written */
   } else {
     assert_trx_in_recovery(trx);
 
-    lizard::cleanout_rows_at_commit(trx);
+    lizard::cleanout_after_commit(trx, serialised);
     trx_release_impl_and_expl_locks(trx, serialised);
 
     /* Removed the transaction from the list of active transactions.
@@ -2361,7 +2361,7 @@ void trx_commit_low(trx_t *trx, mtr_t *mtr) {
 
     mtr_commit(mtr);
 
-    lizard::trx_cache_tcn(trx);
+    lizard::trx_cache_tcn(trx, serialised);
 
     DBUG_PRINT("trx_commit", ("commit lsn at " LSN_PF, mtr->commit_lsn()));
 

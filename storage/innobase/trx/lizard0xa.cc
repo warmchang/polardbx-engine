@@ -367,39 +367,39 @@ bool trx_search_rollback_background_by_xid(const XID *xid, MyXAInfo *info) {
 */
 bool trx_search_history_by_xid(const XID *xid, MyXAInfo *info) {
   trx_rseg_t *rseg;
-  txn_undo_hdr_t txn_hdr;
+  txn_slot_t txn_slot;
   bool found;
 
   rseg = get_txn_rseg_by_xid(xid);
 
   ut_ad(rseg);
 
-  found = txn_rseg_find_trx_info_by_xid(rseg, xid, &txn_hdr);
+  found = txn_rseg_find_trx_info_by_xid(rseg, xid, &txn_slot);
 
   if (!found) {
     return false;
   }
 
-  switch (txn_hdr.state) {
+  switch (txn_slot.state) {
     case TXN_UNDO_LOG_COMMITED:
     case TXN_UNDO_LOG_PURGED:
-      if (!txn_hdr.tags_allocated()) {
+      if (!txn_slot.tags_allocated()) {
         /** Found old format, not support. */
         *info = MY_XA_INFO_NOT_SUPPORT;
         break;
       }
 
       info->status =
-          txn_hdr.is_rollback() ? XA_status::ROLLBACK : XA_status::COMMIT;
+          txn_slot.is_rollback() ? XA_status::ROLLBACK : XA_status::COMMIT;
 
-      info->slot = {txn_hdr.trx_id, txn_hdr.slot_ptr};
+      info->slot = {txn_slot.trx_id, txn_slot.slot_ptr};
 
       /** if TXN_UNDO_LOG_COMMITED or TXN_UNDO_LOG_PURGED, must be
       non proposal. */
-      txn_hdr.image.copy_to_my_gcn(&info->gcn);
+      txn_slot.image.copy_to_my_gcn(&info->gcn);
 
-      info->branch = txn_hdr.branch;
-      info->maddr = txn_hdr.maddr;
+      info->branch = txn_slot.branch;
+      info->maddr = txn_slot.maddr;
 
       break;
     case TXN_UNDO_LOG_ACTIVE:

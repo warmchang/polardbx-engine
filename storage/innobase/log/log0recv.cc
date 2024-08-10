@@ -83,6 +83,7 @@ this program; if not, write to the Free Software Foundation, Inc.,
 
 #include "lizard0cleanout.h"
 #include "lizard0gcs.h"
+#include "lizard0btr0cur.h"
 
 std::list<space_id_t> recv_encr_ts_list;
 
@@ -2100,6 +2101,13 @@ static byte *recv_parse_or_apply_log_rec_body(
       ut_ad(!page || fil_page_type_is_index(page_type));
 
       ptr = btr_cur_parse_del_mark_set_sec_rec(ptr, end_ptr, page, page_zip);
+      break;
+    
+    case MLOG_REC_SEC_GPP_NO:
+      ut_ad(!page || fil_page_type_is_index(page_type));
+
+      ptr = lizard::btr_cur_parse_gpp_no_upd_sec_rec(ptr, end_ptr, page,
+                                                     page_zip);
       break;
 
     case MLOG_REC_UPDATE_IN_PLACE:
@@ -4268,6 +4276,9 @@ const char *get_mlog_string(mlog_id_t type) {
 
     case MLOG_REC_SEC_DELETE_MARK:
       return "MLOG_REC_SEC_DELETE_MARK";
+
+    case MLOG_REC_SEC_GPP_NO:
+      return "MLOG_REC_SEC_GPP_NO";
 
     case MLOG_REC_UPDATE_IN_PLACE_8027:
       return "MLOG_REC_UPDATE_IN_PLACE_8027";

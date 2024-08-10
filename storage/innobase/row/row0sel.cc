@@ -3126,6 +3126,8 @@ non-clustered index. Does the necessary locking.
   dberr_t err;
   trx_t *trx;
 
+  lizard::SCursor *scursor = nullptr;
+
   *out_rec = nullptr;
   trx = thr_get_trx(thr);
 
@@ -3135,7 +3137,7 @@ non-clustered index. Does the necessary locking.
 
   if (lizard::row_sel_optimistic_guess_clust(
           clust_index, sec_index, prebuilt->clust_ref, rec,
-          prebuilt->clust_pcur, *offsets, BTR_SEARCH_LEAF, mtr)) {
+          prebuilt->clust_pcur, *offsets, BTR_SEARCH_LEAF, prebuilt->pcur, &scursor, mtr)) {
     clust_rec = prebuilt->clust_pcur->get_rec();
     prebuilt->clust_pcur->m_trx_if_known = trx;
     goto clust_rec_found;
@@ -3258,6 +3260,12 @@ non-clustered index. Does the necessary locking.
   }
 
 clust_rec_found:
+  if (scursor != nullptr) {
+    page_no_t gpp_no = page_get_page_no(prebuilt->clust_pcur->get_page());
+    scursor->set_gpp_no(gpp_no);
+  }
+     
+  
   *offsets = rec_get_offsets(clust_rec, clust_index, *offsets, ULINT_UNDEFINED,
                              UT_LOCATION_HERE, offset_heap);
 
@@ -4515,7 +4523,7 @@ dberr_t row_search_mvcc(byte *buf, page_cur_mode_t mode,
   assert_lizard_dict_index_check(index);
   assert_lizard_dict_table_check(index->table);
 
-  ut_ad(!pcur->m_cleanout_pages || pcur->m_cleanout_pages->is_empty());
+  ut_ad(!pcur->m_cleanout || pcur->m_cleanout->is_empty());
 
   /* We don't support FTS queries from the HANDLER interfaces, because
   we implemented FTS as reversed inverted index with auxiliary tables.
@@ -6155,7 +6163,7 @@ func_exit:
 
   ut_a(!trx->has_search_latch);
 
-  lizard::row_cleanout_after_read(prebuilt);
+  lizard::cleanout_after_read(prebuilt);
 
   return err;
 }

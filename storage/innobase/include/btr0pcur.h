@@ -508,18 +508,12 @@ struct btr_pcur_t {
   tablespace, otherwise undefined */
   import_ctx_t *import_ctx{nullptr};
 
-  /** Collected pages that need to cleanout */
-  lizard::Cleanout_pages *m_cleanout_pages{nullptr};
-
   /** Collected cursor that need to cleanout */
-  lizard::Cleanout_cursors *m_cleanout_cursors{nullptr};
+  lizard::Scan_cleanout *m_cleanout{nullptr};
 
-  /** Add constructor to init m_cleanout_pages, otherwise we have to init it
+  /** Add constructor to init m_cleanout, otherwise we have to init it
   at many place.*/
-  btr_pcur_t() {
-    m_cleanout_pages = nullptr;
-    m_cleanout_cursors = nullptr;
-  }
+  btr_pcur_t() { m_cleanout = nullptr; }
 };
 
 inline void btr_pcur_t::init(size_t read_level) {
@@ -533,8 +527,7 @@ inline void btr_pcur_t::init(size_t read_level) {
   import_ctx = nullptr;
   m_block_when_stored.clear();
 
-  m_cleanout_pages = nullptr;
-  m_cleanout_cursors = nullptr;
+  m_cleanout = nullptr;
 }
 
 inline void btr_pcur_t::open(dict_index_t *index, ulint level,
@@ -570,8 +563,7 @@ inline void btr_pcur_t::open(dict_index_t *index, ulint level,
 
   m_trx_if_known = nullptr;
 
-  ut_ad(!m_cleanout_pages || m_cleanout_pages->is_empty());
-  ut_ad(!m_cleanout_cursors || m_cleanout_cursors->is_empty());
+  ut_ad(!m_cleanout || m_cleanout->is_empty());
 }
 
 inline void btr_pcur_t::open_at_side(bool from_left, dict_index_t *index,
@@ -931,8 +923,7 @@ inline void btr_pcur_t::reset() {
   m_old_n_fields = 0;
   m_old_stored = false;
 
-  if (m_cleanout_pages) m_cleanout_pages->init();
-  if (m_cleanout_cursors) m_cleanout_cursors->init();
+  if (m_cleanout) m_cleanout->clear();
 
   m_latch_mode = BTR_NO_LATCHES;
   m_pos_state = BTR_PCUR_NOT_POSITIONED;

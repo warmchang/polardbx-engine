@@ -541,9 +541,9 @@ void trx_undo_header_add_space_for_txn(trx_rseg_t *rseg, page_t *undo_page,
   @param[in]      mtr
   @param[out]     txn_undo_ext
 */
-void trx_undo_hdr_read_txn(const page_t *undo_page,
-                           const trx_ulogf_t *undo_header, mtr_t *mtr,
-                           txn_undo_hdr_t *txn_undo_hdr);
+void trx_undo_hdr_read_txn_slot(const page_t *undo_page,
+                                const trx_ulogf_t *undo_header, mtr_t *mtr,
+                                txn_slot_t *txn_slot);
 /**
   Read the scn, utc, gcn from prev image.
 
@@ -790,43 +790,49 @@ void txn_purge_segment_to_free_list(trx_rseg_t *rseg, fil_addr_t hdr_addr,
 
   @return         bool       true if the record should be cleaned out.
 */
-bool txn_undo_hdr_lookup_low(txn_rec_t *txn_rec, txn_lookup_t *txn_lookup,
-                             mtr_t *txn_mtr);
+std::pair<bool, txn_status_t> txn_slot_lookup_low(txn_rec_t *txn_rec,
+                                                  txn_lookup_t *txn_lookup,
+                                                  mtr_t *txn_mtr);
 
 /**
-  set txn_undo_hdr_t
+  set txn_slot_t
 
   @param[in/out]  txn_rec    txn info of the records.
 
   @return         bool       true if the record should be cleaned out.
 */
 inline void txn_lookup_t_set(txn_lookup_t *txn_lookup,
-                             const txn_undo_hdr_t &txn_undo_hdr,
+                             const txn_slot_t &txn_slot,
                              const commit_mark_t &real_image,
-                             const txn_state_t &real_state) {
+                             const txn_status_t &real_status) {
   if (txn_lookup == nullptr) return;
 
-  txn_lookup->txn_undo_hdr = txn_undo_hdr;
+  txn_lookup->txn_slot = txn_slot;
   txn_lookup->real_image = real_image;
-  txn_lookup->real_state = real_state;
+  txn_lookup->real_status = real_status;
 #if defined UNIV_DEBUG || defined LIZARD_DEBUG
-  if (real_state == TXN_STATE_ACTIVE || real_state == TXN_STATE_COMMITTED ||
-      real_state == TXN_STATE_PURGED || real_state == TXN_STATE_ERASED) {
-    if (real_state != TXN_STATE_ACTIVE) {
+  if (real_status == txn_status_t::ACTIVE ||
+      real_status == txn_status_t::COMMITTED ||
+      real_status == txn_status_t::PURGED ||
+      real_status == txn_status_t::ERASED) {
+    if (real_status != txn_status_t::ACTIVE) {
       /** TXN reuse, current scn should be larger than prev scn */
-      ut_a(txn_undo_hdr.image.scn > txn_undo_hdr.prev_image.scn);
+      ut_a(txn_slot.image.scn > txn_slot.prev_image.scn);
     }
-    ut_a(real_image == txn_undo_hdr.image);
-  } else if (real_state == TXN_STATE_REUSE) {
-    ut_a(real_image == txn_undo_hdr.prev_image);
+    ut_a(real_image == txn_slot.image);
+  } else if (real_status == txn_status_t::REUSE) {
+    ut_a(real_image == txn_slot.prev_image);
   }
 #endif /* UNIV_DEBUG || LIZARD_DEBUG */
 }
 
 inline bool txn_rec_lock_state_by_lookup(txn_rec_t *txn_rec,
                                          txn_lookup_t *txn_lookup, mtr_t *mtr) {
+  bool active = false;
   ut_ad(txn_lookup && mtr);
-  return txn_undo_hdr_lookup_low(txn_rec, txn_lookup, mtr);
+
+  std::tie(active, std::ignore) = txn_slot_lookup_low(txn_rec, txn_lookup, mtr);
+  return active;
 }
 
 /**
@@ -836,16 +842,63 @@ inline bool txn_rec_lock_state_by_lookup(txn_rec_t *txn_rec,
 
   Return the cleanout flag to decide yourself.
 
-  @param[in/out]	txn record
-  @param[in/out]	cleanout is needed?
+  @param[in/out]  txn record
+  @param[in/out]  txn state
+  @param[in/out]  cleanout is needed?
 
-  @retval	true		active
-                false		committed
+  @retval true    active
+          false   committed
+*/
+inline bool txn_rec_real_state_by_lookup(txn_rec_t *txn_rec,
+                                         txn_status_t *txn_status,
+                                         bool *cleanout) {
+  bool active = false;
+  bool cache_hit = false;
+  txn_lookup_t txn_lookup;
+
+  /** Unknown the real state */
+  ut_ad(undo_ptr_is_active(txn_rec->undo_ptr));
+  ut_ad(txn_rec && txn_status);
+
+  /** Pcur is nullptr, didn't support block level tcn cache. */
+  cache_hit = trx_search_tcn(txn_rec, txn_status);
+  if (cache_hit) {
+    ut_ad(!undo_ptr_is_active(txn_rec->undo_ptr));
+    lizard_ut_ad(txn_rec->scn > 0 && txn_rec->scn <= SCN_MAX);
+    lizard_ut_ad(txn_rec->gcn > 0 && txn_rec->gcn <= GCN_MAX);
+    if (cleanout) *cleanout = true;
+    return false;
+  }
+
+  /** Record is still active, lookup txn hdr to confirm it. */
+  std::tie(active, *txn_status) =
+      txn_slot_lookup_low(txn_rec, &txn_lookup, nullptr);
+  if (active) {
+    return active;
+  } else {
+    /** cleanout when trx real state has committed. */
+    if (cleanout) *cleanout = true;
+    return false;
+  }
+}
+
+/**
+  Decide the real trx state.
+    1) Search tcn cache
+    2) Lookup txn undo
+
+  Return the cleanout flag to decide yourself.
+
+  @param[in/out]  txn record
+  @param[in/out]  cleanout is needed?
+
+  @retval true    active
+          false   committed
 */
 inline bool txn_rec_real_state_by_misc(txn_rec_t *txn_rec,
                                        bool *cleanout = nullptr) {
-  bool active = false;
-  bool cache_hit = false;
+  txn_status_t txn_status = txn_status_t::ACTIVE;
+
   /** If record is not active, the trx must be committed. */
   if (!undo_ptr_is_active(txn_rec->undo_ptr)) {
     lizard_ut_ad(txn_rec->scn > 0 && txn_rec->scn <= SCN_MAX);
@@ -856,25 +909,7 @@ inline bool txn_rec_real_state_by_misc(txn_rec_t *txn_rec,
     return false;
   }
 
-  /** Pcur is nullptr, didn't support block level tcn cache. */
-  cache_hit = trx_search_tcn(txn_rec, nullptr, nullptr);
-  if (cache_hit) {
-    ut_ad(!undo_ptr_is_active(txn_rec->undo_ptr));
-    lizard_ut_ad(txn_rec->scn > 0 && txn_rec->scn <= SCN_MAX);
-    lizard_ut_ad(txn_rec->gcn > 0 && txn_rec->gcn <= GCN_MAX);
-    if (cleanout) *cleanout = true;
-    return false;
-  }
-
-  /** Record is still active, lookup txn hdr to confirm it. */
-  active = txn_undo_hdr_lookup_low(txn_rec, nullptr, nullptr);
-  if (active) {
-    return active;
-  } else {
-    /** cleanout when trx real state has committed. */
-    if (cleanout) *cleanout = true;
-    return false;
-  }
+  return txn_rec_real_state_by_lookup(txn_rec, &txn_status, cleanout);
 }
 
 /**
@@ -898,10 +933,10 @@ extern bool txn_rec_cleanout_state_by_misc(txn_rec_t *txn_rec, btr_pcur_t *pcur,
 
 inline bool txn_lookup_rollptr_is_valid(const txn_lookup_t *txn_lookup,
                                         bool flashback_area) {
-  if (flashback_area && txn_lookup->txn_undo_hdr.is_2pp) {
-    return (txn_lookup->real_state < txn_state_t::TXN_STATE_ERASED);
+  if (flashback_area && txn_lookup->txn_slot.is_2pp) {
+    return (txn_lookup->real_status < txn_status_t::ERASED);
   } else {
-    return (txn_lookup->real_state < txn_state_t::TXN_STATE_PURGED);
+    return (txn_lookup->real_status < txn_status_t::PURGED);
   }
 }
   /**
@@ -915,8 +950,8 @@ inline bool txn_lookup_rollptr_is_valid(const txn_lookup_t *txn_lookup,
     @retval true    active
             false   committed
   */
-extern bool txn_rec_share_cn_by_lookup(txn_rec_t *txn_rec,
-                                       txn_rec_t *ref_txn_rec);
+extern bool txn_rec_get_master_by_lookup(txn_rec_t *txn_rec,
+                                         txn_rec_t *ref_txn_rec);
 
 /** Collect rsegs into the purge heap for the first time */
 bool trx_collect_rsegs_for_purge(TxnUndoRsegs *elem,
@@ -1166,12 +1201,12 @@ trx_rseg_t *get_txn_rseg_by_xid(const XID *xid);
 
   @param[in]  rseg         The rollseg where the transaction is being looked up.
   @params[in] xid          xid
-  @param[out] txn_undo_hdr Corresponding txn undo header
+  @param[out] txn_slot     Corresponding txn undo header
 
   @retval     true if the corresponding transaction is found, false otherwise.
 */
 bool txn_rseg_find_trx_info_by_xid(trx_rseg_t *rseg, const XID *xid,
-                                   txn_undo_hdr_t *txn_undo_hdr);
+                                   txn_slot_t *txn_slot);
 
 /**
   Only write XID on the TXN.
@@ -1400,11 +1435,11 @@ void trx_undo_header_add_space_for_xid(page_t *undo_page, trx_ulogf_t *log_hdr,
     ut_a(lizard::trx_undo_hdr_slot_validate(undo_hdr, mtr)); \
   } while (0)
 
-#define trx_undo_hdr_txn_validation(undo_page, undo_hdr, mtr)               \
-  do {                                                                      \
-    txn_undo_hdr_t txn_undo_hdr;                                            \
-    lizard::trx_undo_hdr_read_txn(undo_page, undo_hdr, mtr, &txn_undo_hdr); \
-    ut_a(txn_undo_hdr.magic_n == TXN_MAGIC_N);                              \
+#define trx_undo_hdr_txn_validation(undo_page, undo_hdr, mtr)                \
+  do {                                                                       \
+    txn_slot_t txn_slot;                                                     \
+    lizard::trx_undo_hdr_read_txn_slot(undo_page, undo_hdr, mtr, &txn_slot); \
+    ut_a(txn_slot.magic_n == TXN_MAGIC_N);                                   \
   } while (0)
 
 #define undo_addr_validation(undo_addr, index)          \

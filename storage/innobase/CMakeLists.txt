@@ -289,6 +289,7 @@ SET(INNOBASE_SOURCES
   data/lizard0data0data.cc
   mtr/lizard0mtr0log.cc
   dict/lizard0dd0policy.cc
+  btr/lizard0cleanout0safe.cc
   )
 
 # https://gcc.gnu.org/bugzilla/show_bug.cgi?id=98753

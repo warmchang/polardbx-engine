@@ -33,7 +33,7 @@ this program; if not, write to the Free Software Foundation, Inc.,
 #include "lizard0ut.h"
 #include "univ.i"
 
-#include "lizard0cleanout.h"
+#include "lizard0cleanout0safe.h"
 
 namespace lizard {
 

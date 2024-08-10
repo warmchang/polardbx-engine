@@ -57,7 +57,7 @@ this program; if not, write to the Free Software Foundation, Inc.,
 
 #include "ut0new.h"
 
-#include "lizard0cleanout.h"
+#include "lizard0cleanout0safe.h"
 #include "lizard0gcs.h"
 #include "lizard0gp.h"
 #include "lizard0read0read.h"

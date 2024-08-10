@@ -224,6 +224,8 @@ enum mlog_id_t {
   MLOG_COMP_PAGE_CREATE_SDI = 64,
 
   /** biggest value (used in assertions) */
-  MLOG_BIGGEST_TYPE = MLOG_COMP_PAGE_CREATE_SDI
+  MLOG_BIGGEST_TYPE = MLOG_COMP_PAGE_CREATE_SDI,
+
+
 };
 #endif  // _mtr0types_h_
