@@ -3610,6 +3610,14 @@ class Alter_inplace_info {
     index_add_buffer[index_add_count++] = (uint)(new_key - key_info_buffer);
     DBUG_PRINT("info", ("index added: '%s'", new_key->name));
   }
+
+  bool is_inplace_alter_partition() {
+    constexpr HA_ALTER_FLAGS INPLACE_PARTITION_OP =
+        ADD_PARTITION | DROP_PARTITION | ALTER_REBUILD_PARTITION |
+        COALESCE_PARTITION | REORGANIZE_PARTITION;
+
+    return ((handler_flags & INPLACE_PARTITION_OP) != 0);
+  }
 };
 
 struct HA_CHECK_OPT {

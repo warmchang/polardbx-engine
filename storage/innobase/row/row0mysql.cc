@@ -2774,7 +2774,8 @@ dberr_t row_create_table_for_mysql(dict_table_t *&table,
                                    const char *compression,
                                    const HA_CREATE_INFO *create_info,
                                    trx_t *trx, mem_heap_t *heap,
-                                   const lizard::Ha_ddl_policy *ddl_policy) {
+                                   const lizard::Ha_ddl_policy *ddl_policy,
+                                   const dd::Table *old_dd_tab) {
   dberr_t err;
 
   ut_ad(!dict_sys_mutex_own());
@@ -2814,7 +2815,7 @@ dberr_t row_create_table_for_mysql(dict_table_t *&table,
   }
 
   lizard::dd_fill_dict_table_fba(
-      lizard::ha_ddl_create_table_policy(ddl_policy, table), table);
+      lizard::ha_ddl_create_table_policy(ddl_policy, table, old_dd_tab), table);
 
   bool free_heap = false;
   if (heap == nullptr) {

@@ -392,12 +392,12 @@ bool Snapshot_gcn_vision::too_old() const {
       assert(m_current_scn != SCN_NULL && m_gcn != GCN_NULL);
       return innodb_hton->ext.snapshot_scn_too_old(m_current_scn,
                                                    m_flashback_area) ||
-             innodb_hton->ext.snapshot_automatic_gcn_too_old(
-                 m_gcn, m_flashback_area);
+             innodb_hton->ext.snapshot_automatic_gcn_too_old(m_gcn,
+                                                             m_flashback_area);
     case CSR_ASSIGNED:
       assert(m_current_scn == SCN_NULL && m_gcn != GCN_NULL);
-      return innodb_hton->ext.snapshot_assigned_gcn_too_old(
-          m_gcn, m_flashback_area);
+      return innodb_hton->ext.snapshot_assigned_gcn_too_old(m_gcn,
+                                                            m_flashback_area);
     default:
       return true;
   }
@@ -545,9 +545,6 @@ void Table_ref::choose_flashback_area(THD *thd, TABLE *tbl) {
 
   /** set flag in the snapshot_hint. */
   snapshot_hint->set_flashback_area(true);
-
-  /** increase the counter. */
-  thd->status_var.flashback_area_query_cnt++;
 
   /* initialize the result variables */
   tbl->keys_in_use_for_query = tbl->keys_in_use_for_group_by =

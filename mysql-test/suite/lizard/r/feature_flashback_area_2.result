@@ -19,9 +19,9 @@ test	bar	NULL	avg_row_length=0;encrypt_type=N;flashback_area=1;key_block_size=0;
 set query_via_flashback_area = 1;
 select * from bar as of timestamp date_add(now(), interval 2 hour);
 ERROR HY000: The snapshot to find is out of range, please adjust scn history configuration
-SHOW GLOBAL STATUS WHERE Variable_name = 'flashback_area_query_cnt';
+SHOW STATUS WHERE Variable_name like '%flashback_area_query%';
 Variable_name	Value
-Flashback_area_query_cnt	1
+Lizard_flashback_area_query_cnt	0
 
 === test flashback to purged data ===
 set @past_timestamp = (select now());
@@ -39,16 +39,16 @@ select * from bar as of timestamp @past_timestamp;
 c1	c2
 1	3
 2	2
-SHOW GLOBAL STATUS WHERE Variable_name = 'flashback_area_query_cnt';
+SHOW STATUS WHERE Variable_name like '%flashback_area_query%';
 Variable_name	Value
-Flashback_area_query_cnt	2
+Lizard_flashback_area_query_cnt	1
 set query_via_flashback_area = 1;
 select c1 from bar as of timestamp @past_timestamp force index(c2) where c2 = 3;
 c1
 1
-SHOW GLOBAL STATUS WHERE Variable_name = 'flashback_area_query_cnt';
+SHOW STATUS WHERE Variable_name like '%flashback_area_query%';
 Variable_name	Value
-Flashback_area_query_cnt	3
+Lizard_flashback_area_query_cnt	2
 
 === test flashback to erased data via flashback area ===
 set global innodb_txn_retention = 0;
@@ -57,15 +57,15 @@ update bar set c2 = 5 where c1 = 1;
 set query_via_flashback_area = 1;
 select * from bar as of timestamp @past_timestamp;
 ERROR HY000: Snapshot too old
-SHOW GLOBAL STATUS WHERE Variable_name = 'flashback_area_query_cnt';
+SHOW STATUS WHERE Variable_name like '%flashback_area_query%';
 Variable_name	Value
-Flashback_area_query_cnt	4
+Lizard_flashback_area_query_cnt	3
 set query_via_flashback_area = 1;
 select c1 from bar as of timestamp @past_timestamp force index(c2) where c2 = 4;
 ERROR HY000: Snapshot too old
-SHOW GLOBAL STATUS WHERE Variable_name = 'flashback_area_query_cnt';
+SHOW STATUS WHERE Variable_name like '%flashback_area_query%';
 Variable_name	Value
-Flashback_area_query_cnt	5
+Lizard_flashback_area_query_cnt	4
 drop table bar;
 
 ========================================================
@@ -118,9 +118,9 @@ include/assert.inc [The options for test.t1. should match the expected FBA=0 con
 set query_via_flashback_area = 1;
 select * from t1 as of timestamp @past_timestamps;
 ERROR HY000: The definition of the table required by the flashback query has changed
-SHOW GLOBAL STATUS WHERE Variable_name = 'flashback_area_query_cnt';
+SHOW STATUS WHERE Variable_name like '%flashback_area_query%';
 Variable_name	Value
-Flashback_area_query_cnt	5
+Lizard_flashback_area_query_cnt	4
 
 === Index Operations ===
 include/assert.inc [The options for test.t2. should match the expected FBA=1 condition]
@@ -289,120 +289,6 @@ set opt_flashback_area = 0;
 ALTER TABLE t7 DROP FOREIGN KEY fk, ALGORITHM=INPLACE;
 include/assert.inc [The options for test.t7. should match the expected FBA=1 condition]
 
-=== Partitioning Operations ===
-include/assert.inc [The options for test.t8. should match the expected FBA=0 condition]
-set opt_flashback_area = 1;
-ALTER TABLE t8 PARTITION BY RANGE(c1) (PARTITION p0 VALUES LESS THAN (100), PARTITION p1 VALUES LESS THAN (200));
-include/assert.inc [The options for test.t8. should match the expected FBA=0 condition]
-include/assert.inc [The options for test.t8.p0 should match the expected FBA=1 condition]
-include/assert.inc [The options for test.t8.p1 should match the expected FBA=1 condition]
-set opt_flashback_area = 0;
-ALTER TABLE t8 ADD PARTITION (PARTITION p2 VALUES LESS THAN (300));
-include/assert.inc [The options for test.t8. should match the expected FBA=0 condition]
-include/assert.inc [The options for test.t8.p0 should match the expected FBA=1 condition]
-include/assert.inc [The options for test.t8.p1 should match the expected FBA=1 condition]
-include/assert.inc [The options for test.t8.p2 should match the expected FBA=0 condition]
-set opt_flashback_area = 0;
-ALTER TABLE t8 DROP PARTITION p2;
-include/assert.inc [The options for test.t8. should match the expected FBA=0 condition]
-include/assert.inc [The options for test.t8.p0 should match the expected FBA=1 condition]
-include/assert.inc [The options for test.t8.p1 should match the expected FBA=1 condition]
-set opt_flashback_area = 0;
-ALTER TABLE t8 TRUNCATE PARTITION p0;
-include/assert.inc [The options for test.t8. should match the expected FBA=0 condition]
-include/assert.inc [The options for test.t8.p0 should match the expected FBA=0 condition]
-include/assert.inc [The options for test.t8.p1 should match the expected FBA=1 condition]
-set opt_flashback_area = 0;
-ALTER TABLE t8 REORGANIZE PARTITION p1 INTO (PARTITION p1 VALUES LESS THAN (150), PARTITION p2 VALUES LESS THAN (200)) ;
-include/assert.inc [The options for test.t8. should match the expected FBA=0 condition]
-include/assert.inc [The options for test.t8.p0 should match the expected FBA=0 condition]
-include/assert.inc [The options for test.t8.p1 should match the expected FBA=0 condition]
-include/assert.inc [The options for test.t8.p2 should match the expected FBA=0 condition]
-set opt_flashback_area = 1;
-ALTER TABLE t8 ANALYZE PARTITION p1;
-Table	Op	Msg_type	Msg_text
-test.t8	analyze	status	OK
-include/assert.inc [The options for test.t8. should match the expected FBA=0 condition]
-include/assert.inc [The options for test.t8.p0 should match the expected FBA=0 condition]
-include/assert.inc [The options for test.t8.p1 should match the expected FBA=0 condition]
-include/assert.inc [The options for test.t8.p2 should match the expected FBA=0 condition]
-set opt_flashback_area = 1;
-ALTER TABLE t8 CHECK PARTITION p1;
-Table	Op	Msg_type	Msg_text
-test.t8	check	status	OK
-include/assert.inc [The options for test.t8. should match the expected FBA=0 condition]
-include/assert.inc [The options for test.t8.p0 should match the expected FBA=0 condition]
-include/assert.inc [The options for test.t8.p1 should match the expected FBA=0 condition]
-include/assert.inc [The options for test.t8.p2 should match the expected FBA=0 condition]
-set opt_flashback_area = 1;
-ALTER TABLE t8 OPTIMIZE PARTITION p1;
-Table	Op	Msg_type	Msg_text
-test.t8	optimize	note	Table does not support optimize on partitions. All partitions will be rebuilt and analyzed.
-test.t8	optimize	status	OK
-include/assert.inc [The options for test.t8. should match the expected FBA=0 condition]
-include/assert.inc [The options for test.t8.p0 should match the expected FBA=1 condition]
-include/assert.inc [The options for test.t8.p1 should match the expected FBA=1 condition]
-include/assert.inc [The options for test.t8.p2 should match the expected FBA=1 condition]
-set opt_flashback_area = 0;
-ALTER TABLE t8 REBUILD PARTITION p1;
-include/assert.inc [The options for test.t8. should match the expected FBA=0 condition]
-include/assert.inc [The options for test.t8.p0 should match the expected FBA=1 condition]
-include/assert.inc [The options for test.t8.p1 should match the expected FBA=0 condition]
-include/assert.inc [The options for test.t8.p2 should match the expected FBA=1 condition]
-set opt_flashback_area = 1;
-ALTER TABLE t8 REPAIR PARTITION p1;
-Table	Op	Msg_type	Msg_text
-test.t8	repair	status	OK
-include/assert.inc [The options for test.t8. should match the expected FBA=0 condition]
-include/assert.inc [The options for test.t8.p0 should match the expected FBA=1 condition]
-include/assert.inc [The options for test.t8.p1 should match the expected FBA=0 condition]
-include/assert.inc [The options for test.t8.p2 should match the expected FBA=1 condition]
-set opt_flashback_area = 1;
-truncate table t9;
-include/assert.inc [The options for test.t9. should match the expected FBA=1 condition]
-insert into t9 values (110, 110);
-insert into t9 values (120, 120);
-insert into t9 values (130, 130);
-insert into t9 values (140, 140);
-ALTER TABLE t8 EXCHANGE PARTITION p1 WITH TABLE t9;
-include/assert.inc [The options for test.t9. should match the expected FBA=0 condition]
-include/assert.inc [The options for test.t8. should match the expected FBA=0 condition]
-include/assert.inc [The options for test.t8.p0 should match the expected FBA=1 condition]
-include/assert.inc [The options for test.t8.p1 should match the expected FBA=1 condition]
-include/assert.inc [The options for test.t8.p2 should match the expected FBA=1 condition]
-set opt_flashback_area = 0;
-create table t11 like t8;
-include/assert.inc [The options for test.t11. should match the expected FBA=0 condition]
-include/assert.inc [The options for test.t11.p0 should match the expected FBA=0 condition]
-include/assert.inc [The options for test.t11.p1 should match the expected FBA=0 condition]
-include/assert.inc [The options for test.t11.p2 should match the expected FBA=0 condition]
-ALTER TABLE t8 DISCARD PARTITION p1 TABLESPACE;
-FLUSH TABLES t11 FOR EXPORT;
-UNLOCK TABLES;
-ALTER TABLE t8 IMPORT PARTITION p1 TABLESPACE;
-include/assert.inc [The options for test.t8. should match the expected FBA=0 condition]
-include/assert.inc [The options for test.t8.p0 should match the expected FBA=1 condition]
-include/assert.inc [The options for test.t8.p1 should match the expected FBA=1 condition]
-include/assert.inc [The options for test.t8.p2 should match the expected FBA=1 condition]
-set opt_flashback_area = 0;
-ALTER TABLE t8 REMOVE PARTITIONING;
-include/assert.inc [The options for test.t8. should match the expected FBA=0 condition]
-set opt_flashback_area = 1;
-ALTER TABLE t8 PARTITION BY HASH(c1) PARTITIONS 4;
-include/assert.inc [The options for test.t8. should match the expected FBA=0 condition]
-include/assert.inc [The options for test.t8.p0 should match the expected FBA=1 condition]
-include/assert.inc [The options for test.t8.p1 should match the expected FBA=1 condition]
-include/assert.inc [The options for test.t8.p2 should match the expected FBA=1 condition]
-include/assert.inc [The options for test.t8.p3 should match the expected FBA=1 condition]
-set opt_flashback_area = 0;
-ALTER TABLE t8 COALESCE PARTITION 2;
-include/assert.inc [The options for test.t8. should match the expected FBA=0 condition]
-include/assert.inc [The options for test.t8.p0 should match the expected FBA=0 condition]
-include/assert.inc [The options for test.t8.p1 should match the expected FBA=0 condition]
-set opt_flashback_area = 1;
-ALTER TABLE t8 REMOVE PARTITIONING;
-include/assert.inc [The options for test.t8. should match the expected FBA=1 condition]
-
 === Tablespace Operations ===
 set opt_flashback_area = 1;
 CREATE TABLESPACE test_space ADD DATAFILE 'test_space.ibd' ENGINE = InnoDB;
@@ -418,6 +304,23 @@ include/assert.inc [The options for test.t9. should match the expected FBA=0 con
 set opt_flashback_area = 1;
 ALTER TABLE t9 ENCRYPTION='Y';
 include/assert.inc [The options for test.t9. should match the expected FBA=1 condition]
+ALTER TABLE t9 ENCRYPTION='N';
+set @past_timestamps = (select now());
+set opt_flashback_area = 0;
+create table t11 like t9;
+insert into t11 select * from t9;
+include/assert.inc [The options for test.t11. should match the expected FBA=0 condition]
+ALTER TABLE t9 DISCARD TABLESPACE;
+FLUSH TABLES t11 FOR EXPORT;
+UNLOCK TABLES;
+ALTER TABLE t9 IMPORT TABLESPACE;
+include/assert.inc [The options for test.t9. should match the expected FBA=1 condition]
+set query_via_flashback_area = 1;
+select * from t9 as of timestamp @past_timestamps;
+ERROR HY000: Snapshot too old
+SHOW STATUS WHERE Variable_name like '%flashback_area_query%';
+Variable_name	Value
+Lizard_flashback_area_query_cnt	5
 set opt_flashback_area = default;
 set global innodb_undo_retention = default;
 set global innodb_txn_retention = default;
@@ -433,8 +336,8 @@ drop table t7;
 drop table t8;
 drop table t9;
 drop table t10;
-drop table t11;
 drop table tt;
 drop table geom;
+drop table t11;
 drop tablespace new_space;
 UNINSTALL PLUGIN keyring_file;

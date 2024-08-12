@@ -238,6 +238,9 @@ struct lizard_var_t {
   ulint index_lock_guess_clust_hit;
   /** The count of failed clustered index record inferences during locking. */
   ulint index_lock_guess_clust_miss;
+
+  /** Number of queries via flashback area. */
+  ulint flashback_area_query_cnt;
 };
 
 struct lizard_stats_t {
@@ -360,6 +363,8 @@ struct lizard_stats_t {
   ulint_ctr_1_t index_lock_guess_clust_hit;
   /** The count of failed clustered index record inferences during locking. */
   ulint_ctr_1_t index_lock_guess_clust_miss;
+
+  ulint_ctr_1_t flashback_area_query_cnt;
 };
 
 namespace lizard {

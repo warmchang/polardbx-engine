@@ -448,7 +448,7 @@ void dd_exchange_index_format(dd::Properties &part_dd_options,
   swap_dd_options.set(OPTION_IFT, part_format);
 }
 
-static bool dd_table_options_has_fba(const dd::Properties *options) {
+bool dd_table_options_has_fba(const dd::Properties *options) {
   bool fba = false;
 
   if (options->exists(TABLE_OPTION_FBA)) {
@@ -474,16 +474,28 @@ void dd_fill_dict_table_fba(const Table_policy &table_policy,
   table->is_2pp = table_policy.has_fba();
 }
 
-void dd_write_table_fba(dd::Properties *options, const dict_table_t *table) {
-  // ut_ad(!dd_table_options_has_fba(options));
-
-  options->set(TABLE_OPTION_FBA, table->is_2pp);
+template <typename Table>
+void dd_write_table_fba(const dict_table_t *table, Table *dd_table) {
+  if (!dd_table_is_partitioned(dd_table->table()) ||
+      dd_part_is_first(reinterpret_cast<dd::Partition *>(dd_table))) {
+    dd_table->table().options().set(TABLE_OPTION_FBA, table->is_2pp);
+  }
 }
+
+template void dd_write_table_fba<dd::Table>(const dict_table_t *table,
+                                            dd::Table *dd_table);
+
+template void dd_write_table_fba<dd::Partition>(const dict_table_t *table,
+                                                dd::Partition *dd_table);
 
 template <typename Table>
 void dd_copy_table_fba(const Table &old_dd_tab, Table &new_dd_tab) {
-  new_dd_tab.options().set(TABLE_OPTION_FBA,
-                           dd_table_options_has_fba(&old_dd_tab.options()));
+  if (!dd_table_is_partitioned(new_dd_tab.table()) ||
+      dd_part_is_first(reinterpret_cast<dd::Partition *>(&new_dd_tab))) {
+    new_dd_tab.table().options().set(
+        TABLE_OPTION_FBA,
+        dd_table_options_has_fba(&old_dd_tab.table().options()));
+  }
 }
 
 template void dd_copy_table_fba<dd::Table>(const dd::Table &old_dd_tab,
@@ -492,16 +504,9 @@ template void dd_copy_table_fba<dd::Table>(const dd::Table &old_dd_tab,
 template void dd_copy_table_fba<dd::Partition>(const dd::Partition &old_dd_tab,
                                                dd::Partition &new_dd_tab);
 
-template <typename Table>
-bool dd_check_table_fba(const dict_table_t *table, const Table *dd_table) {
-  return (table->is_2pp == dd_table_options_has_fba(&dd_table->options()));
+bool dd_check_table_fba(const dict_table_t *table, const dd::Table &dd_table) {
+  return (table->is_2pp == dd_table_options_has_fba(&dd_table.options()));
 }
-
-template bool dd_check_table_fba<dd::Table>(const dict_table_t *table,
-                                            const dd::Table *dd_table);
-
-template bool dd_check_table_fba<dd::Partition>(const dict_table_t *table,
-                                                const dd::Partition *dd_table);
 
 void dd_exchange_table_fba(dd::Properties &part_dd_options,
                            dd::Properties &swap_dd_options) {

@@ -139,6 +139,11 @@ dberr_t prebuilt_bind_flashback_query(row_prebuilt_t *prebuilt) {
 
   snapshot_vision = table->table_snapshot.vision();
 
+  if (snapshot_vision->get_flashback_area()) {
+    ut_ad(prebuilt->table->is_2pp);
+    lizard_stats.flashback_area_query_cnt.inc();
+  }
+
   DBUG_EXECUTE_IF("simulate_gcn_def_changed_error", { goto simulate_error; });
 
   if (snapshot_vision->too_old()) {

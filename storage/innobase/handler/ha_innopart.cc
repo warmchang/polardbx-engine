@@ -1308,6 +1308,14 @@ void ha_innopart::set_partition(uint part_id) {
   m_prebuilt->sql_stat_start = m_sql_stat_start_parts.test(part_id);
   m_prebuilt->table = m_part_share->get_table_part(part_id);
   m_prebuilt->index = innopart_get_index(part_id, active_index);
+
+  dberr_t error = lizard::prebuilt_unbind_flashback_query(m_prebuilt);
+  if (error != DB_SUCCESS) {
+    /** Lizard: Just call **my_error** here because only lock errors will
+    be expected, see unlock_external, handler::ha_external_lock. */
+    ut_ad(error == DB_SNAPSHOT_TOO_OLD);
+    my_error(ER_SNAPSHOT_TOO_OLD, 0);
+  }
 }
 
 /** Update active partition.
@@ -2441,7 +2449,7 @@ int ha_innopart::create(const char *name, TABLE *form,
     return HA_ERR_INTERNAL_ERROR;
   }
 
-  lizard::Ha_ddl_policy ddl_policy(thd);
+  lizard::Ha_ddl_policy ddl_policy(thd, false);
 
   create_table_info_t info(thd, form, create_info, table_name, remote_path,
                            tablespace_name, srv_file_per_table, false, 0, 0,

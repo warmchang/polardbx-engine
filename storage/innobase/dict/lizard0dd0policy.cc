@@ -40,6 +40,8 @@ this program; if not, write to the Free Software Foundation, Inc.,
 #include "ut0dbg.h"
 
 #include "lizard0dd0policy.h"
+#include "dict0dd.h"
+#include "lizard0dict.h"
 
 namespace lizard {
 
@@ -89,8 +91,18 @@ void Index_policy::restore(const dd::Properties &options) {
   m_inited = true;
 }
 
+/**
+  Initializes the Table_policy with options based on the ddl policy and the
+  table information.
+
+  @param[in]    ddl_policy      ddl policy from handler
+  @param[in]    table           dict_t table
+  @param[in]    dd_table        The old parent table of a partitioned table.
+  Must be provided if the ddl policy requires inheritance.
+*/
 void Table_policy::create(const Ha_ddl_policy *ddl_policy,
-                          const dict_table_t *table) {
+                          const dict_table_t *table,
+                          const dd::Table *dd_table) {
   ut_a(m_inited == false);
   m_inited = true;
 
@@ -98,8 +110,14 @@ void Table_policy::create(const Ha_ddl_policy *ddl_policy,
     return;
   }
 
-  if (ddl_policy->hint_fba()) {
-    m_flashback_area = can_fba(table);
+  if (ddl_policy->should_inherit()) {
+    /** Inherit table options from the parent table of partition. */
+    ut_ad(dd_table && dd_table_is_partitioned(*dd_table));
+
+    m_flashback_area = lizard::dd_table_options_has_fba(&dd_table->options());
+    ut_ad(!m_flashback_area || can_fba(table));
+  } else {
+    m_flashback_area = (ddl_policy->hint_fba() && can_fba(table));
   }
 }
 
@@ -125,15 +143,25 @@ const Index_policy ha_ddl_create_index_policy(Ha_ddl_policy *ddl_policy,
   return index_policy;
 }
 
+/**
+  Create the Table_policy.
+
+  @param[in]    ddl_policy      ddl policy from handler
+  @param[in]    table           dict_t table
+  @param[in]    dd_table        The old parent table of a partitioned table.
+  Must be provided if the ddl policy requires inheritance.
+*/
 const Table_policy ha_ddl_create_table_policy(const Ha_ddl_policy *ddl_policy,
-                                              const dict_table_t *table) {
+                                              const dict_table_t *table,
+                                              const dd::Table *dd_table) {
   Table_policy table_policy;
 
-  table_policy.create(ddl_policy, table);
+  table_policy.create(ddl_policy, table, dd_table);
   return table_policy;
 }
 
-Ha_ddl_policy::Ha_ddl_policy(const THD *thd) : m_hint_fba(0), m_hint_gpp(0) {
+Ha_ddl_policy::Ha_ddl_policy(const THD *thd, bool inherit)
+    : m_hint_fba(0), m_hint_gpp(0), m_inherit(inherit) {
   if (thd->variables.opt_flashback_area) {
     ut_a(!m_hint_fba);
     m_hint_fba = 1;
@@ -173,15 +201,9 @@ template Indexes_policy dd_fill_indexes_policy<dd::Table>(
 template Indexes_policy dd_fill_indexes_policy<dd::Partition>(
     const dd::Partition *dd_table);
 
-template <typename Table>
-void dd_fill_table_policy(Table_policy &table_policy, const Table &dd_table) {
+void dd_fill_table_policy(Table_policy &table_policy,
+                          const dd::Table &dd_table) {
   table_policy.restore(dd_table.options());
 }
-
-template void dd_fill_table_policy<dd::Table>(Table_policy &table_policy,
-                                              const dd::Table &dd_table);
-
-template void dd_fill_table_policy<dd::Partition>(
-    Table_policy &table_policy, const dd::Partition &dd_table);
 
 }  // namespace lizard

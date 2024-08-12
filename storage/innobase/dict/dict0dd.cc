@@ -266,7 +266,7 @@ bool dd_table_match(const dict_table_t *table, const Table *dd_table) {
     match = false;
   }
 
-  if (!lizard::dd_check_table_fba(table, dd_table)) {
+  if (!lizard::dd_check_table_fba(table, dd_table->table())) {
     ib::warn(ER_IB_MSG_166)
         << "Flashback area mismatch. Table in InnoDB has flashback area "
            "option: "
@@ -2548,7 +2548,7 @@ void dd_write_table(dd::Object_id dd_space_id, Table *dd_table,
         dd_table_key_strings[DD_TABLE_DATA_DIRECTORY], true);
   }
 
-  lizard::dd_write_table_fba(&dd_table->options(), table);
+  lizard::dd_write_table_fba(table, dd_table);
 
   for (auto dd_index : *dd_table->indexes()) {
     /* Don't assume the index orders are the same, even on
@@ -4981,7 +4981,7 @@ dict_table_t *dd_open_table_one(dd::cache::Dictionary_client *client,
 
   /* Create dict_table_t for the table */
   lizard::Table_policy table_policy;
-  lizard::dd_fill_table_policy(table_policy, *dd_table);
+  lizard::dd_fill_table_policy(table_policy, dd_table->table());
   dict_table_t *m_table =
       dd_fill_dict_table(dd_table, table, norm_name, nullptr, zip_allowed,
                          strict, thd, implicit, table_policy);

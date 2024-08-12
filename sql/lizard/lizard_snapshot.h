@@ -253,7 +253,7 @@ class Snapshot_vision {
 
   void set_flashback_area(bool value) { m_flashback_area = value; }
 
-  bool get_flashback_area() { return m_flashback_area; }
+  bool get_flashback_area() const { return m_flashback_area; }
 
   virtual trx_id_t up_limit_tid() const { return 0; }
 

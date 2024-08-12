@@ -12078,7 +12078,7 @@ void innodb_base_col_setup_for_stored(const dict_table_t *table,
 
     if (err == DB_SUCCESS) {
       err = row_create_table_for_mysql(table, algorithm, m_create_info, m_trx,
-                                       heap, ddl_policy);
+                                       heap, ddl_policy, old_part_table);
 
       if (err == DB_IO_NO_PUNCH_HOLE_FS) {
         ut_ad(!dict_table_in_shared_tablespace(table));
@@ -14386,7 +14386,8 @@ int innobase_basic_ddl::create_impl(THD *thd, const char *name, TABLE *form,
                                     bool file_per_table, bool evictable,
                                     bool skip_strict, uint32_t old_flags,
                                     uint32_t old_flags2,
-                                    const dd::Table *old_part_table) {
+                                    const dd::Table *old_part_table,
+                                    lizard::Ha_ddl_policy *ddl_policy) {
   char norm_name[FN_REFLEN] = {'\0'};   /* {database}/{tablename} */
   char remote_path[FN_REFLEN] = {'\0'}; /* Absolute path of table */
   char tablespace[NAME_LEN] = {'\0'};   /* Tablespace name identifier */
@@ -14404,8 +14405,6 @@ int innobase_basic_ddl::create_impl(THD *thd, const char *name, TABLE *form,
   if (!(create_info->options & HA_LEX_CREATE_TMP_TABLE)) {
     trx_start_if_not_started(trx, true, UT_LOCATION_HERE);
   }
-
-  lizard::Ha_ddl_policy ddl_policy(thd);
 
   create_table_info_t info(thd, form, create_info, norm_name, remote_path,
                            tablespace, file_per_table, skip_strict, old_flags,
@@ -14426,12 +14425,12 @@ int innobase_basic_ddl::create_impl(THD *thd, const char *name, TABLE *form,
   }
 
   error = info.create_table(dd_tab != nullptr ? &dd_tab->table() : nullptr,
-                            old_part_table, &ddl_policy);
+                            old_part_table, ddl_policy);
   if (error) {
     goto cleanup;
   }
 
-  error = info.create_table_update_global_dd(dd_tab, &ddl_policy);
+  error = info.create_table_update_global_dd(dd_tab, ddl_policy);
   if (error) {
     goto cleanup;
   }
@@ -14491,11 +14490,11 @@ cleanup:
 
 template int innobase_basic_ddl::create_impl<dd::Table>(
     THD *, const char *, TABLE *, HA_CREATE_INFO *, dd::Table *, bool, bool,
-    bool, uint32_t, uint32_t, const dd::Table *);
+    bool, uint32_t, uint32_t, const dd::Table *, lizard::Ha_ddl_policy *);
 
 template int innobase_basic_ddl::create_impl<dd::Partition>(
     THD *, const char *, TABLE *, HA_CREATE_INFO *, dd::Partition *, bool, bool,
-    bool, uint32_t, uint32_t, const dd::Table *);
+    bool, uint32_t, uint32_t, const dd::Table *, lizard::Ha_ddl_policy *);
 
 template <typename Table>
 int innobase_basic_ddl::delete_impl(THD *thd, const char *name,
@@ -14886,16 +14885,18 @@ int innobase_truncate<Table>::truncate() {
 
   m_trx->in_truncate = true;
   bool inherit_metadata = false;
-  if (dd_table_has_instant_cols(m_dd_table->table()) &&
+  if (/* dd_table_has_instant_cols(m_dd_table->table()) && */
       dd_table_is_partitioned(m_dd_table->table()) && !m_table_truncate) {
     /* For a partition table, if this is not a full table truncate, and first
     partition is getting truncated, make sure INSTANT metadata is inherited. */
     inherit_metadata = true;
   }
+
+  lizard::Ha_ddl_policy ddl_policy(m_thd, inherit_metadata);
   error = innobase_basic_ddl::create_impl(
       m_thd, m_name, m_form, &m_create_info, m_dd_table, m_file_per_table,
       false, true, m_flags, m_flags2,
-      inherit_metadata ? &m_dd_table->table() : nullptr);
+      inherit_metadata ? &m_dd_table->table() : nullptr, &ddl_policy);
   m_trx->in_truncate = false;
 
   if (reset) {
@@ -15408,6 +15409,8 @@ int ha_innobase::create(const char *name, TABLE *form,
     innobase_register_trx(ht, thd, trx);
   }
 
+  lizard::Ha_ddl_policy ddl_policy(thd, false);
+
   /* Determine if this CREATE TABLE will be making a file-per-table
   tablespace.  Note that "srv_file_per_table" is not under
   dict_sys mutex protection, and could be changed while creating the
@@ -15415,7 +15418,7 @@ int ha_innobase::create(const char *name, TABLE *form,
   decisions based on this. */
   return (innobase_basic_ddl::create_impl(ha_thd(), name, form, create_info,
                                           table_def, srv_file_per_table, true,
-                                          false, 0, 0, nullptr));
+                                          false, 0, 0, nullptr, &ddl_policy));
 }
 
 /** Discards or imports an InnoDB tablespace.

@@ -1082,6 +1082,7 @@ class innobase_basic_ddl {
   @param[in]    old_flags2      old Table flags2
   @param[in]    old_dd_table    Table def for old table. Used in truncate or
                                 while adding a new partition
+  @param[in]    ddl_policy      ddl policy from handler.
   @return       error number
   @retval       0 on success */
   template <typename Table>
@@ -1089,7 +1090,8 @@ class innobase_basic_ddl {
                          HA_CREATE_INFO *create_info, Table *dd_tab,
                          bool file_per_table, bool evictable, bool skip_strict,
                          uint32_t old_flags, uint32_t old_flags2,
-                         const dd::Table *old_dd_table);
+                         const dd::Table *old_dd_table,
+                         lizard::Ha_ddl_policy *ddl_policy);
 
   /** Drop an InnoDB table.
   @tparam               Table           dd::Table or dd::Partition

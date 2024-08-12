@@ -13296,7 +13296,9 @@ static bool mysql_inplace_alter_table(
 
   DBUG_TRACE;
 
-  lizard::Ha_ddl_policy ddl_policy(thd);
+  lizard::Ha_ddl_policy ddl_policy(thd,
+                                   ha_alter_info->is_inplace_alter_partition());
+
   raii::Sentry alter_ddl_policy_guard(
       [&ha_alter_info] { ha_alter_info->ddl_policy = nullptr; });
   assert(ha_alter_info->ddl_policy == nullptr);

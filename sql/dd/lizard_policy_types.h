@@ -38,6 +38,7 @@ this program; if not, write to the Free Software Foundation, Inc.,
 #include "include/my_inttypes.h"
 
 #include "sql/dd/properties.h"
+#include "sql/dd/types/table.h"
 
 class THD;
 class dict_table_t;
@@ -103,7 +104,8 @@ class Table_policy {
 
   bool has_fba() const { return m_flashback_area; }
 
-  void create(const Ha_ddl_policy *ddl_policy, const dict_table_t *table);
+  void create(const Ha_ddl_policy *ddl_policy, const dict_table_t *table,
+              const dd::Table *old_part_table = nullptr);
 
   void restore(const dd::Properties &options);
 
@@ -116,11 +118,13 @@ class Table_policy {
 
 class Ha_ddl_policy {
  public:
-  Ha_ddl_policy(const THD *thd);
+  Ha_ddl_policy(const THD *thd, bool inherit = false);
 
   bool hint_fba() const { return m_hint_fba; }
 
   bool hint_gpp() const { return m_hint_gpp; }
+
+  bool should_inherit() const { return m_inherit; }
 
  private:
   /** ------Table options------- */
@@ -130,6 +134,10 @@ class Ha_ddl_policy {
   /** ------Index options------- */
   /** Hint GPP */
   unsigned int m_hint_gpp : 1;
+
+  /** Indicates whether a partitioned table should inherit table options from
+   * the parent table */
+  bool m_inherit;
 };
 
 }  // namespace lizard

@@ -4619,6 +4619,9 @@ dberr_t row_import_for_mysql(dict_table_t *table, dd::Table *table_def,
     dd_import_instant_add_columns(table, table_def);
   }
 
+  ut_ad(!table->is_2pp ||
+        lizard::dd_table_options_has_fba(&table_def->options()));
+
   /* If the table is stored in a remote tablespace, we need to
   determine that filepath from the link file and system tables.
   Find the space ID in SYS_TABLES since this is an ALTER TABLE. */

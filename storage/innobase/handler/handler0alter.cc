@@ -4804,9 +4804,9 @@ template <typename Table>
 
     dict_sys_mutex_exit();
 
-    error = row_create_table_for_mysql(ctx->new_table, compression,
-                                       ha_alter_info->create_info, ctx->trx,
-                                       nullptr, ha_alter_info->ddl_policy);
+    error = row_create_table_for_mysql(
+        ctx->new_table, compression, ha_alter_info->create_info, ctx->trx,
+        nullptr, ha_alter_info->ddl_policy, &old_dd_tab->table());
 
     dict_sys_mutex_enter();
 
@@ -8315,10 +8315,12 @@ class alter_part {
   @param[in]    file_per_table  Current value of innodb_file_per_table
   @param[in]    autoinc         Next AUTOINC value to use
   @param[in]    autoextend_size Value of AUTOEXTEND_SIZE for this tablespace
+  @param[in]    ddl_policy      DDL policy from handler
   @return 0 or error number */
   int create(const dd::Table *part_table, const char *part_name,
              dd::Partition *dd_part, TABLE *table, const char *tablespace,
-             bool file_per_table, uint64_t autoinc, uint64_t autoextend_size);
+             bool file_per_table, uint64_t autoinc, uint64_t autoextend_size,
+             lizard::Ha_ddl_policy *ddl_policy);
 
  protected:
   /** InnoDB transaction, nullptr if not used */
@@ -8374,7 +8376,8 @@ bool alter_part::build_partition_name(const dd::Partition *dd_part, bool temp,
 int alter_part::create(const dd::Table *old_part_table, const char *part_name,
                        dd::Partition *dd_part, TABLE *table,
                        const char *tablespace, bool file_per_table,
-                       uint64_t autoinc, uint64_t autoextend_size) {
+                       uint64_t autoinc, uint64_t autoextend_size,
+                       lizard::Ha_ddl_policy *ddl_policy) {
   ut_ad(m_state == PART_TO_BE_ADDED || m_state == PART_CHANGED);
 
   dd::Table &dd_table = dd_part->table();
@@ -8422,7 +8425,7 @@ int alter_part::create(const dd::Table *old_part_table, const char *part_name,
 
   return (innobase_basic_ddl::create_impl<dd::Partition>(
       current_thd, part_name, table, &create_info, dd_part, file_per_table,
-      false, false, 0, 0, old_part_table));
+      false, false, 0, 0, old_part_table, ddl_policy));
 }
 
 typedef std::vector<alter_part *, ut::allocator<alter_part *>> alter_part_array;
@@ -8788,10 +8791,11 @@ class alter_part_add : public alter_part {
     dd::get_implicit_tablespace_options(current_thd, &part_table,
                                         &autoextend_size);
 
-    int error =
-        create(dd_table_has_instant_cols(part_table) ? &part_table : nullptr,
-               part_name, new_part, altered_table, m_tablespace,
-               m_file_per_table, m_autoinc, autoextend_size);
+    bool inherit_metadata = dd_table_has_instant_cols(part_table) ||
+                            m_ha_alter_info->ddl_policy->should_inherit();
+    int error = create(inherit_metadata ? &part_table : nullptr, part_name,
+                       new_part, altered_table, m_tablespace, m_file_per_table,
+                       m_autoinc, autoextend_size, m_ha_alter_info->ddl_policy);
 
     if (error == 0 && alter_parts::need_copy(m_ha_alter_info)) {
       /* If partition belongs to table with instant columns, copy instant
@@ -9204,10 +9208,12 @@ int alter_part_change::prepare(TABLE *altered_table,
   dd::get_implicit_tablespace_options(current_thd, &part_table,
                                       &autoextend_size);
 
-  int error =
-      create(dd_table_has_instant_cols(part_table) ? &part_table : nullptr,
-             part_name, new_part, altered_table, m_tablespace, m_file_per_table,
-             m_autoinc, autoextend_size);
+  bool inherit_metadata = dd_table_has_instant_cols(part_table) ||
+                          m_ha_alter_info->ddl_policy->should_inherit();
+
+  int error = create(inherit_metadata ? &part_table : nullptr, part_name,
+                     new_part, altered_table, m_tablespace, m_file_per_table,
+                     m_autoinc, autoextend_size, m_ha_alter_info->ddl_policy);
 
   if (error == 0) {
     dict_sys_mutex_enter();
@@ -10920,6 +10926,12 @@ int ha_innopart::exchange_partition_low(uint part_id, dd::Table *part_table,
     return true;
   }
 
+  if (lizard::dd_table_options_has_fba(&part_table->options()) !=
+      lizard::dd_table_options_has_fba(&swap_table->options())) {
+    my_error(ER_PARTITION_EXCHANGE_DIFFERENT_OPTION, MYF(0), "FLASHBACK_AREA");
+    return true;
+  }
+
   /* Find the specified dd::Partition object */
   uint id = 0;
   dd::Partition *dd_part = nullptr;
@@ -11087,7 +11099,8 @@ int ha_innopart::exchange_partition_low(uint part_id, dd::Table *part_table,
   dd_part_adjust_table_id(part_table);
 
   /** Swap the flashback area between partition and table */
-  lizard::dd_exchange_table_fba(dd_part->options(), swap_table->options());
+  lizard::dd_exchange_table_fba(dd_part->table().options(),
+                                swap_table->options());
 
 func_exit:
   free(swap_name);

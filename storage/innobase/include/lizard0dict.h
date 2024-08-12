@@ -271,6 +271,8 @@ extern void dd_copy_index_format(dd::Properties &new_dd_options,
 extern void dd_exchange_index_format(dd::Properties &part_dd_options,
                                      dd::Properties &swap_dd_options);
 
+extern bool dd_table_options_has_fba(const dd::Properties *options);
+
 /**
   Instantiate table related metadata about flashback area
   @param[in]      table_policy  table config info
@@ -283,11 +285,11 @@ extern void dd_fill_dict_table_fba(const Table_policy &table_policy,
   Write lizard metadata of a table to dd::Table or dd::Partition_table for
   partition tables.
 
-  @param[in,out]  dd_options  dd_options which might carry flashback area info
-  @param[in]      index       InnoDB index object
+  @param[in]          table          innodb dict table
+  @param[in,out]      dd_table       dd::table or dd::partition
 */
-extern void dd_write_table_fba(dd::Properties *options,
-                               const dict_table_t *table);
+template <typename Table>
+extern void dd_write_table_fba(const dict_table_t *table, Table *dd_table);
 
 /**
   Copy the flashback area option from an old dd table to a new dd table.
@@ -303,14 +305,13 @@ extern void dd_copy_table_fba(const Table &old_dd_tab, Table &new_dd_tab);
   and the InnoDB table object.
 
   @param[in,out]  table             Innodb table object
-  @param[in]      dd_table          dd::table or dd::parititon
+  @param[in]      dd_table          dd::table
 
   @return `true` if the flashback area options are consistent, `false`
   otherwise.
 */
-template <typename Table>
 extern bool dd_check_table_fba(const dict_table_t *table,
-                               const Table *dd_table);
+                               const dd::Table &dd_table);
 
 /**
   Exchange flashback area option between Partition table and Swap table.

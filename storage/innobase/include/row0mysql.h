@@ -320,11 +320,14 @@ kept in non-LRU list while on failure the 'table' object will be freed.
 @param[in,out]  trx             transaction
 @param[in]      heap            temp memory heap or nullptr
 @param[in]      ddl_policy      ddl policy from handler
+@param[in]      old_dd_tab      dd::Table from an old partition for partitioned
+                                table, NULL otherwise.
 @return error code or DB_SUCCESS */
 [[nodiscard]] dberr_t row_create_table_for_mysql(
     dict_table_t *&table, const char *compression,
     const HA_CREATE_INFO *create_info, trx_t *trx, mem_heap_t *heap,
-    const lizard::Ha_ddl_policy *ddl_policy);
+    const lizard::Ha_ddl_policy *ddl_policy,
+    const dd::Table *old_dd_tab = nullptr);
 
 /** Does an index creation operation for MySQL. TODO: currently failure
  to create an index results in dropping the whole table! This is no problem

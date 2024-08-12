@@ -10246,9 +10246,6 @@ SHOW_VAR status_vars[] = {
      reinterpret_cast<char *>(
          const_cast<long int *>(&alisql::easy_pool_alloc_byte)),
      SHOW_LONG, SHOW_SCOPE_GLOBAL},
-    {"Flashback_area_query_cnt",
-     (char *)offsetof(System_status_var, flashback_area_query_cnt),
-     SHOW_LONGLONG_STATUS, SHOW_SCOPE_ALL},
     {NullS, NullS, SHOW_LONG, SHOW_SCOPE_ALL}};
 
 void add_terminator(vector<my_option> *options) {

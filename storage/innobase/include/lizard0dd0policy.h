@@ -52,14 +52,22 @@ extern Indexes_policy dd_fill_indexes_policy(const Table *dd_table);
   This function should be called when open a table.
 
   @param[in,out]  table_policy       table policy to be filled
-  @param[in]      dd_table           dd::table or dd::parititon
+  @param[in]      dd_table           dd::table
 */
-template <typename Table>
 extern void dd_fill_table_policy(Table_policy &table_policy,
-                                 const Table &dd_table);
+                                 const dd::Table &dd_table);
 
+/**
+  Create the Table_policy.
+
+  @param[in]    ddl_policy      ddl policy from handler
+  @param[in]    table           dict_t table
+  @param[in]    dd_table        The old parent table of a partitioned table.
+  Must be provided if the ddl policy requires inheritance.
+*/
 extern const Table_policy ha_ddl_create_table_policy(
-    const Ha_ddl_policy *ddl_policy, const dict_table_t *table);
+    const Ha_ddl_policy *ddl_policy, const dict_table_t *table,
+    const dd::Table *dd_table = nullptr);
 
 extern const Index_policy ha_ddl_create_index_policy(Ha_ddl_policy *ddl_policy,
                                                      const dict_table_t *table,
