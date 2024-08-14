@@ -4425,6 +4425,7 @@ buf_block_t *buf_page_get_gen(const page_id_t &page_id,
 
   switch (mode) {
     case Page_fetch::NO_LATCH:
+    case Page_fetch::GPP_FETCH:
       ut_ad(rw_latch == RW_NO_LATCH);
       break;
     case Page_fetch::NORMAL:
@@ -4433,7 +4434,6 @@ buf_block_t *buf_page_get_gen(const page_id_t &page_id,
     case Page_fetch::PEEK_IF_IN_POOL:
     case Page_fetch::IF_IN_POOL_OR_WATCH:
     case Page_fetch::POSSIBLY_FREED:
-    case Page_fetch::GPP_FETCH:
       break;
     default:
       ib::fatal(UT_LOCATION_HERE, ER_IB_ERR_UNKNOWN_PAGE_FETCH_MODE)
@@ -4580,7 +4580,7 @@ bool buf_page_optimistic_get(ulint rw_latch, buf_block_t *block,
 
 bool buf_page_get_known_nowait(ulint rw_latch, buf_block_t *block,
                                Cache_hint hint, const char *file, ulint line,
-                               mtr_t *mtr) {
+                               mtr_t *mtr, ut_d(bool gpp_fetch)) {
   ut_ad(mtr->is_active());
   ut_ad((rw_latch == RW_S_LATCH) || (rw_latch == RW_X_LATCH));
 
@@ -4648,7 +4648,7 @@ bool buf_page_get_known_nowait(ulint rw_latch, buf_block_t *block,
 #endif /* UNIV_DEBUG || UNIV_BUF_DEBUG */
 
 #ifdef UNIV_DEBUG
-  if (hint != Cache_hint::KEEP_OLD) {
+  if (hint != Cache_hint::KEEP_OLD && !gpp_fetch) {
     /* If hint == BUF_KEEP_OLD, we are executing an I/O
     completion routine.  Avoid a bogus assertion failure
     when ibuf_merge_or_delete_for_page() is processing a

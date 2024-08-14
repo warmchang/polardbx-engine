@@ -58,10 +58,11 @@ bool btr_cur_guess_clust_by_gpp(dict_index_t *clust_idx,
   bool clust_found = false;
   ulint up_match = 0;
   ulint low_match = 0;
-  ulint idx_savepoint = 0;
-  ulint block_savepoint = 0;
   buf_block_t *block = nullptr;
   ulint rw_latch = latch_mode;
+  ulint cur_savepoint = 0;
+  ulint savepoints[2];
+  ulint n_savepoint = 0;
 
   page_no_t gpp_no = lizard::row_get_gpp_no(sec_rec, sec_idx, sec_offsets);
   ut_ad(gpp_no != 0);
@@ -78,22 +79,26 @@ bool btr_cur_guess_clust_by_gpp(dict_index_t *clust_idx,
   }
 
   /** Phase 2: fetch the page according to gpp_no. */
-  idx_savepoint = mtr_set_savepoint(mtr);
-  mtr_s_lock(dict_index_get_lock(clust_idx), mtr, UT_LOCATION_HERE);
-
   /** Fetch the page in Page_fetch::GPP_FETCH mode because the page may
    * have already been freed or out of tablespace. */
-  block_savepoint = mtr_set_savepoint(mtr);
-  block =
-      buf_page_get_gen(page_id_t{dict_index_get_space(clust_idx), gpp_no},
-                       dict_table_page_size(clust_idx->table), rw_latch,
-                       nullptr, Page_fetch::GPP_FETCH, UT_LOCATION_HERE, mtr);
+  cur_savepoint = mtr_set_savepoint(mtr);
+  if ((block = buf_page_get_gen(
+           page_id_t{dict_index_get_space(clust_idx), gpp_no},
+           dict_table_page_size(clust_idx->table), RW_NO_LATCH, nullptr,
+           Page_fetch::GPP_FETCH, UT_LOCATION_HERE, mtr)) == nullptr) {
+    goto func_exit;
+  }
+  savepoints[n_savepoint++] = cur_savepoint;
 
-  mtr_release_s_latch_at_savepoint(mtr, idx_savepoint,
-                                   dict_index_get_lock(clust_idx));
+  /** Try lock to avoid deadlock. */
+  cur_savepoint = mtr_set_savepoint(mtr);
+  if (!buf_page_get_known_nowait(rw_latch, block, Cache_hint::MAKE_YOUNG,
+                                 __FILE__, __LINE__, mtr, true)) {
+    goto func_exit;
+  }
+  savepoints[n_savepoint++] = cur_savepoint;
 
-  if (block == nullptr ||
-      !fil_page_index_page_check(buf_block_get_frame(block)) ||
+  if (!fil_page_index_page_check(buf_block_get_frame(block)) ||
       btr_page_get_index_id(buf_block_get_frame(block)) != clust_idx->id ||
       !page_is_leaf(buf_block_get_frame(block))) {
     goto func_exit;
@@ -128,8 +133,8 @@ bool btr_cur_guess_clust_by_gpp(dict_index_t *clust_idx,
 func_exit:
   if (!clust_found) {
     /** Release the page if the found rec is mismatched. */
-    if (block) {
-      mtr_release_block_at_savepoint(mtr, block_savepoint, block);
+    for (ulint i = 0; i < n_savepoint; ++i) {
+      mtr_release_block_at_savepoint(mtr, savepoints[i], block);
     }
   }
 

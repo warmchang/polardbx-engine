@@ -56,15 +56,15 @@ connection default;
 --let $expect_gcn = `select @base_seq + 10200`
 set xa_detach_on_prepare = on;
 
-xa start 'asgc_b1';
+xa start 'asgc_nobinlog_b1';
 --echo set innodb_commit_seq = expect_gcn
 --disable_query_log
 --eval set innodb_commit_seq = $expect_gcn
 --enable_query_log
 
 insert into t1 values (1);
-xa end 'asgc_b1';
-xa prepare 'asgc_b1';
+xa end 'asgc_nobinlog_b1';
+xa prepare 'asgc_nobinlog_b1';
 
 #######################################
 # GCN of prepare when no binlog is meaningless
@@ -84,7 +84,7 @@ connection default;
 --disable_query_log
 --eval set innodb_commit_seq = $expect_gcn
 --enable_query_log
-xa commit 'asgc_b1';
+xa commit 'asgc_nobinlog_b1';
 
 connection conn1;
 --let $actual_gcn = query_get_value('show status like "Lizard_current_gcn"', Value, 1)
@@ -99,15 +99,15 @@ connection default;
 --let $expect_gcn = `select @base_seq + 10400`
 set xa_detach_on_prepare = off;
 
-xa start 'asgc_b2';
+xa start 'asgc_nobinlog_b2';
 --echo set innodb_commit_seq = expect_gcn
 --disable_query_log
 --eval set innodb_commit_seq = $expect_gcn
 --enable_query_log
 
 insert into t1 values (1);
-xa end 'asgc_b2';
-xa prepare 'asgc_b2';
+xa end 'asgc_nobinlog_b2';
+xa prepare 'asgc_nobinlog_b2';
 
 #######################################
 # GCN of prepare when no binlog is meaningless
@@ -127,7 +127,7 @@ connection default;
 --disable_query_log
 --eval set innodb_commit_seq = $expect_gcn
 --enable_query_log
-xa commit 'asgc_b2';
+xa commit 'asgc_nobinlog_b2';
 
 connection conn1;
 --let $actual_gcn = query_get_value('show status like "Lizard_current_gcn"', Value, 1)
@@ -142,15 +142,15 @@ connection default;
 --let $expect_gcn = `select @base_seq + 10600`
 set xa_detach_on_prepare = off;
 
-xa start 'asgc_b3';
+xa start 'asgc_nobinlog_b3';
 --echo set innodb_commit_seq = expect_gcn
 --disable_query_log
 --eval set innodb_commit_seq = $expect_gcn
 --enable_query_log
 
 insert into t1 values (1);
-xa end 'asgc_b3';
-xa commit 'asgc_b3' one phase;
+xa end 'asgc_nobinlog_b3';
+xa commit 'asgc_nobinlog_b3' one phase;
 
 connection conn1;
 --let $actual_gcn = query_get_value('show status like "Lizard_current_gcn"', Value, 1)
@@ -169,18 +169,18 @@ connection default;
 --let $save_expect_gcn = `select @base_seq + 10700`
 set xa_detach_on_prepare = off;
 
-xa start 'asgc_b4';
+xa start 'asgc_nobinlog_b4';
 --echo set innodb_commit_seq = expect_gcn
 --disable_query_log
 --eval set innodb_commit_seq = $expect_gcn
 --enable_query_log
 
 insert into t1 values (1);
-xa end 'asgc_b4';
+xa end 'asgc_nobinlog_b4';
 
 --let $expect_gcn= $expect_gcn
 --let $expect_csr= ASSIGNED_GCN
---let $my_xid= 'asgc_b4', '', 1
+--let $my_xid= 'asgc_nobinlog_b4', '', 1
 --let $ac_args= 1, 1, $expect_gcn
 --let $ac_conn=default
 --source suite/innodb_gcn/include/xa_proc_ac_prepare_verify.inc
@@ -206,7 +206,7 @@ connection default;
 --eval set innodb_commit_seq = $expect_gcn
 --enable_query_log
 
---let $my_xid= 'asgc_b4', '', 1
+--let $my_xid= 'asgc_nobinlog_b4', '', 1
 --let $m_phyid= $m_trx_id, $m_uba
 --let $expect_gcn= $expect_gcn
 # TODO: pmmt not work because set_prepare_in_tc is not called in such a case
@@ -234,18 +234,18 @@ connection default;
 --let $save_expect_gcn = `select @base_seq + 10900`
 set xa_detach_on_prepare = on;
 
-xa start 'asgc_b5';
+xa start 'asgc_nobinlog_b5';
 --echo set innodb_commit_seq = expect_gcn
 --disable_query_log
 --eval set innodb_commit_seq = $expect_gcn
 --enable_query_log
 
 insert into t1 values (1);
-xa end 'asgc_b5';
+xa end 'asgc_nobinlog_b5';
 
 --let $expect_gcn= $expect_gcn
 --let $expect_csr= ASSIGNED_GCN
---let $my_xid= 'asgc_b5', '', 1
+--let $my_xid= 'asgc_nobinlog_b5', '', 1
 --let $ac_args= 1, 1, $expect_gcn
 --let $ac_conn=default
 --source suite/innodb_gcn/include/xa_proc_ac_prepare_verify.inc
@@ -271,7 +271,7 @@ connection default;
 --eval set innodb_commit_seq = $expect_gcn
 --enable_query_log
 
---let $my_xid= 'asgc_b5', '', 1
+--let $my_xid= 'asgc_nobinlog_b5', '', 1
 --let $m_phyid= $m_trx_id, $m_uba
 --let $expect_gcn= $expect_gcn
 --let $expect_csr= ASSIGNED_GCN
@@ -294,16 +294,16 @@ connection default;
 --let $expect_gcn = `select @base_seq + 11100`
 set xa_detach_on_prepare = on;
 
-xa start 'asgc_b6';
+xa start 'asgc_nobinlog_b6';
 insert into t1 values (1);
-xa end 'asgc_b6';
-xa prepare 'asgc_b6';
+xa end 'asgc_nobinlog_b6';
+xa prepare 'asgc_nobinlog_b6';
 
 --echo set innodb_commit_seq = expect_gcn
 --disable_query_log
 --eval set innodb_commit_seq = $expect_gcn
 --enable_query_log
-xa rollback 'asgc_b6';
+xa rollback 'asgc_nobinlog_b6';
 
 connection conn1;
 --let $actual_gcn = query_get_value('show status like "Lizard_current_gcn"', Value, 1)
@@ -318,16 +318,16 @@ connection default;
 --let $expect_gcn = `select @base_seq + 11200`
 set xa_detach_on_prepare = off;
 
-xa start 'asgc_b7';
+xa start 'asgc_nobinlog_b7';
 insert into t1 values (1);
-xa end 'asgc_b7';
-xa prepare 'asgc_b7';
+xa end 'asgc_nobinlog_b7';
+xa prepare 'asgc_nobinlog_b7';
 
 --echo set innodb_commit_seq = expect_gcn
 --disable_query_log
 --eval set innodb_commit_seq = $expect_gcn
 --enable_query_log
-xa rollback 'asgc_b7';
+xa rollback 'asgc_nobinlog_b7';
 
 connection conn1;
 --let $actual_gcn = query_get_value('show status like "Lizard_current_gcn"', Value, 1)

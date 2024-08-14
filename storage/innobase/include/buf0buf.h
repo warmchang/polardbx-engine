@@ -383,7 +383,7 @@ done.
 @return true if success */
 bool buf_page_get_known_nowait(ulint rw_latch, buf_block_t *block,
                                Cache_hint hint, const char *file, ulint line,
-                               mtr_t *mtr);
+                               mtr_t *mtr, ut_d(bool gpp_fetch = false));
 
 /** Given a tablespace id and page number tries to get that page. If the
 page is not in the buffer pool it is not loaded and NULL is returned.
