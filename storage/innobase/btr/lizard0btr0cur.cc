@@ -93,7 +93,7 @@ bool btr_cur_guess_clust_by_gpp(dict_index_t *clust_idx,
   /** Try lock to avoid deadlock. */
   cur_savepoint = mtr_set_savepoint(mtr);
   if (!buf_page_get_known_nowait(rw_latch, block, Cache_hint::MAKE_YOUNG,
-                                 __FILE__, __LINE__, mtr, true)) {
+                                 __FILE__, __LINE__, true, mtr)) {
     goto func_exit;
   }
   savepoints[n_savepoint++] = cur_savepoint;

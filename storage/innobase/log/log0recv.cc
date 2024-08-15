@@ -2732,7 +2732,7 @@ void recv_recover_page_func(
   }
 
   bool success = buf_page_get_known_nowait(
-      RW_X_LATCH, block, Cache_hint::KEEP_OLD, __FILE__, __LINE__, &mtr);
+      RW_X_LATCH, block, Cache_hint::KEEP_OLD, __FILE__, __LINE__, false, &mtr);
   ut_a(success);
 
   buf_block_dbg_add_level(block, SYNC_NO_ORDER_CHECK);

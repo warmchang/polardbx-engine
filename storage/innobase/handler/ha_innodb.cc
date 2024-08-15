@@ -15347,6 +15347,8 @@ bool ha_innobase::get_se_private_data(dd::Table *dd_table, bool reset) {
 
   txn_desc_t *txn_desc = &lizard::txn_sys_t::instance()->txn_desc_dd;
 
+  /* dd_properties shouldn't have secondary indexes. */
+  ut_ad(!reset || dd_table->indexes()->size() == 1);
   for (dd::Index *i : *dd_table->indexes()) {
     i->set_tablespace_id(dict_sys_t::s_dd_dict_space_id);
 
@@ -15369,6 +15371,15 @@ bool ha_innobase::get_se_private_data(dd::Table *dd_table, bool reset) {
     p.set(dd_index_key_strings[DD_INDEX_UBA], txn_desc->undo_ptr);
     p.set(dd_index_key_strings[DD_INDEX_SCN], txn_desc->cmmt.scn);
     p.set(dd_index_key_strings[DD_INDEX_GCN], txn_desc->cmmt.gcn);
+
+#ifdef UNIV_DEBUG
+    /* dd_properties shouldn't have IFT option. */
+    ulonglong IFT_option = 0;
+    if (i->options().exists(lizard::OPTION_IFT)) {
+      i->options().get(lizard::OPTION_IFT, &IFT_option);
+    }
+    ut_ad(IFT_option == 0);
+#endif
   }
 
   assert(n_indexes - n_indexes_old == data.n_indexes);

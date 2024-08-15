@@ -379,11 +379,12 @@ done.
 @param[in] hint Cache_hint::MAKE_YOUNG or Cache_hint::KEEP_OLD
 @param[in] file File name from where it was called.
 @param[in] line Line from where it was called.
+@param[in] gpp_fetch (only used in debug mode)
 @param[in,out] mtr Mini-transaction covering the fetch
 @return true if success */
 bool buf_page_get_known_nowait(ulint rw_latch, buf_block_t *block,
                                Cache_hint hint, const char *file, ulint line,
-                               mtr_t *mtr, ut_d(bool gpp_fetch = false));
+                               bool gpp_fetch [[maybe_unused]], mtr_t *mtr);
 
 /** Given a tablespace id and page number tries to get that page. If the
 page is not in the buffer pool it is not loaded and NULL is returned.

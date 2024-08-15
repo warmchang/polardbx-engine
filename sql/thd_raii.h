@@ -427,4 +427,28 @@ class Enable_derived_merge_guard {
   ulonglong m_save_optimizer_switch{0};
 };
 
+/**
+  RAII class to temporarily disable gpp.
+*/
+class Disable_gpp_guard {
+ public:
+  Disable_gpp_guard(THD *thd) : m_thd(thd) {
+    if (DBUG_EVALUATE_IF("allow_dd_tables_have_gpp", false, true)) {
+      m_stored_gpp = thd->variables.opt_index_format_gpp_enabled;
+      thd->variables.opt_index_format_gpp_enabled = false;
+      m_guarded = true;
+    } else {
+      m_guarded = false;
+    }
+  }
+  ~Disable_gpp_guard() {
+    if (m_guarded) m_thd->variables.opt_index_format_gpp_enabled = m_stored_gpp;
+  }
+
+ private:
+  THD *m_thd;
+  bool m_stored_gpp;
+  bool m_guarded;
+};
+
 #endif  // THD_RAII_INCLUDED

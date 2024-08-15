@@ -4113,8 +4113,9 @@ loop:
                         &mtr, UT_LOCATION_HERE);
 
   if (block != nullptr) {
-    auto success = buf_page_get_known_nowait(
-        RW_X_LATCH, block, Cache_hint::KEEP_OLD, __FILE__, __LINE__, &mtr);
+    auto success =
+        buf_page_get_known_nowait(RW_X_LATCH, block, Cache_hint::KEEP_OLD,
+                                  __FILE__, __LINE__, false, &mtr);
 
     ut_a(success);
 
@@ -4217,7 +4218,7 @@ loop:
 
           success =
               buf_page_get_known_nowait(RW_X_LATCH, block, Cache_hint::KEEP_OLD,
-                                        __FILE__, __LINE__, &mtr);
+                                        __FILE__, __LINE__, false, &mtr);
           ut_a(success);
 
           /* This is a user page (secondary

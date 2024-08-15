@@ -46,10 +46,11 @@ namespace lizard {
 static bool can_gpp(const dict_table_t *table, const dict_index_t *index) {
   return !table->is_compressed() && !table->is_temporary() &&
          !table->is_intrinsic() && !dict_sys_t::is_dd_table_id(table->id) &&
-         !table->is_system_table && !dict_sys->is_permanent_table(table) &&
-         !(index->type & DICT_IBUF) && !(index->type & DICT_SDI) &&
-         !(index->type & DICT_FTS) && !dict_index_is_spatial(index) &&
-         !index->is_clustered();
+         (DBUG_EVALUATE_IF("allow_dd_tables_have_gpp", true,
+                           !table->is_system_table)) &&
+         !dict_sys->is_permanent_table(table) && !(index->type & DICT_IBUF) &&
+         !(index->type & DICT_SDI) && !(index->type & DICT_FTS) &&
+         !dict_index_is_spatial(index) && !index->is_clustered();
 }
 
 static bool can_fba(const dict_table_t *table) {

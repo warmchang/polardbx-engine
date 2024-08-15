@@ -386,8 +386,9 @@ dberr_t PCursor::move_to_user_rec() noexcept {
     block = buf_page_get_gen(page_id_t(page_id.space(), next_page_no),
                              block->page.size, RW_NO_LATCH, nullptr,
                              Page_fetch::SCAN, UT_LOCATION_HERE, m_mtr);
-    bool success = buf_page_get_known_nowait(
-        RW_S_LATCH, block, Cache_hint::KEEP_OLD, __FILE__, __LINE__, m_mtr);
+    bool success =
+        buf_page_get_known_nowait(RW_S_LATCH, block, Cache_hint::KEEP_OLD,
+                                  __FILE__, __LINE__, false, m_mtr);
     btr_leaf_page_release(block, RW_NO_LATCH, m_mtr);
 
     if (!success) {

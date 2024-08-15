@@ -358,7 +358,8 @@ void dd_fill_dict_index_format(const Index_policy &index_policy,
   if (index_policy.has_gpp()) {
     ut_ad(!table->is_compressed());
     ut_ad(!table->is_temporary());
-    ut_ad(!table->is_system_table);
+    ut_ad((DBUG_EVALUATE_IF("allow_dd_tables_have_gpp", true,
+                           !table->is_system_table)));
     ut_ad(!table->is_intrinsic());
 
     ut_ad(!(index->type & DICT_IBUF));

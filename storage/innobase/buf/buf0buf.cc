@@ -4580,7 +4580,7 @@ bool buf_page_optimistic_get(ulint rw_latch, buf_block_t *block,
 
 bool buf_page_get_known_nowait(ulint rw_latch, buf_block_t *block,
                                Cache_hint hint, const char *file, ulint line,
-                               mtr_t *mtr, ut_d(bool gpp_fetch)) {
+                               bool gpp_fetch [[maybe_unused]], mtr_t *mtr) {
   ut_ad(mtr->is_active());
   ut_ad((rw_latch == RW_S_LATCH) || (rw_latch == RW_X_LATCH));
 

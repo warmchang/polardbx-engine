@@ -55,6 +55,7 @@
 #include "sql/sd_notify.h"  // sysd::notify
 #include "sql/sql_class.h"  // THD
 #include "sql/table.h"      // MYSQL_SCHEMA_NAME
+#include "sql/thd_raii.h"
 
 namespace dd {
 
@@ -1071,6 +1072,7 @@ namespace upgrade {
 // Create the target tables for upgrade and migrate the meta data.
 /* purecov: begin inspected */
 bool upgrade_tables(THD *thd) {
+  Disable_gpp_guard disable_gpp_guard(thd);
   if (!bootstrap::DD_bootstrap_ctx::instance().is_dd_upgrade()) return false;
 
   /*
