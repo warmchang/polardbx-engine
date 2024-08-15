@@ -1537,6 +1537,7 @@ char *mysql_data_home = const_cast<char *>(".");
 const char *mysql_real_data_home_ptr = mysql_real_data_home;
 char *opt_protocol_compression_algorithms;
 char server_version[SERVER_VERSION_LENGTH];
+char polardb_version[SERVER_VERSION_LENGTH];
 const char *mysqld_unix_port;
 char *opt_mysql_tmpdir;
 
@@ -10443,6 +10444,7 @@ static int mysql_init_variables() {
   what_to_log = ~(1L << (uint)COM_TIME);
   refresh_version = 1L; /* Increments on each reload */
   my_stpcpy(server_version, MYSQL_SERVER_VERSION);
+  my_stpcpy(polardb_version, POLARDB_VERSION);
   key_caches.clear();
   if (!(dflt_key_cache = get_or_create_key_cache(std::string_view{
             default_key_cache_base.str, default_key_cache_base.length}))) {

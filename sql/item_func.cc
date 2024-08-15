@@ -8450,6 +8450,13 @@ bool Item_func_version::itemize(Parse_context *pc, Item **res) {
   return false;
 }
 
+bool Item_func_polardb_version::itemize(Parse_context *pc, Item **res) {
+  if (skip_itemize(res)) return false;
+  if (super::itemize(pc, res)) return true;
+  pc->thd->lex->set_stmt_unsafe(LEX::BINLOG_STMT_UNSAFE_SYSTEM_FUNCTION);
+  return false;
+}
+
 /**
   Check if schema and table are hidden by NDB engine.
 
@@ -9686,6 +9693,11 @@ longlong Item_func_internal_tablespace_data_free::val_int() {
 Item_func_version::Item_func_version(const POS &pos)
     : Item_static_string_func(pos, NAME_STRING("version()"), server_version,
                               strlen(server_version), system_charset_info,
+                              DERIVATION_SYSCONST) {}
+
+Item_func_polardb_version::Item_func_polardb_version(const POS &pos)
+    : Item_static_string_func(pos, NAME_STRING("polardb_version()"), polardb_version,
+                              strlen(polardb_version), system_charset_info,
                               DERIVATION_SYSCONST) {}
 
 /*

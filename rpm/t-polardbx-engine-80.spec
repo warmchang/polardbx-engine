@@ -1,9 +1,10 @@
+%define polardb_version 'PolarDB V2.0 Distributed Edition'
+%define product_version 2.4.0
+%define release_date %(echo $RELEASE | cut -c 1-8)
 %define version_extra X-Cluster
-%define release_date 20240812
-%define engine_version 8.4.19
-Version: 8.4.19.20240812
 
 Name: t-polardbx-engine-80
+Version: 8.4.19
 Release: %(echo $RELEASE)%{?dist}
 License: GPL
 #URL: http://gitlab.alibaba-inc.com/polardbx/polardbx-engine
@@ -24,7 +25,6 @@ BuildRequires: zlib-devel, snappy-devel, lz4-devel, bzip2-devel
 
 Packager: jianwei.zhao@alibaba-inc.com
 Autoreq: no
-#Source: %{name}-%{version}.tar.gz
 Prefix: /u01/xcluster80_%{release_date}_current
 Summary: PolarDB-X MySQL XCluster 8.0 based on Oracle MySQL 8.0
 
@@ -99,16 +99,16 @@ $CMAKE_BIN .                            \
   -DENABLED_LOCAL_INFILE=1           \
   -DWITH_BOOST="./extra/boost/boost_1_77_0.tar.bz2" \
   -DPOLARDBX_RELEASE_DATE=%{release_date} \
-  -DPOLARDBX_ENGINE_VERSION=%{engine_version} \
+  -DPOLARDBX_ENGINE_VERSION=%{version} \
+  -DPOLARDB_VERSION=%{polardb_version} \
+  -DPOLARDBX_PRODUCT_VERSION=%{product_version} \
   -DPOLARDBX_VERSION_EXTRA=%{version_extra} \
   -DWITH_TESTS=0                     \
   -DWITH_UNIT_TESTS=0
 
-make -j `cat /proc/cpuinfo | grep processor| wc -l`
-
 %install
 cd $OLDPWD/../
-make DESTDIR=$RPM_BUILD_ROOT install
+make DESTDIR=$RPM_BUILD_ROOT install -j `cat /proc/cpuinfo | grep processor| wc -l`
 # releaseNote.txt
 # cp releaseNote.txt $RPM_BUILD_ROOT%{prefix}
 find $RPM_BUILD_ROOT -name '.git' -type d -print0|xargs -0 rm -rf

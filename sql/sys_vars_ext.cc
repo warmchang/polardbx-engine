@@ -73,6 +73,7 @@ char innodb_version[SERVER_VERSION_LENGTH];
 static uint rds_version = 0;
 static char *polardbx_release_date_ptr = NULL;
 static char *polardbx_engine_version_ptr = NULL;
+static char *polardbx_product_version_ptr = NULL;
 
 int32 opt_rpc_port = DEFAULT_RPC_PORT;
 bool opt_enable_polarx_rpc = true;
@@ -86,6 +87,8 @@ ulonglong opt_import_tablespace_iterator_interval_ms =
   @returns void.
 */
 void print_build_info() {
+  printf("PolarDB Version: %s\n", POLARDB_VERSION);
+  printf("PolarDB Product Version: %s\n", POLARDBX_PRODUCT_VERSION);
   printf("Engine Malloc Library: %s\n", MALLOC_LIBRARY);
   printf("Engine Version: %s\n", POLARDBX_ENGINE_VERSION);
   printf("Engine Release Date: %s\n", POLARDBX_RELEASE_DATE);
@@ -152,10 +155,15 @@ static Sys_var_charptr Sys_polardbx_release_date(
     READ_ONLY GLOBAL_VAR(polardbx_release_date_ptr), NO_CMD_LINE, IN_SYSTEM_CHARSET,
     DEFAULT(POLARDBX_RELEASE_DATE));
 
-static Sys_var_charptr Sys_polardbx_release_version(
+static Sys_var_charptr Sys_polardbx_engine_version(
     "polardbx_engine_version", "PolarDB-X engine version",
     READ_ONLY GLOBAL_VAR(polardbx_engine_version_ptr), NO_CMD_LINE, IN_SYSTEM_CHARSET,
     DEFAULT(POLARDBX_ENGINE_VERSION));
+
+static Sys_var_charptr Sys_polardbx_product_version(
+    "polardbx_product_version", "PolarDB-X product version",
+    READ_ONLY GLOBAL_VAR(polardbx_product_version_ptr), NO_CMD_LINE, IN_SYSTEM_CHARSET,
+    DEFAULT(POLARDBX_PRODUCT_VERSION));
 
 static Sys_var_deprecated_alias Sys_rds_release_date(
     "rds_release_date", Sys_polardbx_release_date);

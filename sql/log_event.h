@@ -129,6 +129,7 @@ typedef ulonglong sql_mode_t;
 struct db_worker_hash_entry;
 
 extern "C" MYSQL_PLUGIN_IMPORT char server_version[SERVER_VERSION_LENGTH];
+extern "C" MYSQL_PLUGIN_IMPORT char polardb_version[SERVER_VERSION_LENGTH];
 #if defined(MYSQL_SERVER)
 int ignored_error_code(int err_code);
 #endif

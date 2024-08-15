@@ -1518,6 +1518,7 @@ static const std::pair<const char *, Create_func *> func_array[] = {
     {"PERIOD_ADD", SQL_FN(Item_func_period_add, 2)},
     {"PERIOD_DIFF", SQL_FN(Item_func_period_diff, 2)},
     {"PI", SQL_FN(Item_func_pi, 0)},
+    {"POLARDB_VERSION", SQL_FN(Item_func_polardb_version, 0)},
     {"POW", SQL_FN(Item_func_pow, 2)},
     {"POWER", SQL_FN(Item_func_pow, 2)},
     {"PS_CURRENT_THREAD_ID", SQL_FN(Item_func_pfs_current_thread_id, 0)},
