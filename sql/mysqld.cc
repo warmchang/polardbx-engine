@@ -8311,6 +8311,8 @@ int mysqld_main(int argc, char **argv)
   check_binlog_cache_size(nullptr);
   check_binlog_stmt_cache_size(nullptr);
 
+  xpaxos_set_privilege_checks_user();
+
   binlog_unsafe_map_init();
 
   if (!opt_initialize) {
@@ -8320,23 +8322,6 @@ int mysqld_main(int argc, char **argv)
       }
     }
   }
-
-  //  ReplicaInitializer replica_initializer(opt_initialize,
-  //  opt_skip_replica_start,
-  //                                         rpl_channel_filters,
-  //                                         &opt_replica_skip_errors);
-  //
-  //  /* If running with --initialize, do not start replication. */
-  //  if (!opt_initialize &&
-  //      !opt_consensus_force_recovery &&
-  //      consensus_log_manager.init_consensus_info())
-  //    unireg_abort(MYSQLD_ABORT_EXIT);
-  //
-  //  int consensus_error = consensus_log_manager.init_service();
-  //  if (consensus_error < 0)
-  //    unireg_abort(MYSQLD_ABORT_EXIT);
-  //  else if (consensus_error > 0)
-  //    unireg_abort(MYSQLD_SUCCESS_EXIT);
 
 #ifdef WITH_LOCK_ORDER
   if (!opt_initialize) {

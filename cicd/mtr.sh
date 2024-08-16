@@ -14,7 +14,6 @@ if [ "${TEST_TYPE_ENUM}" -eq "${DAILY_REGRESSION}" ] ||
     --max-test-fail=0 \
     --retry=2 \
     --skip-ndb \
-    --skip-rpl \
     --skip-combinations \
     --nounit-tests \
     --parallel="${PARALLEL}" \

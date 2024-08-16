@@ -1175,14 +1175,12 @@ bool reset_master(THD *thd, bool unlock_global_read_lock) {
     */
     ret = mysql_bin_log.reset_logs(thd);
 
-    /// @attention a hack to pass mysql-test
-#ifndef NDEBUG
+    //append empty log for crash recover
     if (!ret && thd->variables.opt_consensus_safe_for_reset_master) {
       alisql::LogEntry entry1;
       consensus_ptr->getLog()->getEmptyEntry(entry1);
       consensus_ptr->replicateLog(entry1);
     }
-#endif
 
   } else {
     global_sid_lock->wrlock();

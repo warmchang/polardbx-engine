@@ -1183,6 +1183,7 @@ int ConsensusLogManager::wait_leader_degraded(uint64 term, uint64 index) {
     goto end;
   }
   if (!opt_cluster_log_type_instance) {
+    stop_slave_threads();
     start_consensus_apply_threads();
   }
 
@@ -1307,8 +1308,12 @@ int ConsensusLogManager::wait_follower_upgraded(uint64 term, uint64 index) {
     error = 3;
     goto end;
   }
-  consensus_guard.unlock();
 
+  if (!opt_cluster_log_type_instance) {
+    start_slave_threads();
+  }
+  consensus_guard.unlock();
+ 
   // switch event scheduler on
   if (opt_configured_event_scheduler == Events::EVENTS_ON) {
     int err_no = 0;

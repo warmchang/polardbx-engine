@@ -1623,6 +1623,10 @@ int Binlog_sender::wait_commit_index_update(my_off_t log_pos, uint64_t index) {
   //TODO@yanhua, need use strong check like check_exec_consensus_log_end_condition
   while (consensus_ptr->checkCommitIndex(
              index - 1, consensus_log_manager.get_current_term()) < index) {
+
+    if (unlikely(flush_net()))
+      return 1;
+
     my_sleep(opt_consensus_check_commit_index_interval);
     if (unlikely(m_thd->killed)) return 1;
     // send heartbeat event

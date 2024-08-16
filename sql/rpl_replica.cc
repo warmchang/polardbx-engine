@@ -504,15 +504,14 @@ void ReplicaInitializer::print_channel_info() const {
 }
 
 void ReplicaInitializer::start_replication_threads(bool skip_replica_start) {
-  /* Do not start non-xpaxos channel before consensus module is inited if
-   * log_slave_updates is set to ON. */
-  if (!m_opt_skip_replica_start && !skip_replica_start &&
-      !opt_log_replica_updates) {
+  if (!m_opt_skip_replica_start && !skip_replica_start) {
     start_threads();
   }
 }
 
 void ReplicaInitializer::start_threads() {
+  //XPaxos should not arrive here
+  ut_a(false);
   /*
     Loop through the channel_map and start slave threads for each channel.
   */
@@ -521,8 +520,7 @@ void ReplicaInitializer::start_threads() {
     Master_info *mi = it->second;
 
     /* If server id is not set, start_slave_thread() will say it */
-    if (Master_info::is_configured(mi) && mi->rli->inited &&
-        !Multisource_info::is_xpaxos_channel(mi)) {
+    if (Master_info::is_configured(mi) && mi->rli->inited) {
       /* same as in start_slave() cache the global var values into rli's
        * members */
       mi->rli->opt_replica_parallel_workers = opt_mts_replica_parallel_workers;
@@ -2167,7 +2165,7 @@ bool start_slave_threads(bool need_lock_slave, bool wait_for_start,
 
       if (opt_recover_snapshot)
         xp::info(ER_XP_APPLIER)
-            << "start slave threads to get the consensus point failed";
+            << "start slave threads to get the consensus point failedfor " << mi->get_channel();
     }
   } else if (opt_recover_snapshot) {
     mysql_mutex_lock(&mi->rli->run_lock);
@@ -2194,6 +2192,10 @@ bool start_slave_threads(bool need_lock_slave, bool wait_for_start,
       terminate_slave_threads(mi, thread_mask & (SLAVE_IO | SLAVE_MONITOR),
                               rpl_stop_replica_timeout, need_lock_slave);
   }
+  if (!is_error)
+    xp::info(ER_XP_APPLIER) << "succ to start slave threads for '"
+                            << mi->get_channel() << "'";
+
   return is_error;
 }
 

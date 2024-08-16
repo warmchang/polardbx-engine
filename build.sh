@@ -367,7 +367,8 @@ else
       -DWITH_VALGRIND=$valg              \
       -DWITH_BOOST="./extra/boost/boost_1_77_0.tar.bz2" \
       -DDOWNLOAD_BOOST=0                \
-      -DWITH_TESTS=0
+      -DWITH_UNIT_TESTS=$debug           \
+      -DWITH_TESTS=$debug
 fi
 
 make -j $(nproc) install
