@@ -98,9 +98,15 @@ bool btr_cur_guess_clust_by_gpp(dict_index_t *clust_idx,
   }
   savepoints[n_savepoint++] = cur_savepoint;
 
-  if (!fil_page_index_page_check(buf_block_get_frame(block)) ||
-      btr_page_get_index_id(buf_block_get_frame(block)) != clust_idx->id ||
-      !page_is_leaf(buf_block_get_frame(block))) {
+  if (!fil_page_index_page_check(
+          buf_block_get_frame(block)) /* page is not index page */
+      || btr_page_get_index_id(buf_block_get_frame(block)) !=
+             clust_idx->id /* page is not clust index page */
+      || !page_is_leaf(buf_block_get_frame(block)) /* page is not leaf page */
+      || !page_has_siblings(
+             buf_block_get_frame(block)) /* page has siblings (for excluding
+                                            discarded root page in DDL) */
+  ) {
     goto func_exit;
   }
 

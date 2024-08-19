@@ -5,6 +5,7 @@
 
 --source include/not_valgrind.inc
 --source include/have_lowercase0.inc
+--source include/have_debug.inc
 
 # ------------------------------------------------------------
 # Tables created on earlier version with following

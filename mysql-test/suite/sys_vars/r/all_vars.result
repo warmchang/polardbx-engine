@@ -355,6 +355,8 @@ physical_backfill_opt
 physical_backfill_opt
 polardbx_engine_version
 polardbx_engine_version
+polardbx_product_version
+polardbx_product_version
 polardbx_release_date
 polardbx_release_date
 polarx_rpc_auto_cpu_affinity

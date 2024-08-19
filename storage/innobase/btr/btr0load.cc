@@ -1252,6 +1252,8 @@ dberr_t Btree_load::load_root_page(page_no_t last_page_no) noexcept {
     page_loader.copy_all(last_page);
     page_loader.finish();
 
+    /* Make sure the last page has no siblings. */
+    ut_ad(!page_has_siblings(last_page));
     /** To indicate the index page is freed from the b-tree, we reset the index
      * id to 0. */
     lizard::btr_page_reset_index_id(last_block);

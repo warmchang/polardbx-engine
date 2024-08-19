@@ -368,6 +368,10 @@ static inline ulint page_rec_get_heap_no(
 @param[in]      page    page frame
 @return true if the page is a root page of an index */
 [[nodiscard]] static inline bool page_is_root(const page_t *page);
+/** Determine whether a page has any siblings.
+@param[in]      page    page frame
+@return true if the page has any siblings */
+[[nodiscard]] static inline bool page_has_siblings(const page_t *page);
 /** Determine whether the page contains garbage.
  @return true if the page contains garbage (PAGE_GARBAGE is not 0) */
 [[nodiscard]] static inline bool page_has_garbage(
