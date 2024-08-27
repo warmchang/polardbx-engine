@@ -1380,14 +1380,8 @@ struct dict_index_t {
 
   /** Check whether index can be used by transaction
   @param[in] trx                transaction*/
-  bool is_usable(const trx_t *trx);
-
-  /** Check whether index can be used by an as-of query
-  @param[in] trx            transaction
-  @param[in] as_of_scn      as of scn
-  @param[in] as_of_gcn      as of gcn */
-  bool is_usable_as_of(const trx_t *trx,
-                       lizard::Snapshot_vision *snapshot_vision);
+  bool is_usable(const trx_t *trx,
+                 const lizard::Snapshot_vision *snapshot_vision);
 
   /** Check whether index has any instantly added columns.
   Possible only if table has INSTANT ADD columns and is upgraded.

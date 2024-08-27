@@ -146,8 +146,9 @@ dberr_t dd_index_init_txn_desc(dict_index_t *index, trx_t *trx) {
   @param[in]      trx         transaction.
   @return         true if visible
 */
-bool dd_index_modificatsion_visible(dict_index_t *index, const trx_t *trx,
-                                    lizard::Snapshot_vision *snapshot_vision) {
+bool dd_index_modification_visible(
+    dict_index_t *index, const trx_t *trx,
+    const lizard::Snapshot_vision *snapshot_vision) {
   txn_rec_t rec_txn;
   ut_ad(trx);
 
@@ -191,18 +192,18 @@ bool dd_index_modificatsion_visible(dict_index_t *index, const trx_t *trx,
 
 judge:
 
-  if (snapshot_vision) {
+  if (snapshot_vision && likely(srv_flashback_query_enable)) {
     return snapshot_vision->modification_visible(&rec_txn);
   } else {
-    ut_ad(!trx->vision.is_asof());
-    ut_ad(trx->vision.is_active());
+    ut_ad(!trx->vision.is_active() || !trx->vision.is_asof());
     /**
       When is_usable() is executed concurrently, SCN and UBA will be not
       consistent, the vision judgement only depend on real SCN, UBA state
       will be used to code defense, so here omit the check.
     */
-    return trx->vision.modifications_visible(&rec_txn, index->table->name,
-                                             false);
+    return (
+        !trx->vision.is_active() ||
+        trx->vision.modifications_visible(&rec_txn, index->table->name, false));
   }
 }
 

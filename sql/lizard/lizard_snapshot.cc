@@ -24,6 +24,8 @@ this program; if not, write to the Free Software Foundation, Inc.,
 
 *****************************************************************************/
 
+/* #define TURN_MVCC_SEARCH_TO_AS_OF */
+
 #include "sql/lizard/lizard_service.h"
 #include "sql/lizard/lizard_snapshot.h"
 
@@ -446,10 +448,10 @@ bool evaluate_snapshot(THD *thd, const LEX *lex) {
 
   for (TABLE *table = thd->open_tables; table; table = table->next) {
     assert(table->pos_in_table_list);
-    assert(!table->table_snapshot.is_activated());
+    assert(!table->table_snapshot.is_activated() || thd->sp_runtime_ctx);
 
     Snapshot_hint *hint = table->pos_in_table_list->snapshot_hint;
-    if (hint) {
+    if (hint && !table->table_snapshot.is_activated()) {
       error = hint->evoke_vision(table, thd);
       if (error) {
         table->file->print_error(error, 0);
@@ -469,6 +471,10 @@ Simulate asof syntax by adding Item onto Table_snapshot.
 void simulate_snapshot_clause(THD *thd, Table_ref *all_tables) {
   Item *item = nullptr;
   assert(innodb_hton && innodb_hton->ext.load_gcn());
+
+  if (thd->sp_runtime_ctx) {
+    return;
+  }
 
   /** If setting innodb_current_snapshot_gcn, then a view is generated
   internally */
@@ -493,6 +499,19 @@ void simulate_snapshot_clause(THD *thd, Table_ref *all_tables) {
       }
     }
   }
+#if defined TURN_MVCC_SEARCH_TO_AS_OF
+  else {
+    Table_ref *table;
+    for (table = all_tables; table; table = table->next_global) {
+      if (table->snapshot_hint == nullptr) {
+        item = new (thd->mem_root)
+            Item_int((ulonglong)innodb_hton->ext.load_scn());
+        Snapshot_hint *hint = new (thd->mem_root) Snapshot_scn_hint(item);
+        table->snapshot_hint = hint;
+      }
+    }
+  }
+#endif
 }
 
 int Table_snapshot::exchange_timestamp_vision_to_scn_vision(

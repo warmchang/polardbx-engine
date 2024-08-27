@@ -263,10 +263,10 @@ bool Instant_ddl_impl<Table>::commit_instant_ddl() {
       ut_ad(dd_table_has_instant_cols(m_new_dd_tab->table()));
 
       for (auto dd_index : *m_new_dd_tab->indexes()) {
-        dd::Properties &p = dd_index->se_private_data();
-        p.set(dd_index_key_strings[DD_INDEX_TRX_ID], m_trx->id);
-        p.set(dd_index_key_strings[DD_INDEX_UBA], m_trx->txn_desc.undo_ptr);
-        p.set(dd_index_key_strings[DD_INDEX_SCN], m_trx->txn_desc.cmmt.scn);
+        dd_index_set_se_private_for_system_cols(
+            dd_index, m_trx->id,
+            txn_info_t{m_trx->txn_desc.cmmt.scn, m_trx->txn_desc.undo_ptr,
+                       m_trx->txn_desc.cmmt.gcn});
       }
 
       row_mysql_lock_data_dictionary(m_trx, UT_LOCATION_HERE);

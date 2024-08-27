@@ -10665,6 +10665,7 @@ int ha_innobase::change_active_index(
                 InnoDB */
 {
   DBUG_TRACE;
+  const lizard::Snapshot_vision *snapshot_vision = nullptr;
 
   ut_ad(m_user_thd == ha_thd());
   ut_a(m_prebuilt->trx == thd_to_trx(m_user_thd));
@@ -10687,7 +10688,9 @@ int ha_innobase::change_active_index(
     return 1;
   }
 
-  m_prebuilt->index_usable = m_prebuilt->index->is_usable(m_prebuilt->trx);
+  snapshot_vision = lizard::row_prebuilt_get_snapshot_vision(m_prebuilt);
+  m_prebuilt->index_usable =
+      m_prebuilt->index->is_usable(m_prebuilt->trx, snapshot_vision);
 
   if (!m_prebuilt->index_usable) {
     if (m_prebuilt->index->is_corrupted()) {
@@ -10719,7 +10722,8 @@ int ha_innobase::change_active_index(
 
     /* The caller seems to ignore this.  Thus, we must check
     this again in row_search_for_mysql(). */
-    return HA_ERR_TABLE_DEF_CHANGED;
+    return snapshot_vision ? HA_ERR_AS_OF_TABLE_DEF_CHANGED
+                           : HA_ERR_TABLE_DEF_CHANGED;
   }
 
   ut_a(m_prebuilt->search_tuple != nullptr);
@@ -15360,16 +15364,15 @@ bool ha_innobase::get_se_private_data(dd::Table *dd_table, bool reset) {
 
     p.set(dd_index_key_strings[DD_INDEX_ROOT], n_pages++);
     p.set(dd_index_key_strings[DD_INDEX_ID], ++n_indexes);
-    p.set(dd_index_key_strings[DD_INDEX_TRX_ID], 0);
     p.set(dd_index_key_strings[DD_INDEX_SPACE_ID], dict_sys_t::s_dict_space_id);
     p.set(dd_index_key_strings[DD_TABLE_ID], n_tables);
 
     /** For data dict tables, it's always visible, and
     dict_index_t::is_usable return true if it found DD_INDEX_TRX_ID == 0.
     Here we give it a fake number. */
-    p.set(dd_index_key_strings[DD_INDEX_UBA], txn_desc->undo_ptr);
-    p.set(dd_index_key_strings[DD_INDEX_SCN], txn_desc->cmmt.scn);
-    p.set(dd_index_key_strings[DD_INDEX_GCN], txn_desc->cmmt.gcn);
+    dd_index_set_se_private_for_system_cols(
+        i, 0,
+        txn_info_t{txn_desc->cmmt.scn, txn_desc->undo_ptr, txn_desc->cmmt.gcn});
 
 #ifdef UNIV_DEBUG
     /* dd_properties shouldn't have IFT option. */
@@ -16942,6 +16945,7 @@ int ha_innobase::records(ha_rows *num_rows) /*!< out: number of rows */
 
   dberr_t ret;
   ulint n_rows = 0; /* Record count in this view */
+  const lizard::Snapshot_vision *snapshot_vision;
 
   update_thd();
 
@@ -16975,11 +16979,13 @@ int ha_innobase::records(ha_rows *num_rows) /*!< out: number of rows */
 
   ut_ad(index->is_clustered());
 
-  m_prebuilt->index_usable = index->is_usable(m_prebuilt->trx);
+  snapshot_vision = lizard::row_prebuilt_get_snapshot_vision(m_prebuilt);
+  m_prebuilt->index_usable = index->is_usable(m_prebuilt->trx, snapshot_vision);
 
   if (!m_prebuilt->index_usable) {
     *num_rows = HA_POS_ERROR;
-    return HA_ERR_TABLE_DEF_CHANGED;
+    return snapshot_vision ? HA_ERR_AS_OF_TABLE_DEF_CHANGED
+                           : HA_ERR_TABLE_DEF_CHANGED;
   }
 
   /* (Re)Build the m_prebuilt->mysql_template if it is null to use
@@ -17052,6 +17058,7 @@ ha_rows ha_innobase::records_in_range(
   page_cur_mode_t mode1;
   page_cur_mode_t mode2;
   mem_heap_t *heap;
+  const lizard::Snapshot_vision *snapshot_vision = nullptr;
 
   DBUG_TRACE;
 
@@ -17082,8 +17089,10 @@ ha_rows ha_innobase::records_in_range(
     n_rows = HA_ERR_INDEX_CORRUPT;
     goto func_exit;
   }
-  if (!index->is_usable(m_prebuilt->trx)) {
-    n_rows = HA_ERR_TABLE_DEF_CHANGED;
+  snapshot_vision = lizard::row_prebuilt_get_snapshot_vision(m_prebuilt);
+  if (!index->is_usable(m_prebuilt->trx, snapshot_vision)) {
+    n_rows = snapshot_vision ? HA_ERR_AS_OF_TABLE_DEF_CHANGED
+                             : HA_ERR_TABLE_DEF_CHANGED;
     goto func_exit;
   }
 
@@ -18510,6 +18519,7 @@ int ha_innobase::check(THD *thd,                /*!< in: user thread handle */
   bool is_ok = true;
   ulint old_isolation_level;
   dberr_t ret;
+  const lizard::Snapshot_vision *snapshot_vision = nullptr;
 
   DBUG_TRACE;
   assert(thd == ha_thd());
@@ -18595,7 +18605,9 @@ int ha_innobase::check(THD *thd,                /*!< in: user thread handle */
     access to the clustered index. */
     m_prebuilt->index = index;
 
-    m_prebuilt->index_usable = m_prebuilt->index->is_usable(m_prebuilt->trx);
+    snapshot_vision = lizard::row_prebuilt_get_snapshot_vision(m_prebuilt);
+    m_prebuilt->index_usable =
+        m_prebuilt->index->is_usable(m_prebuilt->trx, snapshot_vision);
 
     if (!m_prebuilt->index_usable) {
       if (m_prebuilt->index->is_corrupted()) {
@@ -19257,7 +19269,7 @@ int ha_innobase::external_lock(THD *thd, /*!< in: handle to the user thread */
     ++trx->will_lock;
   }
 
-  dberr_t error = lizard::prebuilt_unbind_flashback_query(m_prebuilt);
+  dberr_t error = lizard::row_prebuilt_unbind_flashback_query(m_prebuilt);
   if (error != DB_SUCCESS) {
     /** Lizard: Just call **my_error** here because only lock errors will
     be expected, see unlock_external, handler::ha_external_lock. */
@@ -23656,7 +23668,7 @@ static MYSQL_SYSVAR_ULONG(scn_history_interval,
                           lizard::SRV_SCN_HISTORY_INTERVAL_MAX, 0);
 
 static MYSQL_SYSVAR_BOOL(rds_flashback_enabled,
-                         lizard::srv_force_normal_query_if_fbq,
+                         lizard::srv_flashback_query_enable,
                          PLUGIN_VAR_OPCMDARG,
                          "Whether to enable use as of query (true by default)",
                          NULL, NULL, true);
@@ -24941,5 +24953,13 @@ void ha_innobase::get_create_info(const char *table_name,
       create_info->tablespace = nullptr;
 
     dd_table_close(dict_table, m_thd, nullptr, false);
+  }
+}
+
+void ha_innobase::change_table_ptr(TABLE *table_arg, TABLE_SHARE *share) {
+  handler::change_table_ptr(table_arg, share);
+
+  if (m_prebuilt && m_prebuilt->m_mysql_table) {
+    m_prebuilt->m_mysql_table = table_arg;
   }
 }

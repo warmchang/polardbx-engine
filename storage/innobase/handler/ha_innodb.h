@@ -703,6 +703,16 @@ class ha_innobase : public handler {
                                HA_CREATE_INFO *create_info) override;
 
   virtual bool support_index_format() const override { return true; }
+
+  /**
+    Change the internal TABLE_SHARE pointer.
+
+    @param table_arg    TABLE object
+    @param share        New share to use
+
+    @note Is used in error handling in ha_delete_table.
+  */
+  virtual void change_table_ptr(TABLE *table_arg, TABLE_SHARE *share) override;
 };
 
 struct trx_t;

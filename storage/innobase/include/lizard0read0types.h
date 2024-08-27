@@ -32,8 +32,6 @@ this program; if not, write to the Free Software Foundation, Inc.,
 #ifndef lizard0read0types_h
 #define lizard0read0types_h
 
-/* #define TURN_MVCC_SEARCH_TO_AS_OF */
-
 #include <algorithm>
 
 #include "ut0lst.h"
@@ -142,14 +140,14 @@ class Vision {
   /** Reset as initialzed values */
   void reset();
 
-  void store_snapshot_vision(Snapshot_vision *v) {
+  void store_snapshot_vision(const Snapshot_vision *v) {
     ut_ad(v->is_vision());
     m_snapshot_vision = v;
   }
 
   void release_snapshot_vision() { m_snapshot_vision = nullptr; }
 
-  Snapshot_vision *snapshot_vision() const { return m_snapshot_vision; }
+  const Snapshot_vision *snapshot_vision() const { return m_snapshot_vision; }
 
   bool is_asof_gcn() const {
     return m_snapshot_vision &&
@@ -194,7 +192,7 @@ class Vision {
   bool m_active;
 
   /** Snapshot vision used for asof query. */
-  Snapshot_vision *m_snapshot_vision;
+  const Snapshot_vision *m_snapshot_vision;
 
   UT_LIST_NODE_T(Vision) list;
 

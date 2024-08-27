@@ -4882,7 +4882,7 @@ dberr_t row_search_mvcc(byte *buf, page_cur_mode_t mode,
       trx_assign_read_view(trx);
 
       /* convert ctx to innobase, only set once */
-      if ((err = lizard::prebuilt_bind_flashback_query(prebuilt)) !=
+      if ((err = lizard::row_prebuilt_bind_flashback_query(prebuilt)) !=
           DB_SUCCESS) {
         goto as_of_error;
       }

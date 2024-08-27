@@ -45,6 +45,8 @@ this program; if not, write to the Free Software Foundation, Inc.,
 #include "lizard0undo0types.h"
 #include "lizard0dd0policy.h"
 
+#include "sql/dd/types/partition_index.h"
+
 struct dict_table_t;
 struct dict_index_t;
 
@@ -166,8 +168,9 @@ bool dd_index_fill_txn_desc(dict_index_t *index, const dd::Properties &p);
   @param[in]      trx         transaction.
   @return         true if visible
 */
-bool dd_index_modificatsion_visible(dict_index_t *index, const trx_t *trx,
-                                    lizard::Snapshot_vision *snapshot_vision);
+bool dd_index_modification_visible(
+    dict_index_t *index, const trx_t *trx,
+    const lizard::Snapshot_vision *snapshot_vision);
 
 /**
  * Return prefined dict_table_t GPP_NO column.

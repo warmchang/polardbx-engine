@@ -61,14 +61,6 @@ class VisionContainer {
     ~VisionList();
 
     /**
-      Add a element
-
-      @retval		a new empty vision obj
-      @deprecated    use add_element instead
-    */
-    inline Vision *new_element();
-
-    /**
       Add an element
 
       @param[in]		the element will be added

@@ -111,7 +111,7 @@ class Snapshot_hint {
 
   void set_flashback_area(bool value) { m_flashback_area = value; }
 
-  bool get_flashback_area() { return m_flashback_area; }
+  bool get_flashback_area() const { return m_flashback_area; }
 
  protected:
   Item *m_item;
@@ -521,6 +521,8 @@ class Table_snapshot {
 
   /** Return current vision. */
   Snapshot_vision *vision() { return m_vision; }
+
+  const Snapshot_vision *vision() const { return m_vision; }
 
   /** Activate a vision that can be used by innodb later.
   return true if error. */

@@ -1605,5 +1605,27 @@ void get_field_types(const dd::Table *dd_tab, const dict_table_t *m_table,
                      ulint &prtype);
 #endif
 
+/** Set se private data for DD::Index or DD::Partition_index
+@param[in,out]  dd_index        dd::Index
+@param[in]      trx_id          trx ID
+@param[in]      txn_info        {scn, gcn, uba} */
+template <typename Index>
+void dd_index_set_se_private_for_system_cols(Index *dd_index,
+                                             const trx_id_t trx_id,
+                                             const txn_info_t &txn_info) {
+  dd::Properties &p = dd_index->se_private_data();
+  p.set(dd_index_key_strings[DD_INDEX_TRX_ID], trx_id);
+  p.set(dd_index_key_strings[DD_INDEX_UBA], txn_info.undo_ptr);
+  p.set(dd_index_key_strings[DD_INDEX_SCN], txn_info.scn);
+  p.set(dd_index_key_strings[DD_INDEX_GCN], txn_info.gcn);
+}
+
+template void dd_index_set_se_private_for_system_cols<dd::Index>(
+    dd::Index *dd_index, const trx_id_t trx_id, const txn_info_t &txn_info);
+
+template void dd_index_set_se_private_for_system_cols<dd::Partition_index>(
+    dd::Partition_index *dd_index, const trx_id_t trx_id,
+    const txn_info_t &txn_info);
+
 #include "dict0dd.ic"
 #endif

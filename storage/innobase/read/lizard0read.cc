@@ -90,34 +90,6 @@ VisionContainer::VisionList::~VisionList() {
 }
 
 /**
-  Add a element
-
-  @retval		  a new empty vision obj
-  @deprecated    use add_element instead
-*/
-Vision *VisionContainer::VisionList::new_element() {
-  Vision *vision = nullptr;
-  vision = ut::new_<Vision>();
-
-  if (vision == nullptr) {
-    lizard_error(ER_LIZARD) << "Failed to allocate vision";
-    return nullptr;
-  }
-
-  vision->m_up_limit_id = gcs_load_min_active_trx_id();
-
-  ut_ad(!m_mutex.is_owned());
-
-  mutex_enter(&m_mutex);
-  UT_LIST_ADD_LAST(m_vision_list, vision);
-  vision->m_snapshot_scn = gcs_load_scn();
-  vision->m_active = true;
-  mutex_exit(&m_mutex);
-
-  return vision;
-}
-
-/**
   Add an element
 
   @param[in]  the element will be added
