@@ -1275,9 +1275,18 @@ void ha_innopart::set_partition(uint part_id) {
   }
   if (m_pcur_parts != nullptr) {
     m_prebuilt->pcur = &m_pcur_parts[m_pcur_map[part_id]];
+
+    if (m_prebuilt->pcur->m_cleanout == nullptr) {
+      m_prebuilt->pcur->m_cleanout = ut::new_<lizard::Scan_cleanout>();
+    }
   }
   if (m_clust_pcur_parts != nullptr) {
     m_prebuilt->clust_pcur = &m_clust_pcur_parts[m_pcur_map[part_id]];
+
+    if (m_prebuilt->clust_pcur->m_cleanout == nullptr) {
+      m_prebuilt->clust_pcur->m_cleanout = ut::new_<lizard::Scan_cleanout>();
+    }
+    
   }
 
   /* Restore all fields stored in m_parts[part_id] to corresponding m_prebuilt's
@@ -1618,8 +1627,10 @@ inline void ha_innopart::destroy_record_priority_queue_for_parts() {
     used_parts = bitmap_bits_set(&m_part_info->read_partitions);
     for (uint i = 0; i < used_parts; i++) {
       m_pcur_parts[i].free_rec_buf();
+      m_pcur_parts[i].free_cleanout();
       if (m_clust_pcur_parts != nullptr) {
         m_clust_pcur_parts[i].free_rec_buf();
+        m_clust_pcur_parts[i].free_cleanout();
       }
     }
     ut::free(m_pcur_parts);

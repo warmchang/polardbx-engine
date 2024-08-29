@@ -1177,7 +1177,7 @@ bool row_sel_optimistic_guess_clust(dict_index_t *clust_idx,
                                         clust_pcur, sec_offsets, mode, gpp_no_offset ,mtr);
 
   /* Try to add the cursor into scan_cleanout. */
-  if(!hit && scursor && pcur->m_cleanout) {
+  if(!hit && scursor && pcur->m_cleanout){
     *scursor = pcur->m_cleanout ->acquire_for_gpp(pcur, gpp_no_offset);
   }
   

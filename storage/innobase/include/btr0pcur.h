@@ -237,6 +237,13 @@ struct btr_pcur_t {
     m_old_rec_buf = nullptr;
   }
 
+  void free_cleanout() {
+    if (m_cleanout != nullptr) {
+      ut::delete_(m_cleanout);
+      m_cleanout = nullptr;
+    }
+  }
+
 #ifndef UNIV_HOTBACKUP
 
   /** Gets the rel_pos field for a cursor whose position has been stored.
