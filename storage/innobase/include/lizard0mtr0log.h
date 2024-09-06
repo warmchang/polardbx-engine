@@ -35,8 +35,15 @@ this program; if not, write to the Free Software Foundation, Inc.,
 
 #include "univ.i"
 #include <cstdint>
+#include "data0type.h"
 
 class dict_index_t;
+
+constexpr size_t REDO_SYS_FIELDS_LEN =
+    14 /* 5(trx_id pos len) + 9(trx_id len)*/ + DATA_ROLL_PTR_LEN;
+
+constexpr size_t REDO_LIZARD_FIELDS_LEN =
+    14 /* 5(scn pos len) + 9(scn len)*/ + DATA_UNDO_PTR_LEN + DATA_GCN_ID_LEN;
 
 namespace lizard {
 

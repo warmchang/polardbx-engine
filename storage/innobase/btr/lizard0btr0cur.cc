@@ -37,6 +37,7 @@ this program; if not, write to the Free Software Foundation, Inc.,
 #include "lizard0dbg.h"
 #include "lizard0dict.h"
 #include "lizard0dict0mem.h"
+#include "lizard0mtr0log.h"
 #include "lizard0row.h"
 
 namespace lizard {
@@ -183,9 +184,7 @@ void btr_cur_upd_lizard_fields_clust_rec_log(const rec_t *rec,
   ut_ad(mtr);
 
   if (!mlog_open_and_write_index(mtr, rec, index, MLOG_REC_CLUST_LIZARD_UPDATE,
-                                 1 + 1 + DATA_SCN_ID_LEN + DATA_UNDO_PTR_LEN +
-                                     DATA_GCN_ID_LEN + 14 + 2,
-                                 log_ptr)) {
+                                 REDO_LIZARD_FIELDS_LEN + 2, log_ptr)) {
     return;
   }
 

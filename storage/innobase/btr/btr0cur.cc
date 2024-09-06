@@ -53,6 +53,7 @@ this program; if not, write to the Free Software Foundation, Inc.,
 
 #include <assert.h>
 
+#include "lizard0mtr0log.h"
 #include "my_dbug.h"
 
 #ifndef UNIV_HOTBACKUP
@@ -3170,8 +3171,7 @@ void btr_cur_update_in_place_log(ulint flags, const rec_t *rec,
 
   const bool opened = mlog_open_and_write_index(
       mtr, rec, index, MLOG_REC_UPDATE_IN_PLACE,
-      1 + DATA_ROLL_PTR_LEN + 14 + 2 + MLOG_BUF_MARGIN + DATA_UNDO_PTR_LEN +
-          DATA_GCN_ID_LEN + 14,
+      1 + REDO_SYS_FIELDS_LEN + REDO_LIZARD_FIELDS_LEN + 2 + MLOG_BUF_MARGIN,
       log_ptr);
 
   if (!opened) {
@@ -4281,7 +4281,7 @@ static inline void btr_cur_del_mark_set_clust_rec_log(
 
   const bool opened = mlog_open_and_write_index(
       mtr, rec, index, MLOG_REC_CLUST_DELETE_MARK,
-      1 + 1 + DATA_ROLL_PTR_LEN + 14 + 2 + DATA_UNDO_PTR_LEN + 14, log_ptr);
+      1 + 1 + REDO_SYS_FIELDS_LEN + REDO_LIZARD_FIELDS_LEN + 2, log_ptr);
 
   if (!opened) {
     /* Logging in mtr is switched off during crash recovery */
