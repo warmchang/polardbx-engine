@@ -1292,9 +1292,10 @@ void Srv_session::set_safe(bool safe) {
   safe_session = safe;
   if (safe) {
     m_thd->remove_srv_session_mark();
-    m_thd->m_audited = true;
+    // todo: temporarily disable audit log(bad performance)
+    // m_thd->m_audited = true;
   } else {
     m_thd->mark_as_srv_session();
-    m_thd->m_audited = false;
+    // m_thd->m_audited = false;
   }
 }
