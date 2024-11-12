@@ -21,7 +21,7 @@
 # 51 Franklin St, Fifth Floor, Boston, MA 02110-1301  USA
 
 
-%define polardb_version 'PolarDB V2.0 OpenSource'
+%define polardb_version 'PolarDB V2.0'
 %define product_version 2.4.1
 %define release_date %(echo $RELEASE | cut -c 1-8)
 %define version_extra X-Cluster
